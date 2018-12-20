@@ -145,25 +145,6 @@ func GetGitHubRepository(ctx context.Context, args protocol.RepoLookupArgs) (rep
 		return GetGitHubRepositoryMock(args)
 	}
 
-	ghrepoToRepoInfo := func(ghrepo *github.Repository, conn *githubConnection) *protocol.RepoInfo {
-		return &protocol.RepoInfo{
-			Name:         githubRepositoryToRepoPath(conn, ghrepo),
-			ExternalRepo: github.ExternalRepoSpec(ghrepo, *conn.baseURL),
-			Description:  ghrepo.Description,
-			Fork:         ghrepo.IsFork,
-			Archived:     ghrepo.IsArchived,
-			Links: &protocol.RepoLinks{
-				Root:   ghrepo.URL,
-				Tree:   ghrepo.URL + "/tree/{rev}/{path}",
-				Blob:   ghrepo.URL + "/blob/{rev}/{path}",
-				Commit: ghrepo.URL + "/commit/{commit}",
-			},
-			VCS: protocol.VCSInfo{
-				URL: conn.authenticatedRemoteURL(ghrepo),
-			},
-		}
-	}
-
 	conn, err := getGitHubConnection(args)
 	if err != nil {
 		return nil, true, err // refers to a GitHub repo but the host is not configured
@@ -237,7 +218,7 @@ func GetGitHubRepository(ctx context.Context, args protocol.RepoLookupArgs) (rep
 		// Look up by external repository spec.
 		ghrepo, err := conn.client.GetRepositoryByNodeID(ctx, "", args.ExternalRepo.ID)
 		if ghrepo != nil {
-			repo = ghrepoToRepoInfo(ghrepo, conn)
+			repo = githubRepoToRepoInfo(ghrepo, conn)
 		}
 		return repo, true, err
 	}
@@ -252,12 +233,31 @@ func GetGitHubRepository(ctx context.Context, args protocol.RepoLookupArgs) (rep
 
 		ghrepo, err := conn.client.GetRepository(ctx, owner, repoName)
 		if ghrepo != nil {
-			repo = ghrepoToRepoInfo(ghrepo, conn)
+			repo = githubRepoToRepoInfo(ghrepo, conn)
 		}
 		return repo, true, err
 	}
 
 	return nil, true, fmt.Errorf("unable to look up GitHub repository (%+v)", args)
+}
+
+func githubRepoToRepoInfo(ghrepo *github.Repository, conn *githubConnection) *protocol.RepoInfo {
+	return &protocol.RepoInfo{
+		Name:         githubRepositoryToRepoPath(conn, ghrepo),
+		ExternalRepo: github.ExternalRepoSpec(ghrepo, *conn.baseURL),
+		Description:  ghrepo.Description,
+		Fork:         ghrepo.IsFork,
+		Archived:     ghrepo.IsArchived,
+		Links: &protocol.RepoLinks{
+			Root:   ghrepo.URL,
+			Tree:   ghrepo.URL + "/tree/{rev}/{path}",
+			Blob:   ghrepo.URL + "/blob/{rev}/{path}",
+			Commit: ghrepo.URL + "/commit/{commit}",
+		},
+		VCS: protocol.VCSInfo{
+			URL: conn.authenticatedRemoteURL(ghrepo),
+		},
+	}
 }
 
 var gitHubRepositorySyncWorker = &worker{

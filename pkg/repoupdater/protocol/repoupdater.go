@@ -83,6 +83,7 @@ type RepoInfo struct {
 	Description string // repository description (from the external service)
 	Fork        bool   // whether this repository is a fork of another repository (from the external service)
 	Archived    bool   // whether this repository is archived (from the external service)
+	Enabled     bool   // whether the repository is enabled on Sourcegraph.
 
 	VCS VCSInfo // VCS-related information (for cloning/updating)
 

@@ -248,6 +248,7 @@ func githubRepoToRepoInfo(ghrepo *github.Repository, conn *githubConnection) *pr
 		Description:  ghrepo.Description,
 		Fork:         ghrepo.IsFork,
 		Archived:     ghrepo.IsArchived,
+		Enabled:      conn.config.InitialRepositoryEnablement,
 		Links: &protocol.RepoLinks{
 			Root:   ghrepo.URL,
 			Tree:   ghrepo.URL + "/tree/{rev}/{path}",
@@ -259,6 +260,7 @@ func githubRepoToRepoInfo(ghrepo *github.Repository, conn *githubConnection) *pr
 		},
 	}
 }
+
 
 var gitHubRepositorySyncWorker = &worker{
 	work: func(ctx context.Context, shutdown chan struct{}) {

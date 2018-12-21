@@ -190,6 +190,10 @@
 // 1528395562_.up.sql (420B)
 // 1528395563_.down.sql (133B)
 // 1528395563_.up.sql (181B)
+// 1528395564_add_deleted_at_to_repos_table.down.sql (41B)
+// 1528395564_add_deleted_at_to_repos_table.up.sql (65B)
+// 1528395565_add_repo_external_service_unique_index.down.sql (64B)
+// 1528395565_add_repo_external_service_unique_index.up.sql (129B)
 
 package migrations
 
@@ -4058,6 +4062,86 @@ func _1528395563_UpSql() (*asset, error) {
 	return a, nil
 }
 
+var __1528395564_add_deleted_at_to_repos_tableDownSql = []byte("\x1f\x8b\x08\x00\x00\x00\x00\x00\x00\xff\x72\xf4\x09\x71\x0d\x52\x08\x71\x74\xf2\x71\x55\x28\x4a\x2d\xc8\x57\x70\x09\xf2\x0f\x50\x70\xf6\xf7\x09\xf5\xf5\x53\x48\x49\xcd\x49\x2d\x49\x4d\x89\x4f\x2c\xb1\xe6\x02\x04\x00\x00\xff\xff\x19\x42\xe2\x20\x29\x00\x00\x00")
+
+func _1528395564_add_deleted_at_to_repos_tableDownSqlBytes() ([]byte, error) {
+	return bindataRead(
+		__1528395564_add_deleted_at_to_repos_tableDownSql,
+		"1528395564_add_deleted_at_to_repos_table.down.sql",
+	)
+}
+
+func _1528395564_add_deleted_at_to_repos_tableDownSql() (*asset, error) {
+	bytes, err := _1528395564_add_deleted_at_to_repos_tableDownSqlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "1528395564_add_deleted_at_to_repos_table.down.sql", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	a := &asset{bytes: bytes, info: info, digest: [32]uint8{0x60, 0xb1, 0x1b, 0xb3, 0xc7, 0xaf, 0xca, 0xde, 0xe3, 0x16, 0x14, 0x85, 0xae, 0xdf, 0x4d, 0x7c, 0x80, 0x50, 0x1c, 0xf6, 0xb5, 0xca, 0x67, 0x8b, 0x14, 0xd6, 0xd0, 0x30, 0xb4, 0xc1, 0x8e, 0x68}}
+	return a, nil
+}
+
+var __1528395564_add_deleted_at_to_repos_tableUpSql = []byte("\x1f\x8b\x08\x00\x00\x00\x00\x00\x00\xff\x72\xf4\x09\x71\x0d\x52\x08\x71\x74\xf2\x71\x55\x28\x4a\x2d\xc8\x57\x70\x74\x71\x51\x70\xf6\xf7\x09\xf5\xf5\x53\x48\x49\xcd\x49\x2d\x49\x4d\x89\x4f\x2c\x51\x08\xf1\xf4\x75\x0d\x0e\x71\xf4\x0d\x50\x08\xf7\x0c\xf1\x00\x73\x15\xa2\xfc\xfd\x5c\xad\xb9\x00\x01\x00\x00\xff\xff\x97\xe2\xb8\x1e\x41\x00\x00\x00")
+
+func _1528395564_add_deleted_at_to_repos_tableUpSqlBytes() ([]byte, error) {
+	return bindataRead(
+		__1528395564_add_deleted_at_to_repos_tableUpSql,
+		"1528395564_add_deleted_at_to_repos_table.up.sql",
+	)
+}
+
+func _1528395564_add_deleted_at_to_repos_tableUpSql() (*asset, error) {
+	bytes, err := _1528395564_add_deleted_at_to_repos_tableUpSqlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "1528395564_add_deleted_at_to_repos_table.up.sql", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	a := &asset{bytes: bytes, info: info, digest: [32]uint8{0x27, 0xab, 0x8e, 0x8f, 0xe5, 0x87, 0x13, 0xc7, 0x7b, 0xf4, 0x61, 0x9b, 0x6d, 0x20, 0x55, 0xf, 0x68, 0x3a, 0xfd, 0x2a, 0x20, 0x3e, 0xf7, 0x6c, 0x62, 0xd9, 0xf0, 0x62, 0xc2, 0x70, 0xd4, 0x44}}
+	return a, nil
+}
+
+var __1528395565_add_repo_external_service_unique_indexDownSql = []byte("\x1f\x8b\x08\x00\x00\x00\x00\x00\x00\xff\x72\x09\xf2\x0f\x50\xf0\xf4\x73\x71\x8d\x50\x70\xf6\xf7\x73\x0e\x0d\x0a\x72\xf5\x0b\xf1\x89\x54\xf0\x74\x53\x70\x8d\xf0\x0c\x0e\x09\x56\x28\x4a\x2d\xc8\x8f\x4f\xad\x28\x49\x2d\xca\x4b\xcc\x89\x2f\x4e\x2d\x2a\xcb\x4c\x4e\x8d\x2f\xcd\xcb\x2c\x2c\x4d\xb5\xe6\x02\x04\x00\x00\xff\xff\xc7\x56\xd9\x78\x40\x00\x00\x00")
+
+func _1528395565_add_repo_external_service_unique_indexDownSqlBytes() ([]byte, error) {
+	return bindataRead(
+		__1528395565_add_repo_external_service_unique_indexDownSql,
+		"1528395565_add_repo_external_service_unique_index.down.sql",
+	)
+}
+
+func _1528395565_add_repo_external_service_unique_indexDownSql() (*asset, error) {
+	bytes, err := _1528395565_add_repo_external_service_unique_indexDownSqlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "1528395565_add_repo_external_service_unique_index.down.sql", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	a := &asset{bytes: bytes, info: info, digest: [32]uint8{0x7a, 0xda, 0x8f, 0xf9, 0x9f, 0x17, 0x4b, 0x2b, 0x20, 0x7a, 0x19, 0x72, 0x96, 0x8a, 0x6f, 0x97, 0xf, 0xa8, 0xc8, 0xa4, 0xf3, 0x68, 0xaf, 0x21, 0x71, 0xf0, 0x70, 0x6e, 0x1, 0x78, 0xf4, 0xbc}}
+	return a, nil
+}
+
+var __1528395565_add_repo_external_service_unique_indexUpSql = []byte("\x1f\x8b\x08\x00\x00\x00\x00\x00\x00\xff\x72\x0e\x72\x75\x0c\x71\x55\x08\xf5\xf3\x0c\x0c\x75\x55\xf0\xf4\x73\x71\x8d\x50\x70\xf6\xf7\x73\x0e\x0d\x0a\x72\xf5\x0b\xf1\x89\x54\x28\x4a\x2d\xc8\x8f\x4f\xad\x28\x49\x2d\xca\x4b\xcc\x89\x2f\x4e\x2d\x2a\xcb\x4c\x4e\x8d\x2f\xcd\xcb\x2c\x2c\x4d\xe5\xf2\xf7\x03\xcb\x2b\x68\xc0\x15\x64\xa6\xe8\x28\x60\xa8\x2e\xa9\x2c\x48\xc5\x22\x9c\x99\xa2\x69\xcd\x05\x08\x00\x00\xff\xff\xb4\xf8\x2d\x05\x81\x00\x00\x00")
+
+func _1528395565_add_repo_external_service_unique_indexUpSqlBytes() ([]byte, error) {
+	return bindataRead(
+		__1528395565_add_repo_external_service_unique_indexUpSql,
+		"1528395565_add_repo_external_service_unique_index.up.sql",
+	)
+}
+
+func _1528395565_add_repo_external_service_unique_indexUpSql() (*asset, error) {
+	bytes, err := _1528395565_add_repo_external_service_unique_indexUpSqlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "1528395565_add_repo_external_service_unique_index.up.sql", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	a := &asset{bytes: bytes, info: info, digest: [32]uint8{0x81, 0x92, 0xa, 0x99, 0x9d, 0xb4, 0x9a, 0xe2, 0x8e, 0x1, 0xc9, 0xe2, 0x9d, 0x3d, 0xa8, 0x5d, 0xc, 0xb2, 0x15, 0xe2, 0x68, 0x1e, 0xfd, 0x92, 0x24, 0xca, 0xc, 0x5d, 0x60, 0x96, 0xeb, 0xf4}}
+	return a, nil
+}
+
 // Asset loads and returns the asset for the given name.
 // It returns an error if the asset could not be found or
 // could not be loaded.
@@ -4528,6 +4612,14 @@ var _bindata = map[string]func() (*asset, error){
 	"1528395563_.down.sql": _1528395563_DownSql,
 
 	"1528395563_.up.sql": _1528395563_UpSql,
+
+	"1528395564_add_deleted_at_to_repos_table.down.sql": _1528395564_add_deleted_at_to_repos_tableDownSql,
+
+	"1528395564_add_deleted_at_to_repos_table.up.sql": _1528395564_add_deleted_at_to_repos_tableUpSql,
+
+	"1528395565_add_repo_external_service_unique_index.down.sql": _1528395565_add_repo_external_service_unique_indexDownSql,
+
+	"1528395565_add_repo_external_service_unique_index.up.sql": _1528395565_add_repo_external_service_unique_indexUpSql,
 }
 
 // AssetDir returns the file names below a certain
@@ -4761,6 +4853,10 @@ var _bintree = &bintree{nil, map[string]*bintree{
 	"1528395562_.up.sql":                                          {_1528395562_UpSql, map[string]*bintree{}},
 	"1528395563_.down.sql":                                        {_1528395563_DownSql, map[string]*bintree{}},
 	"1528395563_.up.sql":                                          {_1528395563_UpSql, map[string]*bintree{}},
+	"1528395564_add_deleted_at_to_repos_table.down.sql":           {_1528395564_add_deleted_at_to_repos_tableDownSql, map[string]*bintree{}},
+	"1528395564_add_deleted_at_to_repos_table.up.sql":             {_1528395564_add_deleted_at_to_repos_tableUpSql, map[string]*bintree{}},
+	"1528395565_add_repo_external_service_unique_index.down.sql":  {_1528395565_add_repo_external_service_unique_indexDownSql, map[string]*bintree{}},
+	"1528395565_add_repo_external_service_unique_index.up.sql":    {_1528395565_add_repo_external_service_unique_indexUpSql, map[string]*bintree{}},
 }}
 
 // RestoreAsset restores an asset under the given directory.

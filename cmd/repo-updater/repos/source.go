@@ -4,57 +4,12 @@ import (
 	"context"
 	"net/url"
 	"sync/atomic"
-	"time"
 
 	"github.com/sourcegraph/sourcegraph/pkg/extsvc/github"
 	"github.com/sourcegraph/sourcegraph/pkg/repoupdater/protocol"
 	"github.com/sourcegraph/sourcegraph/schema"
 	log15 "gopkg.in/inconshreveable/log15.v2"
 )
-
-// A Sourcerer periodically sources available repositories from all its given Sources,
-// converging the persistent repo state in Sourcegraph to match what it finds.
-type Sourcerer struct {
-	interval time.Duration
-	source   Source
-	store    Store
-}
-
-// NewSourcerer returns a new Sourcerer with the given parameters.
-func NewSourcerer(interval time.Duration, store Store, sources []Source) *Sourcerer {
-	return &Sourcerer{
-		interval: interval,
-		source:   NewSources(sources...),
-		store:    store,
-	}
-}
-
-// Run runs the Sourcerer at its specified interval.
-func (s Sourcerer) Run(ctx context.Context) error {
-	ticks := time.NewTicker(s.interval)
-	defer ticks.Stop()
-
-	for {
-		select {
-		case <-ctx.Done():
-			return ctx.Err()
-		case <-ticks.C:
-			if err := s.sync(ctx); err != nil {
-				log15.Error("sourcerer", "err", err)
-			}
-		}
-	}
-}
-
-func (s Sourcerer) sync(ctx context.Context) error {
-	// TODO:
-	// - get sourced repos
-	// - get store repos
-	// - calculate diff state
-	// - upsert / delete records
-	// - ensure scheduler picks up changes to get propagated to git server
-	panic("not implemented")
-}
 
 // A Source yields repositories to be mirrored and analysed by Sourcegraph.
 // Successive calls to its Repos method may yield different results.

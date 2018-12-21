@@ -103,17 +103,22 @@ func (s Syncer) upserts(sourced, stored []*Repo) []*Repo {
 		return a.(*Repo).Equal(b.(*Repo))
 	})
 
+	now := s.now()
 	upserts := make([]*Repo, 0, len(diff.Added)+len(diff.Deleted)+len(diff.Modified))
+
 	for _, add := range diff.Added {
-		upserts = append(upserts, add.(*Repo))
+		repo := add.(*Repo)
+		repo.CreatedAt = now
+		upserts = append(upserts, repo)
 	}
 
 	for _, mod := range diff.Modified {
-		upserts = append(upserts, mod.(*Repo))
+		repo := mod.(*Repo)
+		repo.UpdatedAt = &now
+		upserts = append(upserts, repo)
 	}
 
 	// TODO(tsenart): Protect against unintended deleted due to transient sourcing errors.
-	now := s.now()
 	for _, del := range diff.Modified {
 		repo := del.(*Repo)
 		repo.DeletedAt = &now

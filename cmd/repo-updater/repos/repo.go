@@ -8,8 +8,6 @@ import (
 
 // Repo represents a source code repository stored in Sourcegraph.
 type Repo struct {
-	// ID is the unique numeric ID for this repository.
-	_ID int32
 	// Name is the name for this repository (e.g., "github.com/user/repo").
 	//
 	// Previously, this was called RepoURI.
@@ -45,9 +43,17 @@ func (r *Repo) ID() string {
 func (r *Repo) Equal(other *Repo) bool {
 	return r == other || (r != nil && other != nil &&
 		r.Name == other.Name &&
-		r.Description == other.Description &&
+		r.Language == other.Language &&
 		r.Fork == other.Fork &&
-		r.Archived == other.Archived &&
 		r.Enabled == other.Enabled &&
+		r.Archived == other.Archived &&
+		r.CreatedAt == other.CreatedAt &&
+		(r.UpdatedAt == other.UpdatedAt ||
+			(r.UpdatedAt != nil && other.UpdatedAt != nil &&
+				r.UpdatedAt.Equal(*other.UpdatedAt))) &&
+		(r.DeletedAt == other.DeletedAt ||
+			(r.DeletedAt != nil && other.DeletedAt != nil &&
+				r.DeletedAt.Equal(*other.DeletedAt))) &&
+		r.Description == other.Description &&
 		r.ExternalRepo == other.ExternalRepo)
 }

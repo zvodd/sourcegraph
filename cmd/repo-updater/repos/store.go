@@ -24,7 +24,7 @@ func NewFrontendAPIStore() *FrontendAPIStore {
 }
 
 // GetRepos gets all configured repositories in Sourcegraph.
-func (s FrontendAPIStore) Repos(ctx context.Context) (*protocol.RepoInfo, error) {
+func (s FrontendAPIStore) Repos(ctx context.Context) ([]*protocol.RepoInfo, error) {
 	panic("not implemented")
 }
 

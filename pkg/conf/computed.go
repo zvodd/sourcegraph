@@ -117,6 +117,12 @@ func UpdateScheduler2Enabled() bool {
 	return p != "disabled"
 }
 
+// RepoUpdaterSyncerEnabled returns true if the repoUpdaterSyncer experiment is enabled.
+func RepoUpdaterSyncerEnabled() bool {
+	p := Get().ExperimentalFeatures.RepoUpdaterSyncer
+	return p == "enabled"
+}
+
 func AWSCodeCommitConfigs(ctx context.Context) ([]*schema.AWSCodeCommitConnection, error) {
 	var config []*schema.AWSCodeCommitConnection
 	if err := api.InternalClient.ExternalServiceConfigs(ctx, "AWSCODECOMMIT", &config); err != nil {

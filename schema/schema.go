@@ -146,6 +146,7 @@ type ExperimentalFeatures struct {
 	ExternalServices     string `json:"externalServices,omitempty"`
 	GithubAuth           bool   `json:"githubAuth,omitempty"`
 	GitlabAuth           bool   `json:"gitlabAuth,omitempty"`
+	RepoUpdaterSyncer    string `json:"repoUpdaterSyncer,omitempty"`
 	UpdateScheduler2     string `json:"updateScheduler2,omitempty"`
 }
 

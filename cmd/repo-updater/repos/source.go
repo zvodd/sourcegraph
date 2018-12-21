@@ -29,8 +29,8 @@ type GithubSource struct {
 type GithubConnConfigs func(context.Context) ([]*schema.GitHubConnection, error)
 
 // NewGithubSource returns a new GithubSource with the given configs.
-func NewGithubSource(configs GithubConnConfigs) (*GithubSource, error) {
-	return &GithubSource{configs: configs}, nil
+func NewGithubSource(configs GithubConnConfigs) *GithubSource {
+	return &GithubSource{configs: configs}
 }
 
 // Repos returns all Github repositories accessible to all connections configured

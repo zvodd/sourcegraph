@@ -25,7 +25,7 @@ import (
 
 var githubConnections = atomicvalue.New()
 
-func init() {
+func SyncGithubConnections() {
 	githubConnections.Set(func() interface{} {
 		return []*githubConnection{}
 	})
@@ -281,7 +281,7 @@ var gitHubRepositorySyncWorker = &worker{
 					select {
 					case <-shutdown:
 						return
-					case <-time.After(getUpdateInterval()):
+					case <-time.After(GetUpdateInterval()):
 					}
 				}
 			}(c)

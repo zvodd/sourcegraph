@@ -12,6 +12,8 @@ type Repo struct {
 	//
 	// Previously, this was called RepoURI.
 	Name api.RepoName
+	// Description is a brief description of the repository.
+	Description string
 	// Language is the primary programming language used in this repository.
 	Language string
 	// Fork is whether this repository is a fork of another repository.
@@ -27,8 +29,6 @@ type Repo struct {
 	UpdatedAt *time.Time
 	// DeletedAt is when this repository was soft-deleted from Sourcegraph.
 	DeletedAt *time.Time
-	// Description is a brief description of the repository.
-	Description string
 	// ExternalRepo identifies this repository by its ID on the external service where it resides (and the external
 	// service itself).
 	ExternalRepo api.ExternalRepoSpec

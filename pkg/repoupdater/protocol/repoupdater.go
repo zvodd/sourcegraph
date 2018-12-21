@@ -80,11 +80,10 @@ type RepoInfo struct {
 	// in the lookup. If the repository was renamed on the external service, this name is the new name.
 	Name api.RepoName
 
-	Description string    // repository description (from the external service)
-	Fork        bool      // whether this repository is a fork of another repository (from the external service)
-	Archived    bool      // whether this repository is archived (from the external service)
-	Enabled     bool      // whether the repository is enabled on Sourcegraph.
-	DeletedAt   time.Time // timestamp indicating when this repo was deleted from Sourcegraph.
+	Description string // repository description (from the external service)
+	Fork        bool   // whether this repository is a fork of another repository (from the external service)
+	Archived    bool   // whether this repository is archived (from the external service)
+	Enabled     bool   // whether the repository is enabled on Sourcegraph.
 
 	VCS VCSInfo // VCS-related information (for cloning/updating)
 

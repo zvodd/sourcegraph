@@ -78,7 +78,7 @@ func main() {
 	// Initially we're only experimenting with this new code path for Github.
 	if conf.RepoUpdaterSyncerEnabled() {
 		interval := repos.GetUpdateInterval()
-		store := repos.NewFrontendAPIStore()
+		store := repos.NewDBStore(nil)
 		sources := []repos.Source{
 			repos.NewGithubSource(conf.GitHubConfigs),
 		}

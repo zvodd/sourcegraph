@@ -6,7 +6,6 @@ import (
 	"sync/atomic"
 
 	"github.com/sourcegraph/sourcegraph/pkg/extsvc/github"
-	"github.com/sourcegraph/sourcegraph/pkg/repoupdater/protocol"
 	"github.com/sourcegraph/sourcegraph/schema"
 	log15 "gopkg.in/inconshreveable/log15.v2"
 )
@@ -14,7 +13,7 @@ import (
 // A Source yields repositories to be stored and analysed by Sourcegraph.
 // Successive calls to its Repos method may yield different results.
 type Source interface {
-	Repos(context.Context) ([]*protocol.RepoInfo, error)
+	Repos(context.Context) ([]*Repo, error)
 }
 
 // A GithubSource yields repositories from multiple Github connections configured
@@ -35,7 +34,7 @@ func NewGithubSource(configs GithubConnConfigs) *GithubSource {
 
 // Repos returns all Github repositories accessible to all connections configured
 // in Sourcegraph via the external services configuration.
-func (s GithubSource) Repos(ctx context.Context) ([]*protocol.RepoInfo, error) {
+func (s GithubSource) Repos(ctx context.Context) ([]*Repo, error) {
 	conns, err := s.connections(ctx)
 	if err != nil {
 		log15.Error("unable to fetch GitHub connections", "err", err)
@@ -60,9 +59,16 @@ func (s GithubSource) Repos(ctx context.Context) ([]*protocol.RepoInfo, error) {
 		}(c)
 	}
 
-	var repos []*protocol.RepoInfo
+	var repos []*Repo
 	for r := range ch {
-		repos = append(repos, githubRepoToRepoInfo(r.repo, r.conn))
+		repos = append(repos, &Repo{
+			Name:         githubRepositoryToRepoPath(r.conn, r.repo),
+			ExternalRepo: *github.ExternalRepoSpec(r.repo, *r.conn.baseURL),
+			Description:  r.repo.Description,
+			Fork:         r.repo.IsFork,
+			Archived:     r.repo.IsArchived,
+			Enabled:      r.conn.config.InitialRepositoryEnablement,
+		})
 	}
 
 	return repos, nil
@@ -116,10 +122,10 @@ func NewSources(srcs ...Source) Source {
 type sources struct{ srcs []Source }
 
 // Repos implements the Source interface.
-func (s sources) Repos(ctx context.Context) ([]*protocol.RepoInfo, error) {
+func (s sources) Repos(ctx context.Context) ([]*Repo, error) {
 	type result struct {
 		src   Source
-		repos []*protocol.RepoInfo
+		repos []*Repo
 		err   error
 	}
 
@@ -134,7 +140,7 @@ func (s sources) Repos(ctx context.Context) ([]*protocol.RepoInfo, error) {
 		}(src)
 	}
 
-	var repos []*protocol.RepoInfo
+	var repos []*Repo
 	for i := 0; i < len(ch); i++ {
 		if r := <-ch; r.err != nil {
 			log15.Error("sources", "err", r.err)

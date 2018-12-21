@@ -98,36 +98,8 @@ type RepoInfo struct {
 	ExternalRepo *api.ExternalRepoSpec
 }
 
-// ID returns a globally unique identifier of the repository.
-func (r *RepoInfo) ID() string {
-	if r.ExternalRepo != nil {
-		return r.ExternalRepo.ServiceType + ":" + r.ExternalRepo.ID
-	}
-	return string(r.Name)
-}
-
 func (r *RepoInfo) String() string {
 	return fmt.Sprintf("RepoInfo{%s}", r.Name)
-}
-
-// Equal performs a deep equality comparison of r with other.
-func (r *RepoInfo) Equal(other *RepoInfo) bool {
-	return r == other || (r != nil && other != nil &&
-
-		r.Name == other.Name &&
-		r.Description == other.Description &&
-		r.Fork == other.Fork &&
-		r.Archived == other.Archived &&
-		r.Enabled == other.Enabled &&
-		r.VCS == other.VCS &&
-
-		(r.Links == other.Links ||
-			(r.Links != nil && other.Links != nil &&
-				*(r.Links) == *(other.Links))) &&
-
-		(r.ExternalRepo == other.ExternalRepo ||
-			(r.ExternalRepo != nil && other.ExternalRepo != nil &&
-				*(r.ExternalRepo) == *(other.ExternalRepo))))
 }
 
 // VCSInfo describes how to access an external repository's Git data (to clone or update it).

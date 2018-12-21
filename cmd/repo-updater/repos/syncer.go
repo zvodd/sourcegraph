@@ -5,7 +5,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/sourcegraph/sourcegraph/pkg/repoupdater/protocol"
 	log15 "gopkg.in/inconshreveable/log15.v2"
 )
 
@@ -57,7 +56,7 @@ func (s Syncer) sync(ctx context.Context) error {
 	}
 
 	type upsert struct {
-		repo *protocol.RepoInfo
+		repo *Repo
 		err  error
 	}
 
@@ -71,7 +70,7 @@ func (s Syncer) sync(ctx context.Context) error {
 		}(upsert{repo: repo})
 	}
 
-	serr := SyncError{errors: map[*protocol.RepoInfo]error{}}
+	serr := SyncError{errors: map[*Repo]error{}}
 	for i := 0; i < len(upserts); i++ {
 		if up := <-ch; up.err != nil {
 			serr.errors[up.repo] = up.err
@@ -89,7 +88,7 @@ func (s Syncer) sync(ctx context.Context) error {
 
 }
 
-func (s Syncer) upserts(sourced, stored []*protocol.RepoInfo) []*protocol.RepoInfo {
+func (s Syncer) upserts(sourced, stored []*Repo) []*Repo {
 	a := make([]Diffable, len(sourced))
 	for i := range sourced {
 		a[i] = sourced[i]
@@ -101,23 +100,23 @@ func (s Syncer) upserts(sourced, stored []*protocol.RepoInfo) []*protocol.RepoIn
 	}
 
 	diff := NewDiff(a, b, func(a, b Diffable) bool {
-		return a.(*protocol.RepoInfo).Equal(b.(*protocol.RepoInfo))
+		return a.(*Repo).Equal(b.(*Repo))
 	})
 
-	upserts := make([]*protocol.RepoInfo, 0, len(diff.Added)+len(diff.Deleted)+len(diff.Modified))
+	upserts := make([]*Repo, 0, len(diff.Added)+len(diff.Deleted)+len(diff.Modified))
 	for _, add := range diff.Added {
-		upserts = append(upserts, add.(*protocol.RepoInfo))
+		upserts = append(upserts, add.(*Repo))
 	}
 
 	for _, mod := range diff.Modified {
-		upserts = append(upserts, mod.(*protocol.RepoInfo))
+		upserts = append(upserts, mod.(*Repo))
 	}
 
 	// TODO(tsenart): Protect against unintended deleted due to transient sourcing errors.
 	now := s.now()
 	for _, del := range diff.Modified {
-		repo := del.(*protocol.RepoInfo)
-		repo.DeletedAt = now
+		repo := del.(*Repo)
+		repo.DeletedAt = &now
 		upserts = append(upserts, repo)
 	}
 
@@ -127,7 +126,7 @@ func (s Syncer) upserts(sourced, stored []*protocol.RepoInfo) []*protocol.RepoIn
 // A SyncError is returned by the Syncer's sync method. It captures
 // the details of which repositories failed to be synced.
 type SyncError struct {
-	errors map[*protocol.RepoInfo]error
+	errors map[*Repo]error
 }
 
 func (e SyncError) Error() string {

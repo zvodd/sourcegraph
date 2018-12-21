@@ -11,7 +11,7 @@ import (
 	log15 "gopkg.in/inconshreveable/log15.v2"
 )
 
-// A Source yields repositories to be mirrored and analysed by Sourcegraph.
+// A Source yields repositories to be stored and analysed by Sourcegraph.
 // Successive calls to its Repos method may yield different results.
 type Source interface {
 	Repos(context.Context) ([]*protocol.RepoInfo, error)

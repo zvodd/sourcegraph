@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/url"
 	"sync/atomic"
+	"time"
 
 	"github.com/sourcegraph/sourcegraph/pkg/extsvc/github"
 	"github.com/sourcegraph/sourcegraph/schema"
@@ -11,9 +12,9 @@ import (
 )
 
 // A Source yields repositories to be stored and analysed by Sourcegraph.
-// Successive calls to its Repos method may yield different results.
+// Successive calls to its ListRepos method may yield different results.
 type Source interface {
-	Repos(context.Context) ([]*Repo, error)
+	ListRepos(context.Context) ([]*Repo, error)
 }
 
 // A GithubSource yields repositories from multiple Github connections configured
@@ -32,9 +33,9 @@ func NewGithubSource(configs GithubConnConfigs) *GithubSource {
 	return &GithubSource{configs: configs}
 }
 
-// Repos returns all Github repositories accessible to all connections configured
+// ListRepos lists all Github repositories accessible to all connections configured
 // in Sourcegraph via the external services configuration.
-func (s GithubSource) Repos(ctx context.Context) ([]*Repo, error) {
+func (s GithubSource) ListRepos(ctx context.Context) ([]*Repo, error) {
 	conns, err := s.connections(ctx)
 	if err != nil {
 		log15.Error("unable to fetch GitHub connections", "err", err)
@@ -50,6 +51,7 @@ func (s GithubSource) Repos(ctx context.Context) ([]*Repo, error) {
 	done := uint32(0)
 	for _, c := range conns {
 		go func(c *githubConnection) {
+			time.Sleep(backoffPeriod(c))
 			for r := range c.listAllRepositories(ctx) {
 				ch <- repository{conn: c, repo: r}
 			}
@@ -110,6 +112,19 @@ func (s GithubSource) connections(ctx context.Context) ([]*githubConnection, err
 	}
 
 	return conns, nil
+}
+
+func backoffPeriod(c *githubConnection) time.Duration {
+	if remaining, reset, ok := c.client.RateLimit.Get(); ok && remaining < 200 {
+		wait := reset + 10*time.Second
+		log15.Warn(
+			"GitHub API rate limit is almost exhausted. Waiting until rate limit is reset.",
+			"wait", reset,
+			"rateLimitRemaining", remaining,
+		)
+		return wait
+	}
+	return 0
 }
 
 // NewSources returns a Source which is the composition of all the given Sources.

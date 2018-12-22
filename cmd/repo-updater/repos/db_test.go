@@ -40,7 +40,7 @@ func testDatabase(t testing.TB) (*sql.DB, func()) {
 		t.Fatalf("failed to apply migrations: %s", err)
 	}
 
-	return db, schema, func() {
+	return db, func() {
 		_, err := db.Exec(`DROP SCHEMA "` + schema + `" CASCADE`)
 		if err != nil {
 			t.Fatalf("failed to drop schema: %s", err)

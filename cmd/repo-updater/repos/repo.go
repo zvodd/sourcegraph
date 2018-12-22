@@ -26,9 +26,9 @@ type Repo struct {
 	// CreatedAt is when this repository was created on Sourcegraph.
 	CreatedAt time.Time
 	// UpdatedAt is when this repository's metadata was last updated on Sourcegraph.
-	UpdatedAt *time.Time
+	UpdatedAt time.Time
 	// DeletedAt is when this repository was soft-deleted from Sourcegraph.
-	DeletedAt *time.Time
+	DeletedAt time.Time
 	// ExternalRepo identifies this repository by its ID on the external service where it resides (and the external
 	// service itself).
 	ExternalRepo api.ExternalRepoSpec
@@ -47,13 +47,9 @@ func (r *Repo) Equal(other *Repo) bool {
 		r.Fork == other.Fork &&
 		r.Enabled == other.Enabled &&
 		r.Archived == other.Archived &&
-		r.CreatedAt == other.CreatedAt &&
-		(r.UpdatedAt == other.UpdatedAt ||
-			(r.UpdatedAt != nil && other.UpdatedAt != nil &&
-				r.UpdatedAt.Equal(*other.UpdatedAt))) &&
-		(r.DeletedAt == other.DeletedAt ||
-			(r.DeletedAt != nil && other.DeletedAt != nil &&
-				r.DeletedAt.Equal(*other.DeletedAt))) &&
+		r.CreatedAt.Equal(other.CreatedAt) &&
+		r.UpdatedAt.Equal(other.UpdatedAt) &&
+		r.DeletedAt.Equal(other.DeletedAt) &&
 		r.Description == other.Description &&
 		r.ExternalRepo == other.ExternalRepo)
 }

@@ -45,12 +45,12 @@ func (s Syncer) Run(ctx context.Context) error {
 }
 
 func (s Syncer) sync(ctx context.Context) error {
-	sourced, err := s.source.Repos(ctx)
+	sourced, err := s.source.ListRepos(ctx)
 	if err != nil {
 		return err
 	}
 
-	stored, err := s.store.Repos(ctx)
+	stored, err := s.store.ListRepos(ctx)
 	if err != nil {
 		return err
 	}

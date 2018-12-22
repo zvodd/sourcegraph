@@ -136,8 +136,8 @@ func NewSources(srcs ...Source) Source {
 
 type sources struct{ srcs []Source }
 
-// Repos implements the Source interface.
-func (s sources) Repos(ctx context.Context) ([]*Repo, error) {
+// ListRepos implements the Source interface.
+func (s sources) ListRepos(ctx context.Context) ([]*Repo, error) {
 	type result struct {
 		src   Source
 		repos []*Repo
@@ -147,7 +147,7 @@ func (s sources) Repos(ctx context.Context) ([]*Repo, error) {
 	ch := make(chan result, len(s.srcs))
 	for _, src := range s.srcs {
 		go func(src Source) {
-			if repos, err := src.Repos(ctx); err != nil {
+			if repos, err := src.ListRepos(ctx); err != nil {
 				ch <- result{src: src, err: err}
 			} else {
 				ch <- result{src: src, repos: repos}

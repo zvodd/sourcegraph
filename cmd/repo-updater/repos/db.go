@@ -1,26 +1,34 @@
 package repos
 
 import (
-	"context"
 	"database/sql"
 	"os"
 
 	migr "github.com/golang-migrate/migrate/v4"
 	"github.com/golang-migrate/migrate/v4/database/postgres"
 	bindata "github.com/golang-migrate/migrate/v4/source/go_bindata"
+	"github.com/pkg/errors"
 	"github.com/sourcegraph/sourcegraph/migrations"
 	log15 "gopkg.in/inconshreveable/log15.v2"
 )
 
-// The DB interface captures the essential methods of a sql.DB
-type DB interface {
-	ExecContext(context.Context, string, ...interface{}) (sql.Result, error)
+// NewDB returns a new *sql.DB from the given dsn (data source name).
+func NewDB(dsn string) (*sql.DB, error) {
+	db, err := sql.Open("postgres", dsn)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to connect to database")
+	}
+
+	db.SetMaxOpenConns(25)
+
+	return db, nil
 }
 
 // Migrate runs all migrations from github.com/sourcegraph/sourcegraph/migrations
 // against the given sql.DB
 func MigrateDB(db *sql.DB) error {
-	driver, err := postgres.WithInstance(db, &postgres.Config{})
+	var cfg postgres.Config
+	driver, err := postgres.WithInstance(db, &cfg)
 	if err != nil {
 		return err
 	}

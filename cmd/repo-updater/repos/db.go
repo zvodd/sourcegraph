@@ -2,7 +2,9 @@ package repos
 
 import (
 	"database/sql"
+	"database/sql/driver"
 	"os"
+	"time"
 
 	migr "github.com/golang-migrate/migrate/v4"
 	"github.com/golang-migrate/migrate/v4/database/postgres"
@@ -62,4 +64,23 @@ func MigrateDB(db *sql.DB) error {
 		return nil
 	}
 	return err
+}
+
+// nullTime represents a time.Time that may be null. nullTime implements the
+// sql.Scanner interface so it can be used as a scan destination, similar to
+// sql.NullString. When the scanned value is null, Time is set to the zero value.
+type nullTime struct{ *time.Time }
+
+// Scan implements the Scanner interface.
+func (nt *nullTime) Scan(value interface{}) error {
+	*nt.Time, _ = value.(time.Time)
+	return nil
+}
+
+// Value implements the driver Valuer interface.
+func (nt nullTime) Value() (driver.Value, error) {
+	if nt.Time == nil {
+		return nil, nil
+	}
+	return *nt.Time, nil
 }

@@ -4,7 +4,6 @@ import (
 	"context"
 	"database/sql"
 
-	"github.com/lib/pq"
 	"github.com/pkg/errors"
 )
 
@@ -53,19 +52,15 @@ func (s DBStore) listReposPage(ctx context.Context, cursor, limit int64, repos *
 	}()
 
 	for rows.Next() {
-		var (
-			r                    Repo
-			updatedAt, deletedAt pq.NullTime
-		)
-
+		var r Repo
 		if err = rows.Scan(
 			&r._ID,
 			&r.Name,
 			&r.Description,
 			&r.Language,
 			&r.CreatedAt,
-			&updatedAt,
-			&deletedAt,
+			&nullTime{&r.UpdatedAt},
+			&nullTime{&r.DeletedAt},
 			&r.ExternalRepo.ID,
 			&r.ExternalRepo.ServiceType,
 			&r.ExternalRepo.ServiceID,
@@ -75,8 +70,6 @@ func (s DBStore) listReposPage(ctx context.Context, cursor, limit int64, repos *
 		); err != nil {
 			return err
 		}
-
-		r.UpdatedAt, r.DeletedAt = updatedAt.Time, deletedAt.Time
 		*repos = append(*repos, &r)
 	}
 

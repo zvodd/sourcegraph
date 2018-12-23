@@ -4,7 +4,6 @@ import (
 	"database/sql"
 	"math/rand"
 	"net/url"
-	"os"
 	"strconv"
 	"testing"
 	"time"
@@ -16,22 +15,6 @@ func testDatabase(t testing.TB, dsn string) (*sql.DB, func()) {
 	config, err := url.Parse(dsn)
 	if err != nil {
 		t.Fatalf("failed to parse dsn %q: %s", dsn, err)
-	}
-
-	// We want to configure the database client explicitly through the DSN.
-	// lib/pq uses and gives precedence to these environment variables so we unset them.
-	for _, v := range []string{
-		"PGHOST", "PGHOSTADDR", "PGPORT",
-		"PGDATABASE", "PGUSER", "PGPASSWORD",
-		"PGSERVICE", "PGSERVICEFILE", "PGREALM",
-		"PGOPTIONS", "PGAPPNAME", "PGSSLMODE",
-		"PGSSLCERT", "PGSSLKEY", "PGSSLROOTCERT",
-		"PGREQUIRESSL", "PGSSLCRL", "PGREQUIREPEER",
-		"PGKRBSRVNAME", "PGGSSLIB", "PGCONNECT_TIMEOUT",
-		"PGCLIENTENCODING", "PGDATESTYLE", "PGTZ",
-		"PGGEQO", "PGSYSCONFDIR", "PGLOCALEDIR",
-	} {
-		os.Unsetenv(v)
 	}
 
 	rng := rand.New(rand.NewSource(time.Now().UnixNano()))

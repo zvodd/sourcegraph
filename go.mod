@@ -10,11 +10,9 @@ require (
 	github.com/codahale/hdrhistogram v0.0.0-20161010025455-3a0bb77429bd // indirect
 	github.com/coreos/go-oidc v0.0.0-20171002155002-a93f71fdfe73
 	github.com/coreos/go-semver v0.2.0
-	github.com/cosiner/argv v0.0.1 // indirect
 	github.com/crewjam/saml v0.0.0-20180831135026-ebc5f787b786
 	github.com/davecgh/go-spew v1.1.1
 	github.com/daviddengcn/go-colortext v0.0.0-20171126034257-17e75f6184bc
-	github.com/derekparker/delve v1.1.0 // indirect
 	github.com/dghubble/gologin v1.0.2-0.20181013174641-0e442dd5bb73
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible // indirect
 	github.com/die-net/lrucache v0.0.0-20180825112409-f89ea99a4e43
@@ -52,7 +50,6 @@ require (
 	github.com/golangplus/bytes v0.0.0-20160111154220-45c989fe5450 // indirect
 	github.com/golangplus/fmt v0.0.0-20150411045040-2a5d6d7d2995 // indirect
 	github.com/golangplus/testing v0.0.0-20180327235837-af21d9c3145e // indirect
-	github.com/google/go-cmp v0.2.0
 	github.com/google/go-github v17.0.0+incompatible
 	github.com/google/go-querystring v1.0.0
 	github.com/google/uuid v1.0.0
@@ -89,7 +86,6 @@ require (
 	github.com/neelance/parallel v0.0.0-20160708114440-4de9ce63d14c
 	github.com/opentracing-contrib/go-stdlib v0.0.0-20180702182724-07a764486eb1
 	github.com/opentracing/opentracing-go v1.0.2
-	github.com/peterh/liner v1.1.0 // indirect
 	github.com/peterhellberg/link v1.0.0
 	github.com/pkg/errors v0.8.0
 	github.com/pquerna/cachecontrol v0.0.0-20180517163645-1555304b9b35 // indirect
@@ -127,7 +123,6 @@ require (
 	github.com/xeonx/timeago v1.0.0-rc3
 	github.com/zenazn/goji v0.9.0 // indirect
 	go.uber.org/atomic v1.3.2 // indirect
-	golang.org/x/arch v0.0.0-20181203225421-5a4828bb7045 // indirect
 	golang.org/x/crypto v0.0.0-20180910181607-0e37d006457b
 	golang.org/x/lint v0.0.0-20181217174547-8f45f776aaf1 // indirect
 	golang.org/x/net v0.0.0-20181220203305-927f97764cc3

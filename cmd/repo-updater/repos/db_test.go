@@ -17,7 +17,6 @@ func testDatabase(t testing.TB, dsn string) (*sql.DB, func()) {
 	if err != nil {
 		t.Fatalf("failed to parse dsn %q: %s", dsn, err)
 	}
-	config.Path = "/postgres"
 
 	// We want to configure the database client explicitly through the DSN.
 	// lib/pq uses and gives precedence to these environment variables so we unset them.
@@ -35,37 +34,49 @@ func testDatabase(t testing.TB, dsn string) (*sql.DB, func()) {
 		os.Unsetenv(v)
 	}
 
-	db, err := NewDB(config.String())
-	if err != nil {
-		t.Fatalf("failed to connect to database: %s", err)
-	}
-
 	rng := rand.New(rand.NewSource(time.Now().UnixNano()))
 	dbname := "sourcegraph-test-" + strconv.FormatUint(rng.Uint64(), 10)
 
-	_, err = db.Exec(`CREATE DATABASE ` + pq.QuoteIdentifier(dbname))
-	if err != nil {
-		t.Fatalf("failed to run create databse %s: %s", dbname, err)
-	}
+	db := dbConn(t, config)
+	dbExec(t, db, `CREATE DATABASE `+pq.QuoteIdentifier(dbname))
 
 	config.Path = "/" + dbname
-	db, err = NewDB(config.String())
-	if err != nil {
-		t.Fatalf("failed to connect to database: %s", err)
-	}
+	testDB := dbConn(t, config)
 
-	if err = MigrateDB(db); err != nil {
+	if err = MigrateDB(testDB); err != nil {
 		t.Fatalf("failed to apply migrations: %s", err)
 	}
 
-	return db, func() {
+	return testDB, func() {
+		defer db.Close()
+
 		if !t.Failed() {
-			_, err := db.Exec(`DROP DATABASE ` + pq.QuoteIdentifier(dbname) + ` CASCADE`)
-			if err != nil {
-				t.Errorf("failed to drop schema: %s", err)
+			if err := testDB.Close(); err != nil {
+				t.Fatalf("failed to close test database: %s", err)
 			}
+			dbExec(t, db, killClientConnsQuery, dbname)
+			dbExec(t, db, `DROP DATABASE `+pq.QuoteIdentifier(dbname))
 		} else {
 			t.Logf("DATABASE %s left intact for inspection", dbname)
 		}
 	}
 }
+
+func dbConn(t testing.TB, cfg *url.URL) *sql.DB {
+	db, err := NewDB(cfg.String())
+	if err != nil {
+		t.Fatalf("failed to connect to database: %s", err)
+	}
+	return db
+}
+
+func dbExec(t testing.TB, db *sql.DB, q string, args ...interface{}) {
+	_, err := db.Exec(q, args...)
+	if err != nil {
+		t.Errorf("failed to exec %q: %s", q, err)
+	}
+}
+
+const killClientConnsQuery = `
+SELECT pg_terminate_backend(pg_stat_activity.pid)
+FROM pg_stat_activity WHERE datname = $1`

@@ -26,7 +26,7 @@ func NewDB(dsn string) (*sql.DB, error) {
 	return db, nil
 }
 
-// Migrate runs all migrations from github.com/sourcegraph/sourcegraph/migrations
+// MigrateDB runs all migrations from github.com/sourcegraph/sourcegraph/migrations
 // against the given sql.DB
 func MigrateDB(db *sql.DB) error {
 	var cfg postgres.Config

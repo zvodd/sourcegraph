@@ -3,22 +3,25 @@ package repos
 import (
 	"context"
 	"database/sql"
+	"fmt"
+	"io"
+	"strings"
 
+	"github.com/keegancsmith/sqlf"
 	"github.com/pkg/errors"
 )
 
 // A Store exposes methods to read and write persistent repositories.
 type Store interface {
 	ListRepos(ctx context.Context) ([]*Repo, error)
-	UpsertRepo(ctx context.Context, repo *Repo) error
+	UpsertRepos(ctx context.Context, repos ...*Repo) error
 }
 
 // DBStore implements the Store interface for reading and writing repos directly
 // from the Postgres database.
 type DBStore struct {
-	db         *sql.DB
-	upsertRepo *sql.Stmt
-	listRepos  *sql.Stmt
+	db        *sql.DB
+	listRepos *sql.Stmt
 }
 
 // NewDBStore instantiates and returns a new DBStore with prepared statements.
@@ -45,35 +48,14 @@ func (s DBStore) listReposPage(ctx context.Context, cursor, limit int64, repos *
 		return err
 	}
 
-	defer func() {
-		if e := rows.Close(); err == nil {
-			err = e
-		}
-	}()
-
-	for rows.Next() {
+	return scanAll(rows, func(sc scanner) error {
 		var r Repo
-		if err = rows.Scan(
-			&r._ID,
-			&r.Name,
-			&r.Description,
-			&r.Language,
-			&r.CreatedAt,
-			&nullTime{&r.UpdatedAt},
-			&nullTime{&r.DeletedAt},
-			&r.ExternalRepo.ID,
-			&r.ExternalRepo.ServiceType,
-			&r.ExternalRepo.ServiceID,
-			&r.Enabled,
-			&r.Archived,
-			&r.Fork,
-		); err != nil {
+		if err = scanRepo(&r, sc); err != nil {
 			return err
 		}
 		*repos = append(*repos, &r)
-	}
-
-	return rows.Err()
+		return nil
+	})
 }
 
 const listReposSQL = `
@@ -82,46 +64,27 @@ SELECT id, name, description, language, created_at, updated_at, deleted_at,
 FROM repo WHERE id > $1 ORDER BY id ASC LIMIT $2
 `
 
-// UpsertRepo updates or inserts the given repo in the Sourcegraph repository store.
-func (s *DBStore) UpsertRepo(ctx context.Context, r *Repo) error {
-	_, err := s.upsertRepo.ExecContext(
-		ctx,
-		r.Name,
-		r.Description,
-		r.Language,
-		r.CreatedAt.UTC(),
-		r.UpdatedAt.UTC(),
-		r.DeletedAt.UTC(),
-		r.ExternalRepo.ID,
-		r.ExternalRepo.ServiceType,
-		r.ExternalRepo.ServiceID,
-		r.Enabled,
-		r.Archived,
-		r.Fork,
-	)
-	return err
-}
+// UpsertRepos updates or inserts the given repos in the Sourcegraph repository store.
+// The _ID field of each given Repo is set on inserts.
+func (s *DBStore) UpsertRepos(ctx context.Context, repos ...*Repo) error {
+	q := upsertReposQuery(repos)
+	rows, err := s.db.QueryContext(ctx, q.Query(sqlf.PostgresBindVar), q.Args()...)
+	if err != nil {
+		return err
+	}
 
-const upsertRepoSQL = `
-INSERT INTO repo (
-  name, description, language, uri, created_at,
-  external_id, external_service_type, external_service_id,
-  enabled, archived, fork
-)
-VALUES ($1, $2, $3, '', $4, $7, $8, $9, $10, $11, $12)
-ON CONFLICT ON CONSTRAINT repo_external_service_unique DO UPDATE
-SET (
-  name, description, language,
-  updated_at, deleted_at, enabled, archived, fork
-) = ($1, $2, $3, $5, $6, $10, $11, $12)
-`
+	i := -1
+	return scanAll(rows, func(sc scanner) error {
+		i++
+		return scanRepo(repos[i], sc)
+	})
+}
 
 func (s *DBStore) prepare(ctx context.Context) error {
 	for _, st := range []struct {
 		stmt  **sql.Stmt
 		query string
 	}{
-		{&s.upsertRepo, upsertRepoSQL},
 		{&s.listRepos, listReposSQL},
 	} {
 		stmt, err := s.db.PrepareContext(ctx, st.query)
@@ -132,4 +95,111 @@ func (s *DBStore) prepare(ctx context.Context) error {
 	}
 
 	return nil
+}
+
+func upsertReposQuery(repos []*Repo) *sqlf.Query {
+	values := make([]*sqlf.Query, 0, len(repos))
+	for _, r := range repos {
+		values = append(values, sqlf.Sprintf(
+			upsertRepoValuesFmtstr,
+			upsertRepoColumns(r)...,
+		))
+	}
+	return sqlf.Sprintf(upsertReposQueryFmtstr, sqlf.Join(values, ",\n"))
+}
+
+var upsertReposQueryFmtstr = strings.TrimSpace(fmt.Sprintf(`
+INSERT INTO repo
+(%s)
+VALUES
+%%s
+ON CONFLICT ON CONSTRAINT repo_external_service_unique
+DO UPDATE SET
+  name        = excluded.name,
+  description = excluded.description,
+  language    = excluded.language,
+  updated_at  = GREATEST(repo.updated_at, excluded.updated_at),
+  deleted_at  = GREATEST(repo.deleted_at, excluded.deleted_at),
+  archived    = excluded.archived,
+  fork        = excluded.fork
+RETURNING id, name, description, language, created_at, updated_at,
+  deleted_at, external_id, external_service_type, external_service_id,
+  enabled, archived, fork
+`, strings.Join(upsertRepoColumnNames, ", ")))
+
+var upsertRepoColumnNames = []string{
+	"name",
+	"description",
+	"language",
+	"uri",
+	"created_at",
+	"updated_at",
+	"deleted_at",
+	"external_id",
+	"external_service_type",
+	"external_service_id",
+	"enabled",
+	"archived",
+	"fork",
+}
+
+var upsertRepoValuesFmtstr = "(" + strings.TrimSuffix(strings.Repeat("%s, ", len(upsertRepoColumnNames)), ", ") + ")"
+
+func upsertRepoColumns(r *Repo) []interface{} {
+	return []interface{}{
+		r.Name,
+		r.Description,
+		r.Language,
+		"", // URI
+		r.CreatedAt.UTC(),
+		r.UpdatedAt.UTC(),
+		r.DeletedAt.UTC(),
+		r.ExternalRepo.ID,
+		r.ExternalRepo.ServiceType,
+		r.ExternalRepo.ServiceID,
+		r.Enabled,
+		r.Archived,
+		r.Fork,
+	}
+}
+
+// scanner captures the Scan method of sql.Rows and sql.Row
+type scanner interface {
+	Scan(dst ...interface{}) error
+}
+
+func scanAll(rows *sql.Rows, scan func(scanner) error) (err error) {
+	defer closeErr(rows, &err)
+
+	for rows.Next() {
+		if err := scan(rows); err != nil {
+			return err
+		}
+	}
+
+	return rows.Err()
+}
+
+func closeErr(c io.Closer, err *error) {
+	if e := c.Close(); err != nil && *err == nil {
+		*err = e
+	}
+}
+
+func scanRepo(r *Repo, s scanner) error {
+	return s.Scan(
+		&r._ID,
+		&r.Name,
+		&r.Description,
+		&r.Language,
+		&r.CreatedAt,
+		&nullTime{&r.UpdatedAt},
+		&nullTime{&r.DeletedAt},
+		&r.ExternalRepo.ID,
+		&r.ExternalRepo.ServiceType,
+		&r.ExternalRepo.ServiceID,
+		&r.Enabled,
+		&r.Archived,
+		&r.Fork,
+	)
 }

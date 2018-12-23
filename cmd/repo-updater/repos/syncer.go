@@ -2,7 +2,6 @@ package repos
 
 import (
 	"context"
-	"strings"
 	"time"
 
 	log15 "gopkg.in/inconshreveable/log15.v2"
@@ -55,37 +54,12 @@ func (s Syncer) sync(ctx context.Context) error {
 		return err
 	}
 
-	type upsert struct {
-		repo *Repo
-		err  error
-	}
-
-	upserts := s.upserts(sourced, stored)
-	ch := make(chan upsert, len(upserts))
-
-	for _, repo := range upserts {
-		go func(up upsert) {
-			up.err = s.store.UpsertRepo(ctx, up.repo)
-			ch <- up
-		}(upsert{repo: repo})
-	}
-
-	serr := SyncError{errors: map[*Repo]error{}}
-	for i := 0; i < len(upserts); i++ {
-		if up := <-ch; up.err != nil {
-			serr.errors[up.repo] = up.err
-		}
-	}
-
-	if len(serr.errors) > 0 {
-		return serr
-	}
-
+	return s.store.UpsertRepos(
+		ctx,
+		s.upserts(sourced, stored)...,
+	)
 	// TODO(tsenart): ensure scheduler picks up changes to be propagated to git server
 	// TODO(tsenart): ensure search index gets updated too
-
-	return nil
-
 }
 
 func (s Syncer) upserts(sourced, stored []*Repo) []*Repo {
@@ -126,18 +100,4 @@ func (s Syncer) upserts(sourced, stored []*Repo) []*Repo {
 	}
 
 	return upserts
-}
-
-// A SyncError is returned by the Syncer's sync method. It captures
-// the details of which repositories failed to be synced.
-type SyncError struct {
-	errors map[*Repo]error
-}
-
-func (e SyncError) Error() string {
-	var sb strings.Builder
-	for r, err := range e.errors {
-		sb.WriteString(r.ID() + " sync error: " + err.Error() + "\n")
-	}
-	return sb.String()
 }

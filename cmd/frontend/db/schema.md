@@ -441,7 +441,7 @@ Referenced by:
  deleted_at              | timestamp with time zone |
 Indexes:
     "repo_pkey" PRIMARY KEY, btree (id)
-    "repo_external_id_external_service_type_external_service_id_key" UNIQUE CONSTRAINT, btree (external_id, external_service_type, external_service_id)
+    "repo_external_service_unique" UNIQUE CONSTRAINT, btree (external_id, external_service_type, external_service_id)
     "repo_name_unique" UNIQUE, btree (name)
     "repo_name_trgm" gin (lower(name::text) gin_trgm_ops)
 Check constraints:

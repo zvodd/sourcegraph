@@ -39,7 +39,7 @@ func TestIntegration_DBStore(t *testing.T) {
 	}
 
 	ctx := context.Background()
-	want := make([]*Repo, 0, 1023)
+	want := make([]*Repo, 0, 512) // Test more than one page load
 	for i := 0; i < cap(want); i++ {
 		id := strconv.Itoa(i)
 		want = append(want, &Repo{
@@ -73,5 +73,32 @@ func TestIntegration_DBStore(t *testing.T) {
 
 	if diff := pretty.Compare(have, want); diff != "" {
 		t.Errorf("ListRepos:\n%s", diff)
+	}
+
+	for i := 1; i <= 5; i++ {
+		suffix := " " + strconv.Itoa(i)
+		now := time.Now()
+		for _, r := range want {
+			r.Name += api.RepoName(suffix)
+			r.Description += suffix
+			r.Language += suffix
+			r.DeletedAt = now
+			r.UpdatedAt = now
+			r.Archived = !r.Archived
+			r.Fork = !r.Fork
+		}
+
+		if err := store.UpsertRepos(ctx, want...); err != nil {
+			t.Fatalf("UpsertRepos error: %s", err)
+		}
+
+		have, err = store.ListRepos(ctx)
+		if err != nil {
+			t.Fatalf("ListRepos error: %s", err)
+		}
+
+		if diff := pretty.Compare(have, want); diff != "" {
+			t.Errorf("ListRepos:\n%s", diff)
+		}
 	}
 }

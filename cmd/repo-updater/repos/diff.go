@@ -15,33 +15,34 @@ type Diffable interface {
 	ID() string
 }
 
-// NewDiff returns a Diff of the two given sets of Diffables using the provided
-// equality function to detect modified Diffables.
-func NewDiff(a, b []Diffable, equal func(a, b Diffable) bool) (diff Diff) {
-	sa := make(map[string]Diffable, len(a)) // set a
-	for i := range a {
-		sa[a[i].ID()] = a[i]
+// NewDiff returns a Diff between the set of `before` and `after` Diffables
+// using the provided function to decide if a Diffable that appears in both
+// sets is modified or not.
+func NewDiff(before, after []Diffable, modified func(before, after Diffable) bool) (diff Diff) {
+	bs := make(map[string]Diffable, len(before))
+	for _, b := range before {
+		bs[b.ID()] = b
 	}
 
-	sb := make(map[string]Diffable, len(b)) // set b
-	for i := range b {
-		sb[b[i].ID()] = b[i]
+	as := make(map[string]Diffable, len(after))
+	for _, a := range after {
+		as[a.ID()] = a
 	}
 
-	for id, ra := range sa {
-		switch rb, ok := sb[id]; {
+	for id, b := range bs {
+		switch a, ok := as[id]; {
 		case !ok:
-			diff.Deleted = append(diff.Deleted, ra)
-		case !equal(ra, rb):
-			diff.Modified = append(diff.Modified, rb)
+			diff.Deleted = append(diff.Deleted, b)
+		case modified(b, a):
+			diff.Modified = append(diff.Modified, a)
 		default:
-			diff.Unmodified = append(diff.Unmodified, rb)
+			diff.Unmodified = append(diff.Unmodified, a)
 		}
 	}
 
-	for id, rb := range sb {
-		if _, ok := sa[id]; !ok {
-			diff.Added = append(diff.Added, rb)
+	for id, a := range as {
+		if _, ok := bs[id]; !ok {
+			diff.Added = append(diff.Added, a)
 		}
 	}
 

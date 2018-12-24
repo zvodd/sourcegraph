@@ -11,56 +11,57 @@ func TestDiff(t *testing.T) {
 	t.Parallel()
 
 	for _, tc := range []struct {
-		name string
-		a, b []Diffable
-		diff Diff
+		name   string
+		before []Diffable
+		after  []Diffable
+		diff   Diff
 	}{
 		{
-			name: "empty a and b",
+			name: "empty",
 			diff: Diff{},
 		},
 		{
-			name: "added",
-			b:    []Diffable{diffable{K: 1}},
-			diff: Diff{Added: []Diffable{diffable{K: 1}}},
+			name:  "added",
+			after: []Diffable{diffable{K: 1}},
+			diff:  Diff{Added: []Diffable{diffable{K: 1}}},
 		},
 		{
-			name: "deleted",
-			a:    []Diffable{diffable{K: 1}},
-			diff: Diff{Deleted: []Diffable{diffable{K: 1}}},
+			name:   "deleted",
+			before: []Diffable{diffable{K: 1}},
+			diff:   Diff{Deleted: []Diffable{diffable{K: 1}}},
 		},
 		{
-			name: "modified",
-			a:    []Diffable{diffable{K: 1, V: "foo"}},
-			b:    []Diffable{diffable{K: 1, V: "bar"}},
-			diff: Diff{Modified: []Diffable{diffable{K: 1, V: "bar"}}},
+			name:   "modified",
+			before: []Diffable{diffable{K: 1, V: "foo"}},
+			after:  []Diffable{diffable{K: 1, V: "bar"}},
+			diff:   Diff{Modified: []Diffable{diffable{K: 1, V: "bar"}}},
 		},
 		{
-			name: "unmodified",
-			a:    []Diffable{diffable{K: 1, V: "foo"}},
-			b:    []Diffable{diffable{K: 1, V: "foo"}},
-			diff: Diff{Unmodified: []Diffable{diffable{K: 1, V: "foo"}}},
+			name:   "unmodified",
+			before: []Diffable{diffable{K: 1, V: "foo"}},
+			after:  []Diffable{diffable{K: 1, V: "foo"}},
+			diff:   Diff{Unmodified: []Diffable{diffable{K: 1, V: "foo"}}},
 		},
 		{
-			name: "duplicates in a", // last duplicate wins
-			a:    []Diffable{diffable{K: 1, V: "foo"}, diffable{K: 1, V: "bar"}},
-			diff: Diff{Deleted: []Diffable{diffable{K: 1, V: "bar"}}},
+			name:   "duplicates in before", // last duplicate wins
+			before: []Diffable{diffable{K: 1, V: "foo"}, diffable{K: 1, V: "bar"}},
+			diff:   Diff{Deleted: []Diffable{diffable{K: 1, V: "bar"}}},
 		},
 		{
-			name: "duplicates in b", // last duplicate wins
-			b:    []Diffable{diffable{K: 1, V: "foo"}, diffable{K: 1, V: "bar"}},
-			diff: Diff{Added: []Diffable{diffable{K: 1, V: "bar"}}},
+			name:  "duplicates in after", // last duplicate wins
+			after: []Diffable{diffable{K: 1, V: "foo"}, diffable{K: 1, V: "bar"}},
+			diff:  Diff{Added: []Diffable{diffable{K: 1, V: "bar"}}},
 		},
 		{
 			name: "sorting",
-			a: []Diffable{
+			before: []Diffable{
 				diffable{K: 1, V: "foo"}, // deleted
 				diffable{K: 2, V: "baz"}, // modified
 				diffable{K: 1, V: "bar"}, // duplicate, deleted
 				diffable{K: 3, V: "moo"}, // unmodified
 				diffable{K: 0, V: "poo"}, // deleted
 			},
-			b: []Diffable{
+			after: []Diffable{
 				diffable{K: 5, V: "too"}, // added
 				diffable{K: 4, V: "goo"}, // added
 				diffable{K: 2, V: "boo"}, // modified
@@ -88,8 +89,8 @@ func TestDiff(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
-			diff := NewDiff(tc.a, tc.b, func(a, b Diffable) bool {
-				return reflect.DeepEqual(a, b)
+			diff := NewDiff(tc.before, tc.after, func(b, a Diffable) bool {
+				return !reflect.DeepEqual(b, a)
 			})
 
 			if have, want := diff, tc.diff; !reflect.DeepEqual(have, want) {
@@ -98,27 +99,27 @@ func TestDiff(t *testing.T) {
 		})
 	}
 
-	isomorphism := func(a, b []diffable) bool {
-		da := make([]Diffable, len(a))
-		db := make([]Diffable, len(b))
+	isomorphism := func(bs, as []diffable) bool {
+		before := make([]Diffable, len(bs))
+		after := make([]Diffable, len(as))
 
-		for i := range a {
-			da[i] = &a[i]
+		for i := range bs {
+			before[i] = &bs[i]
 		}
 
-		for i := range b {
-			db[i] = &b[i]
+		for i := range as {
+			after[i] = &as[i]
 		}
 
-		diff := NewDiff(da, db, func(a, b Diffable) bool {
-			return reflect.DeepEqual(a, b)
+		diff := NewDiff(before, after, func(b, a Diffable) bool {
+			return !reflect.DeepEqual(b, a)
 		})
 
 		difflen := len(diff.Added) + len(diff.Deleted) +
 			len(diff.Modified) + len(diff.Unmodified)
 
-		if len(a)+len(b) != difflen {
-			t.Errorf("len(diff) != len(a) + len(b): missing elements")
+		if len(before)+len(after) != difflen {
+			t.Errorf("len(diff) != len(before) + len(after): missing Diffables")
 			return false
 		}
 
@@ -134,9 +135,9 @@ func TestDiff(t *testing.T) {
 			}
 		}
 
-		in := make([]Diffable, 0, len(a)+len(b))
-		in = append(in, da...)
-		in = append(in, db...)
+		in := make([]Diffable, 0, len(before)+len(after))
+		in = append(in, before...)
+		in = append(in, after...)
 
 		for _, d := range in {
 			id := d.ID()

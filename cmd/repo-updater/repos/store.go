@@ -118,8 +118,8 @@ DO UPDATE SET
   name        = excluded.name,
   description = excluded.description,
   language    = excluded.language,
-  updated_at  = GREATEST(repo.updated_at, excluded.updated_at),
-  deleted_at  = GREATEST(repo.deleted_at, excluded.deleted_at),
+  updated_at  = excluded.updated_at,
+  deleted_at  = excluded.deleted_at,
   archived    = excluded.archived,
   fork        = excluded.fork
 RETURNING id, name, description, language, created_at, updated_at,

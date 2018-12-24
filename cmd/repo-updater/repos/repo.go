@@ -36,22 +36,8 @@ type Repo struct {
 	ExternalRepo api.ExternalRepoSpec
 }
 
-// ID returns a globally unique identifier of the repository.
+// ID returns a globally unique identifier of the repository
+// based on its external service metadata.
 func (r *Repo) ID() string {
 	return r.ExternalRepo.ServiceType + ":" + r.ExternalRepo.ServiceID + ":" + r.ExternalRepo.ID
-}
-
-// Equal performs a deep equality comparison of r with other.
-func (r *Repo) Equal(other *Repo) bool {
-	return r == other || (r != nil && other != nil &&
-		r.Name == other.Name &&
-		r.Language == other.Language &&
-		r.Fork == other.Fork &&
-		r.Enabled == other.Enabled &&
-		r.Archived == other.Archived &&
-		r.CreatedAt.Equal(other.CreatedAt) &&
-		r.UpdatedAt.Equal(other.UpdatedAt) &&
-		r.DeletedAt.Equal(other.DeletedAt) &&
-		r.Description == other.Description &&
-		r.ExternalRepo == other.ExternalRepo)
 }

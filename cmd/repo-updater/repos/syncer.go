@@ -63,18 +63,25 @@ func (s Syncer) sync(ctx context.Context) error {
 }
 
 func (s Syncer) upserts(sourced, stored []*Repo) []*Repo {
-	a := make([]Diffable, len(sourced))
-	for i := range sourced {
-		a[i] = sourced[i]
-	}
-
-	b := make([]Diffable, len(stored))
+	before := make([]Diffable, len(stored))
 	for i := range stored {
-		b[i] = stored[i]
+		before[i] = stored[i]
 	}
 
-	diff := NewDiff(a, b, func(a, b Diffable) bool {
-		return a.(*Repo).Equal(b.(*Repo))
+	after := make([]Diffable, len(sourced))
+	for i := range sourced {
+		after[i] = sourced[i]
+	}
+
+	diff := NewDiff(before, after, func(before, after Diffable) bool {
+		// This modified function returns true iff any fields in `after` changed
+		// in comparison to `before` for which the `Source` is authoritative.
+		b, a := before.(*Repo), after.(*Repo)
+		return b.Name != a.Name ||
+			b.Language != a.Language ||
+			b.Fork != a.Fork ||
+			b.Archived != a.Archived ||
+			b.Description != a.Description
 	})
 
 	now := s.now()
@@ -82,20 +89,19 @@ func (s Syncer) upserts(sourced, stored []*Repo) []*Repo {
 
 	for _, add := range diff.Added {
 		repo := add.(*Repo)
-		repo.CreatedAt = now
+		repo.CreatedAt, repo.UpdatedAt = now, now
 		upserts = append(upserts, repo)
 	}
 
 	for _, mod := range diff.Modified {
 		repo := mod.(*Repo)
-		repo.UpdatedAt = now
+		repo.UpdatedAt, repo.DeletedAt = now, time.Time{}
 		upserts = append(upserts, repo)
 	}
 
-	// TODO(tsenart): Protect against unintended deleted due to transient sourcing errors.
-	for _, del := range diff.Modified {
+	for _, del := range diff.Deleted {
 		repo := del.(*Repo)
-		repo.DeletedAt = now
+		repo.UpdatedAt, repo.DeletedAt = now, now
 		upserts = append(upserts, repo)
 	}
 

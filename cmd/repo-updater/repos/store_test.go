@@ -33,11 +33,6 @@ func TestIntegration_DBStore(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	type upsert struct {
-		repo *Repo
-		err  error
-	}
-
 	ctx := context.Background()
 	want := make([]*Repo, 0, 512) // Test more than one page load
 	for i := 0; i < cap(want); i++ {
@@ -86,6 +81,12 @@ func TestIntegration_DBStore(t *testing.T) {
 			r.UpdatedAt = now
 			r.Archived = !r.Archived
 			r.Fork = !r.Fork
+
+			// Not updateable fields. Check that that UpsertRepos
+			// restores their original value.
+			r._ID += 10000
+			r.Enabled = !r.Enabled
+			r.CreatedAt = r.CreatedAt.Add(time.Minute)
 		}
 
 		if err := store.UpsertRepos(ctx, want...); err != nil {

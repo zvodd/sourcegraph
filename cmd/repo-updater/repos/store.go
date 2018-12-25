@@ -17,17 +17,77 @@ type Store interface {
 	UpsertRepos(ctx context.Context, repos ...*Repo) error
 }
 
+// A TxStore returns a Store that operates within a transaction, along
+// with a tx closing function to be defered.
+type TxStore interface {
+	Transact(context.Context) (Store, func(*error) error, error)
+}
+
 // DBStore implements the Store interface for reading and writing repos directly
 // from the Postgres database.
 type DBStore struct {
-	db        *sql.DB
+	db        DB
 	listRepos *sql.Stmt
+	txOpts    sql.TxOptions
 }
 
 // NewDBStore instantiates and returns a new DBStore with prepared statements.
-func NewDBStore(ctx context.Context, db *sql.DB) (*DBStore, error) {
-	store := DBStore{db: db}
+func NewDBStore(ctx context.Context, db DB, txOpts sql.TxOptions) (*DBStore, error) {
+	store := DBStore{db: db, txOpts: txOpts}
 	return &store, store.prepare(ctx)
+}
+
+// Transact returns a Store whose methods operate within the context of a transaction.
+// This method will return an error if the underlying DB cannot be interface upgraded
+// to a TxBeginner.
+//
+// The second returned argument is a function meant to close the underlying transaction
+// based on the error value pointed to by the given error reference. When the error value
+// is nil, it'll commit the transaction and when not nil, it'll roll it back. Best used
+// with defer and named return error arguments.
+//
+//     func execQueries(ctx context.Context) (err error) {
+//         txstore, closetx, err := s.store.TxStore(ctx)
+//         if err != nil {
+//             return err
+//         }
+//         defer closetx(&err)
+//         ...
+//     }
+//
+func (s *DBStore) Transact(ctx context.Context) (Store, func(*error) error, error) {
+	if tx, ok := s.db.(Tx); ok { // Already a Tx.
+		return s, txclose(tx), nil
+	}
+
+	tb, ok := s.db.(TxBeginner)
+	if !ok { // Not a Tx nor a TxBeginner, error.
+		return nil, nil, errors.New("dbstore: not transactable")
+	}
+
+	tx, err := tb.BeginTx(ctx, &s.txOpts)
+	if err != nil {
+		return nil, nil, errors.Wrap(err, "dbstore: BeginTx")
+	}
+
+	return &DBStore{
+		db:        tx,
+		listRepos: tx.StmtContext(ctx, s.listRepos),
+		txOpts:    s.txOpts,
+	}, txclose(tx), nil
+}
+
+func txclose(tx Tx) func(*error) error {
+	return func(err *error) error {
+		if err == nil {
+			return nil
+		} else if *err != nil {
+			return tx.Rollback()
+		} else {
+			*err = tx.Commit()
+			return *err
+		}
+	}
 }
 
 // ListRepos lists all configured repositories in Sourcegraph.

@@ -2,6 +2,7 @@ package repos
 
 import (
 	"database/sql"
+	"flag"
 	"math/rand"
 	"net/url"
 	"strconv"
@@ -11,10 +12,20 @@ import (
 	"github.com/lib/pq"
 )
 
-func testDatabase(t testing.TB, dsn string) (*sql.DB, func()) {
-	config, err := url.Parse(dsn)
+var dsn = flag.String(
+	"dsn",
+	"postgres://sourcegraph:sourcegraph@localhost/postgres?sslmode=disable&timezone=UTC",
+	"Database connection string to use in integration tests",
+)
+
+func init() {
+	flag.Parse()
+}
+
+func testDatabase(t testing.TB) (*sql.DB, func()) {
+	config, err := url.Parse(*dsn)
 	if err != nil {
-		t.Fatalf("failed to parse dsn %q: %s", dsn, err)
+		t.Fatalf("failed to parse dsn %q: %s", *dsn, err)
 	}
 
 	rng := rand.New(rand.NewSource(time.Now().UnixNano()))

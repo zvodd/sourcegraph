@@ -26,7 +26,7 @@ func NewSyncer(interval time.Duration, store Store, sources []Source, now func()
 	}
 }
 
-// Run runs the Syncer at its specified interval.
+// Run runs the Sync at its specified interval.
 func (s Syncer) Run(ctx context.Context) error {
 	ticks := time.NewTicker(s.interval)
 	defer ticks.Stop()
@@ -36,25 +36,32 @@ func (s Syncer) Run(ctx context.Context) error {
 		case <-ctx.Done():
 			return ctx.Err()
 		case <-ticks.C:
-			if err := s.sync(ctx); err != nil {
+			if err := s.Sync(ctx); err != nil {
 				log15.Error("Syncer", "err", err)
 			}
 		}
 	}
 }
 
-func (s Syncer) sync(ctx context.Context) error {
+// Sync synchronizes the set of sourced repos with the set of stored repos.
+func (s Syncer) Sync(ctx context.Context) (err error) {
 	sourced, err := s.source.ListRepos(ctx)
 	if err != nil {
 		return err
 	}
 
-	stored, err := s.store.ListRepos(ctx)
+	store, closetx, err := s.transact(ctx)
+	if err != nil {
+		return err
+	}
+	defer closetx(&err)
+
+	stored, err := store.ListRepos(ctx)
 	if err != nil {
 		return err
 	}
 
-	return s.store.UpsertRepos(
+	return store.UpsertRepos(
 		ctx,
 		s.upserts(sourced, stored)...,
 	)
@@ -62,29 +69,16 @@ func (s Syncer) sync(ctx context.Context) error {
 	// TODO(tsenart): ensure search index gets updated too
 }
 
+func (s Syncer) transact(ctx context.Context) (Store, func(*error) error, error) {
+	if txs, ok := s.store.(TxStore); ok {
+		return txs.Transact(ctx)
+	}
+	return s.store, func(*error) error { return nil }, nil
+}
+
 func (s Syncer) upserts(sourced, stored []*Repo) []*Repo {
-	before := make([]Diffable, len(stored))
-	for i := range stored {
-		before[i] = stored[i]
-	}
-
-	after := make([]Diffable, len(sourced))
-	for i := range sourced {
-		after[i] = sourced[i]
-	}
-
-	diff := NewDiff(before, after, func(before, after Diffable) bool {
-		// This modified function returns true iff any fields in `after` changed
-		// in comparison to `before` for which the `Source` is authoritative.
-		b, a := before.(*Repo), after.(*Repo)
-		return b.Name != a.Name ||
-			b.Language != a.Language ||
-			b.Fork != a.Fork ||
-			b.Archived != a.Archived ||
-			b.Description != a.Description
-	})
-
 	now := s.now()
+	diff := s.diff(sourced, stored)
 	upserts := make([]*Repo, 0, len(diff.Added)+len(diff.Deleted)+len(diff.Modified))
 
 	for _, add := range diff.Added {
@@ -106,4 +100,27 @@ func (s Syncer) upserts(sourced, stored []*Repo) []*Repo {
 	}
 
 	return upserts
+}
+
+func (Syncer) diff(sourced, stored []*Repo) Diff {
+	before := make([]Diffable, len(stored))
+	for i := range stored {
+		before[i] = stored[i]
+	}
+
+	after := make([]Diffable, len(sourced))
+	for i := range sourced {
+		after[i] = sourced[i]
+	}
+
+	return NewDiff(before, after, func(before, after Diffable) bool {
+		// This modified function returns true iff any fields in `after` changed
+		// in comparison to `before` for which the `Source` is authoritative.
+		b, a := before.(*Repo), after.(*Repo)
+		return b.Name != a.Name ||
+			b.Language != a.Language ||
+			b.Fork != a.Fork ||
+			b.Archived != a.Archived ||
+			b.Description != a.Description
+	})
 }

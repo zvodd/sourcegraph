@@ -1,6 +1,7 @@
 package repos
 
 import (
+	"context"
 	"database/sql"
 	"database/sql/driver"
 	"net/url"
@@ -15,6 +16,25 @@ import (
 	"github.com/sourcegraph/sourcegraph/migrations"
 	log15 "gopkg.in/inconshreveable/log15.v2"
 )
+
+// A DB captures the essential methods of a sql.DB.
+type DB interface {
+	PrepareContext(ctx context.Context, q string) (*sql.Stmt, error)
+	ExecContext(ctx context.Context, q string, args ...interface{}) (sql.Result, error)
+	QueryContext(ctx context.Context, q string, args ...interface{}) (*sql.Rows, error)
+	QueryRowContext(ctx context.Context, q string, args ...interface{}) *sql.Row
+}
+
+// A Tx captures the essential methods of a sql.Tx.
+type Tx interface {
+	Rollback() error
+	Commit() error
+}
+
+// A TxBeginner captures BeginTx method of a sql.DB
+type TxBeginner interface {
+	BeginTx(context.Context, *sql.TxOptions) (*sql.Tx, error)
+}
 
 // NewDB returns a new *sql.DB from the given dsn (data source name).
 func NewDB(dsn string) (*sql.DB, error) {

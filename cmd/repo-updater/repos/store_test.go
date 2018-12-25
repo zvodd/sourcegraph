@@ -2,7 +2,7 @@ package repos
 
 import (
 	"context"
-	"flag"
+	"database/sql"
 	"sort"
 	"strconv"
 	"testing"
@@ -12,28 +12,18 @@ import (
 	"github.com/sourcegraph/sourcegraph/pkg/api"
 )
 
-var dsn = flag.String(
-	"dsn",
-	"postgres://sourcegraph:sourcegraph@localhost/postgres?sslmode=disable&timezone=UTC",
-	"Database connection string to use in integration tests",
-)
-
-func init() {
-	flag.Parse()
-}
-
 func TestIntegration_DBStore(t *testing.T) {
 	t.Parallel()
 
-	db, cleanup := testDatabase(t, *dsn)
+	db, cleanup := testDatabase(t)
 	defer cleanup()
 
-	store, err := NewDBStore(context.Background(), db)
+	ctx := context.Background()
+	store, err := NewDBStore(ctx, db, sql.TxOptions{Isolation: sql.LevelSerializable})
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	ctx := context.Background()
 	want := make([]*Repo, 0, 512) // Test more than one page load
 	for i := 0; i < cap(want); i++ {
 		id := strconv.Itoa(i)
@@ -53,21 +43,30 @@ func TestIntegration_DBStore(t *testing.T) {
 		})
 	}
 
-	if err := store.UpsertRepos(ctx, want...); err != nil {
-		t.Fatalf("UpsertRepos error: %s", err)
+	txstore, closetx, err := store.Transact(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer closetx(&err)
+
+	if err = txstore.UpsertRepos(ctx, want...); err != nil {
+		t.Errorf("UpsertRepos error: %s", err)
+		return
 	}
 
 	sort.Slice(want, func(i, j int) bool {
 		return want[i]._ID < want[j]._ID
 	})
 
-	have, err := store.ListRepos(ctx)
+	have, err := txstore.ListRepos(ctx)
 	if err != nil {
-		t.Fatalf("ListRepos error: %s", err)
+		t.Errorf("ListRepos error: %s", err)
+		return
 	}
 
 	if diff := pretty.Compare(have, want); diff != "" {
 		t.Errorf("ListRepos:\n%s", diff)
+		return
 	}
 
 	for i := 1; i <= 5; i++ {
@@ -89,13 +88,15 @@ func TestIntegration_DBStore(t *testing.T) {
 			r.CreatedAt = r.CreatedAt.Add(time.Minute)
 		}
 
-		if err := store.UpsertRepos(ctx, want...); err != nil {
-			t.Fatalf("UpsertRepos error: %s", err)
+		if err = txstore.UpsertRepos(ctx, want...); err != nil {
+			t.Errorf("UpsertRepos error: %s", err)
+			return
 		}
 
-		have, err = store.ListRepos(ctx)
+		have, err = txstore.ListRepos(ctx)
 		if err != nil {
-			t.Fatalf("ListRepos error: %s", err)
+			t.Errorf("ListRepos error: %s", err)
+			return
 		}
 
 		if diff := pretty.Compare(have, want); diff != "" {

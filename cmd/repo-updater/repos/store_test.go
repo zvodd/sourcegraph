@@ -43,11 +43,14 @@ func TestIntegration_DBStore(t *testing.T) {
 		})
 	}
 
-	txstore, closetx, err := store.Transact(ctx)
+	txstore, err := store.BeginTxStore(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer closetx(&err)
+	defer txstore.Done(&err)
+
+	// NOTE(tsenart): We use t.Errorf followed by a return statement instead
+	// of t.Fatalf so that the defered txstore.Done is executed.
 
 	if err = txstore.UpsertRepos(ctx, want...); err != nil {
 		t.Errorf("UpsertRepos error: %s", err)
@@ -90,16 +93,9 @@ func TestIntegration_DBStore(t *testing.T) {
 
 		if err = txstore.UpsertRepos(ctx, want...); err != nil {
 			t.Errorf("UpsertRepos error: %s", err)
-			return
-		}
-
-		have, err = txstore.ListRepos(ctx)
-		if err != nil {
+		} else if have, err = txstore.ListRepos(ctx); err != nil {
 			t.Errorf("ListRepos error: %s", err)
-			return
-		}
-
-		if diff := pretty.Compare(have, want); diff != "" {
+		} else if diff := pretty.Compare(have, want); diff != "" {
 			t.Errorf("ListRepos:\n%s", diff)
 		}
 	}

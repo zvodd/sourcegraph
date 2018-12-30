@@ -17,10 +17,19 @@ type Store interface {
 	UpsertRepos(ctx context.Context, repos ...*Repo) error
 }
 
-// A TxStore returns a Store that operates within a transaction, along
-// with a tx closing function to be defered.
+// A TxStoreBeginner is a store that can initialise and return a TxStore.
+type TxStoreBeginner interface {
+	Store
+	BeginTxStore(context.Context) (TxStore, error)
+}
+
+// A TxStore is a Store that operates within the context of a transaction.
+// Done should be called to terminate the underlying transaction. Once a TxStore
+// is done, it can't be used further. Initiate a new one from its original
+// TxStoreBeginner.
 type TxStore interface {
-	Transact(context.Context) (Store, func(*error) error, error)
+	Store
+	Done(...*error)
 }
 
 // DBStore implements the Store interface for reading and writing repos directly
@@ -37,56 +46,48 @@ func NewDBStore(ctx context.Context, db DB, txOpts sql.TxOptions) (*DBStore, err
 	return &store, store.prepare(ctx)
 }
 
-// Transact returns a Store whose methods operate within the context of a transaction.
+// BeginTxStore returns a TxStore whose methods operate within the context of a transaction.
 // This method will return an error if the underlying DB cannot be interface upgraded
 // to a TxBeginner.
-//
-// The second returned argument is a function meant to close the underlying transaction
-// based on the error value pointed to by the given error reference. When the error value
-// is nil, it'll commit the transaction and when not nil, it'll roll it back. Best used
-// with defer and named return error arguments.
-//
-//     func execQueries(ctx context.Context) (err error) {
-//         txstore, closetx, err := s.store.TxStore(ctx)
-//         if err != nil {
-//             return err
-//         }
-//         defer closetx(&err)
-//         ...
-//     }
-//
-func (s *DBStore) Transact(ctx context.Context) (Store, func(*error) error, error) {
-	if tx, ok := s.db.(Tx); ok { // Already a Tx.
-		return s, txclose(tx), nil
+func (s *DBStore) BeginTxStore(ctx context.Context) (TxStore, error) {
+	if _, ok := s.db.(Tx); ok { // Already in a Tx.
+		return s, nil
 	}
 
 	tb, ok := s.db.(TxBeginner)
 	if !ok { // Not a Tx nor a TxBeginner, error.
-		return nil, nil, errors.New("dbstore: not transactable")
+		return nil, errors.New("dbstore: not transactable")
 	}
 
 	tx, err := tb.BeginTx(ctx, &s.txOpts)
 	if err != nil {
-		return nil, nil, errors.Wrap(err, "dbstore: BeginTx")
+		return nil, errors.Wrap(err, "dbstore: BeginTx")
 	}
 
 	return &DBStore{
 		db:        tx,
 		listRepos: tx.StmtContext(ctx, s.listRepos),
 		txOpts:    s.txOpts,
-	}, txclose(tx), nil
+	}, nil
 }
 
-func txclose(tx Tx) func(*error) error {
-	return func(err *error) error {
-		if err == nil {
-			return nil
-		} else if *err != nil {
-			return tx.Rollback()
-		} else {
-			*err = tx.Commit()
-			return *err
-		}
+// Done terminates the underlying Tx in a DBStore either by committing or rolling
+// back based on the value pointed to by the first given error pointer.
+// It's a no-op if the `DBStore` is not operating within a transaction,
+// which can only be done via `BeginTxStore`.
+//
+// When the error value pointed to by the first given `err` is nil, or when no error
+// pointer is given, the transaction is commited. Otherwise, it's rolled-back.
+func (s *DBStore) Done(errs ...*error) {
+	switch tx, ok := s.db.(Tx); {
+	case !ok:
+		return
+	case len(errs) == 0:
+		_ = tx.Commit()
+	case errs[0] != nil && *errs[0] != nil:
+		_ = tx.Rollback()
+	default:
+		_ = tx.Commit()
 	}
 }
 

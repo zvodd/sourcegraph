@@ -45,19 +45,23 @@ func (s Syncer) Run(ctx context.Context) error {
 
 // Sync synchronizes the set of sourced repos with the set of stored repos.
 func (s Syncer) Sync(ctx context.Context) (err error) {
-	sourced, err := s.source.ListRepos(ctx)
-	if err != nil {
+	var sourced []*Repo
+	if sourced, err = s.source.ListRepos(ctx); err != nil {
 		return err
 	}
 
-	store, closetx, err := s.transact(ctx)
-	if err != nil {
-		return err
+	store := s.store
+	if txb, ok := s.store.(TxStoreBeginner); ok {
+		var txs TxStore
+		if txs, err = txb.BeginTxStore(ctx); err != nil {
+			return err
+		}
+		defer txs.Done(&err)
+		store = txs
 	}
-	defer closetx(&err)
 
-	stored, err := store.ListRepos(ctx)
-	if err != nil {
+	var stored []*Repo
+	if stored, err = store.ListRepos(ctx); err != nil {
 		return err
 	}
 
@@ -67,13 +71,6 @@ func (s Syncer) Sync(ctx context.Context) (err error) {
 	)
 	// TODO(tsenart): ensure scheduler picks up changes to be propagated to git server
 	// TODO(tsenart): ensure search index gets updated too
-}
-
-func (s Syncer) transact(ctx context.Context) (Store, func(*error) error, error) {
-	if txs, ok := s.store.(TxStore); ok {
-		return txs.Transact(ctx)
-	}
-	return s.store, func(*error) error { return nil }, nil
 }
 
 func (s Syncer) upserts(sourced, stored []*Repo) []*Repo {

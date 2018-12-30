@@ -41,3 +41,9 @@ type Repo struct {
 func (r *Repo) ID() string {
 	return r.ExternalRepo.ServiceType + ":" + r.ExternalRepo.ServiceID + ":" + r.ExternalRepo.ID
 }
+
+// Clone returns a clone of the given repo.
+func (r *Repo) Clone() *Repo {
+	clone := *r
+	return &clone
+}

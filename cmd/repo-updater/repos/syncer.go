@@ -51,9 +51,9 @@ func (s Syncer) Sync(ctx context.Context) (err error) {
 	}
 
 	store := s.store
-	if txb, ok := s.store.(TxStoreBeginner); ok {
+	if tr, ok := s.store.(Transactor); ok {
 		var txs TxStore
-		if txs, err = txb.BeginTxStore(ctx); err != nil {
+		if txs, err = tr.Transact(ctx); err != nil {
 			return err
 		}
 		defer txs.Done(&err)

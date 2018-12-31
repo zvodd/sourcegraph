@@ -17,16 +17,16 @@ type Store interface {
 	UpsertRepos(ctx context.Context, repos ...*Repo) error
 }
 
-// A TxStoreBeginner is a store that can initialise and return a TxStore.
-type TxStoreBeginner interface {
-	Store
-	BeginTxStore(context.Context) (TxStore, error)
+// A Transactor can initialise and return a TxStore which operates
+// within the context of a transaction.
+type Transactor interface {
+	Transact(context.Context) (TxStore, error)
 }
 
 // A TxStore is a Store that operates within the context of a transaction.
 // Done should be called to terminate the underlying transaction. Once a TxStore
 // is done, it can't be used further. Initiate a new one from its original
-// TxStoreBeginner.
+// Transactor.
 type TxStore interface {
 	Store
 	Done(...*error)
@@ -46,10 +46,10 @@ func NewDBStore(ctx context.Context, db DB, txOpts sql.TxOptions) (*DBStore, err
 	return &store, store.prepare(ctx)
 }
 
-// BeginTxStore returns a TxStore whose methods operate within the context of a transaction.
+// Transact returns a TxStore whose methods operate within the context of a transaction.
 // This method will return an error if the underlying DB cannot be interface upgraded
 // to a TxBeginner.
-func (s *DBStore) BeginTxStore(ctx context.Context) (TxStore, error) {
+func (s *DBStore) Transact(ctx context.Context) (TxStore, error) {
 	if _, ok := s.db.(Tx); ok { // Already in a Tx.
 		return s, nil
 	}

@@ -43,7 +43,7 @@ func TestIntegration_DBStore(t *testing.T) {
 		})
 	}
 
-	txstore, err := store.BeginTxStore(ctx)
+	txstore, err := store.Transact(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}

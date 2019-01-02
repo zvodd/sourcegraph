@@ -153,7 +153,7 @@ var awsCodeCommitRepositorySyncWorker = &worker{
 					select {
 					case <-shutdown:
 						return
-					case <-time.After(GetUpdateInterval()):
+					case <-time.After(getUpdateInterval()):
 					}
 				}
 			}(c)

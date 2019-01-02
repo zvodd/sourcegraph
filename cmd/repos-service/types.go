@@ -1,4 +1,4 @@
-package repos
+package main
 
 import (
 	"time"
@@ -13,7 +13,7 @@ type Repo struct {
 	// Name is the name for this repository (e.g., "github.com/user/repo").
 	//
 	// Previously, this was called RepoURI.
-	Name api.RepoName
+	Name string
 	// Description is a brief description of the repository.
 	Description string
 	// Language is the primary programming language used in this repository.
@@ -46,4 +46,22 @@ func (r *Repo) ID() string {
 func (r *Repo) Clone() *Repo {
 	clone := *r
 	return &clone
+}
+
+// Apply applies the given functional options to the Repo.
+func (r *Repo) Apply(opts ...func(*Repo)) {
+	if r == nil {
+		return
+	}
+
+	for _, opt := range opts {
+		opt(r)
+	}
+}
+
+// With returns a clone of the given repo with the given functional options applied.
+func (r *Repo) With(opts ...func(*Repo)) *Repo {
+	clone := r.Clone()
+	clone.Apply(opts...)
+	return clone
 }

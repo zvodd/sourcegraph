@@ -11,7 +11,6 @@ import (
 	"log"
 	"net"
 	"net/http"
-	"time"
 
 	"github.com/opentracing-contrib/go-stdlib/nethttp"
 	opentracing "github.com/opentracing/opentracing-go"
@@ -75,20 +74,8 @@ func main() {
 	// Repos purging thread
 	go repos.RunRepositoryPurgeWorker(ctx)
 
-	// Initially we're only experimenting with this new code path for Github.
-	if conf.RepoUpdaterSyncerEnabled() {
-		interval := repos.GetUpdateInterval()
-		store := repos.NewDBStore(nil)
-		sources := []repos.Source{
-			repos.NewGithubSource(conf.GitHubConfigs),
-		}
-		syncer := repos.NewSyncer(interval, store, sources, time.Now)
-		go syncer.Run(ctx)
-	} else {
-		repos.SyncGithubConnections()
-		// GitHub Repository syncing thread
-		go repos.RunGitHubRepositorySyncWorker(ctx)
-	}
+	// GitHub Repository syncing thread
+	go repos.RunGitHubRepositorySyncWorker(ctx)
 
 	// GitLab Repository syncing thread
 	go repos.RunGitLabRepositorySyncWorker(ctx)

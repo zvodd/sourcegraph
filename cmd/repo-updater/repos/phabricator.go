@@ -93,7 +93,7 @@ func RunPhabricatorRepositorySyncWorker(ctx context.Context) {
 			}
 
 		}
-		time.Sleep(GetUpdateInterval())
+		time.Sleep(getUpdateInterval())
 	}
 }
 

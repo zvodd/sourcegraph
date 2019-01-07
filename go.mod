@@ -35,7 +35,6 @@ require (
 	github.com/gchaincl/sqlhooks v1.1.0
 	github.com/getsentry/raven-go v0.0.0-20180903072508-084a9de9eb03
 	github.com/ghodss/yaml v1.0.0
-	github.com/go-ini/ini v1.40.0 // indirect
 	github.com/go-redsync/redsync v1.0.1
 	github.com/go-sql-driver/mysql v1.4.1 // indirect
 	github.com/go-stack/stack v1.8.0 // indirect
@@ -44,7 +43,6 @@ require (
 	github.com/golang-migrate/migrate/v4 v4.1.0
 	github.com/golang/gddo v0.0.0-20181116215533-9bd4a3295021
 	github.com/golang/groupcache v0.0.0-20180513044358-24b0969c4cb7
-	github.com/golang/lint v0.0.0-20181217174547-8f45f776aaf1 // indirect
 	github.com/golang/mock v1.2.0 // indirect
 	github.com/golangci/golangci-lint v1.12.5
 	github.com/golangplus/bytes v0.0.0-20160111154220-45c989fe5450 // indirect
@@ -54,7 +52,6 @@ require (
 	github.com/google/go-querystring v1.0.0
 	github.com/google/uuid v1.0.0
 	github.com/google/zoekt v0.0.0-20180530125106-8e284ca7e964
-	github.com/gopherjs/gopherjs v0.0.0-20181103185306-d547d1d9531e // indirect
 	github.com/gorilla/context v1.1.1
 	github.com/gorilla/csrf v1.5.1
 	github.com/gorilla/handlers v1.4.0
@@ -124,7 +121,6 @@ require (
 	github.com/zenazn/goji v0.9.0 // indirect
 	go.uber.org/atomic v1.3.2 // indirect
 	golang.org/x/crypto v0.0.0-20180910181607-0e37d006457b
-	golang.org/x/lint v0.0.0-20181217174547-8f45f776aaf1 // indirect
 	golang.org/x/net v0.0.0-20181220203305-927f97764cc3
 	golang.org/x/oauth2 v0.0.0-20181203162652-d668ce993890
 	golang.org/x/sync v0.0.0-20181221193216-37e7f081c4d4
@@ -135,7 +131,6 @@ require (
 	google.golang.org/appengine v1.4.0 // indirect
 	gopkg.in/alexcesaro/statsd.v2 v2.0.0 // indirect
 	gopkg.in/inconshreveable/log15.v2 v2.0.0-20180818164646-67afb5ed74ec
-	gopkg.in/ini.v1 v1.40.0 // indirect
 	gopkg.in/jpoehls/gophermail.v0 v0.0.0-20160410235621-62941eab772c
 	gopkg.in/square/go-jose.v2 v2.1.9 // indirect
 	gopkg.in/src-d/go-git.v4 v4.7.0

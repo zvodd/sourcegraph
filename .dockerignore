@@ -1,0 +1,126 @@
+/vagrant_ansible_inventory_default
+/.vagrant
+
+# Vim
+*.swp
+
+# JetBrains/IntelliJ
+.idea
+
+# Emacs
+*~
+\#*\#
+/.emacs.desktop
+/.emacs.desktop.lock
+.\#*
+.dir-locals.el
+
+# Go
+*.o
+*.a
+*.so
+
+# Mac OS X
+.DS_Store
+
+# Python
+*.py[cod]
+__pycache__
+
+# langkit
+/workspace/
+
+# Test binaries
+*.test
+
+grapher/python/pysonar2/tests
+grapher/ruby/rubysonar/target
+grapher/ruby/rubysonar/dependency-reduced-pom.xml
+grapher/ruby/yard/.bundle
+npm-debug.log
+yarn-error.log
+.codemod.bookmark
+.elasticbeanstalk/
+
+.tmp/*.jar
+
+/cmd/frontend/internal/graphqlbackend/node_modules
+
+/ui/artifacts
+/ui/node_modules
+/ui/assets/_goTemplates.js
+/ui/assets/analytics.js
+/ui/assets/bundle.js
+/ui/assets/bundle.css
+/ui/assets/sourcebox.js
+/ui/assets/sourcebox.css
+/ui/assets/test.js
+/ui/assets/test.css
+/ui/assets/vs
+/ui/assets/*.html
+/ui/assets/*.map
+/ui/assets/extension
+/ui/.tmp
+*.json.actual
+
+eb-bundle.zip
+
+/cmd/frontend/internal/app/assets/assets_vfsdata.go
+
+/release/
+
+/conf/private
+
+/provision/kubernetes/gen
+/deploy/sourcegraph.com/src
+/deploy/sourcegraph/src
+
+# Sublime
+*.sublime-project
+*.sublime-workspace
+
+.bin/
+.env
+
+/vendor/
+
+.gtm/
+
+cmd/src/debug
+cmd/gitserver/debug
+cmd/indexer/debug
+
+/dev/e2e/log.html
+/.gtm/
+
+# Web
+node_modules/
+package-lock.json
+.nyc_output/
+coverage/
+out/
+shared/src/graphql/schema.ts
+web/src/schema/*
+puppeteer/
+package-lock.json
+/dist
+sourcegraph-webapp-*.tgz
+
+# Extensions
+/packages/sourcegraph-extension-api/dist
+
+# Management console
+cmd/management-console/web/package-lock.json
+cmd/management-console/assets/*.go
+!cmd/management-console/web/yarn.lock
+!cmd/management-console/assets/gen.go
+!cmd/management-console/assets/replace_hack.go
+!cmd/management-console/assets/assets.go
+cmd/management-console/assets/*.map
+cmd/management-console/assets/*.js
+cmd/management-console/assets/*.css
+cmd/management-console/assets/*.html
+cmd/management-console/assets/favicon.*.png
+cmd/management-console/web/src/favicon.png
+cmd/management-console/web/.cache
+cmd/management-console/assets/assets_vfsdata.go

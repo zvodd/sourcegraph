@@ -162,14 +162,14 @@ html {
 }
 
 body {
-    height: 100vh;
-    display: flex;
+    height: 100%;
+    display: block;
 }
 
 // React root element
 // stylelint-disable-next-line selector-max-id
 #root {
-    display: flex;
+    display: block;
     width: 100%;
 }
 

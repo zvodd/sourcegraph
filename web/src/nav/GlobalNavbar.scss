@@ -1,9 +1,8 @@
 @import '../search/input/QueryInput';
 
 .global-navbar {
-    position: sticky;
-    flex: none;
-    display: flex;
+    position: fixed;
+	display: flex;
     align-items: center;
     justify-content: space-between;
     height: 2.75rem;

@@ -1,0 +1,25 @@
+version: "3.7"
+services:
+  redis:
+    image: redis:3.2.12
+  postgres:
+    image: postgres:9.6
+  frontend:
+    build:
+      context: cmd/frontend
+
+#management-console:
+  #build:
+    #context: cmd/frontend
+  #dockerfile: cmd/management-console/Dockerfile
+  #depends_on:
+    #- frontend
+#github-proxy:
+#gitserver:
+#query-runner:
+#symbols:
+#repo-updater:
+#searcher:
+#zoekt-archive-index:
+#zoekt-sourcegraph-indexserver:
+#zoekt-webserver:

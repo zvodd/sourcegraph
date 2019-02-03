@@ -20,4 +20,4 @@ COPY --from=ctags /usr/local/bin/universal-* /usr/local/bin/
 
 ENV GO111MODULES=on LANG=en_US.utf8 VERSION=$VERSION
 ENTRYPOINT ["/sbin/tini", "--", "/usr/local/bin/server"]
-COPY * /usr/local/bin/
+COPY * /usr/local/bin

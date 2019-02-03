@@ -1,7 +1,13 @@
-# This Dockerfile was generated from github.com/sourcegraph/godockerize. It
-# was not written by a human, and as such looks janky. As you change this
-# file, please don't be scared to make it more pleasant / remove hadolint
-# ignores.
+FROM node:11.6.0-alpine as web_deps
+COPY package.json yarn.lock ./
+RUN yarn install --production
+
+FROM web_deps as web_build
+ENV NODE_ENV=production
+WORKDIR /workspace
+COPY web/ .
+WORKDIR /workspace/web
+RUN yarn -s run build
 
 FROM alpine:3.9
 # hadolint ignore=DL3018

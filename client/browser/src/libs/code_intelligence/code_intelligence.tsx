@@ -61,7 +61,8 @@ import { githubCodeHost } from '../github/code_intelligence'
 import { gitlabCodeHost } from '../gitlab/code_intelligence'
 import { phabricatorCodeHost } from '../phabricator/code_intelligence'
 import { fetchFileContents, findCodeViews } from './code_views'
-import { applyDecorations, initializeExtensions } from './extensions'
+import { applyDecorations } from './decorations'
+import { initializeExtensions } from './extensions'
 import { injectViewContextOnSourcegraph } from './external_links'
 
 registerHighlightContributions()

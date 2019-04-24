@@ -159,7 +159,10 @@ func (r *Repo) UnmarshalJSON(data []byte) error {
 		return err
 	}
 
-	r.URIs = make([]*URI, 0, len(uris))
+	if len(uris) > 0 {
+		r.URIs = make([]*URI, 0, len(uris))
+	}
+
 	for _, u := range uris {
 		uri := URI{
 			ID:                u.ID,

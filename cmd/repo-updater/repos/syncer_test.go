@@ -15,6 +15,7 @@ import (
 	"github.com/sourcegraph/sourcegraph/pkg/extsvc/bitbucketserver"
 	"github.com/sourcegraph/sourcegraph/pkg/extsvc/github"
 	"github.com/sourcegraph/sourcegraph/pkg/extsvc/gitlab"
+	"github.com/sourcegraph/sourcegraph/pkg/extsvc/phabricator"
 )
 
 func TestSyncer_Sync(t *testing.T) {
@@ -143,6 +144,23 @@ func testSyncerSync(s repos.Store) func(*testing.T) {
 		repos.Opt.RepoSources(otherService.URN()),
 	)
 
+	phabricatorService := &repos.ExternalService{
+		ID:   40,
+		Kind: "PHABRICATOR",
+	}
+
+	phabricatorRepo := (&repos.Repo{
+		Name:     "secure.phabricator.com/source/foo",
+		Metadata: &phabricator.Repo{},
+		ExternalRepo: api.ExternalRepoSpec{
+			ID:          "PHID-REPO-b25161d5f5f770f965ca",
+			ServiceID:   "https://secure.phabricator.com",
+			ServiceType: "phabricator",
+		},
+	}).With(
+		repos.Opt.RepoSources(phabricatorService.URN()),
+	)
+
 	clock := repos.NewFakeClock(time.Now(), 0)
 
 	type testCase struct {
@@ -165,6 +183,7 @@ func testSyncerSync(s repos.Store) func(*testing.T) {
 		{repo: gitlabRepo, svc: gitlabService},
 		{repo: bitbucketServerRepo, svc: bitbucketServerService},
 		{repo: otherRepo, svc: otherService},
+		{repo: phabricatorRepo, svc: phabricatorService},
 	} {
 		svcdup := tc.svc.With(repos.Opt.ExternalServiceID(tc.svc.ID + 1))
 		testCases = append(testCases,
@@ -315,6 +334,8 @@ func testSyncerSync(s repos.Store) func(*testing.T) {
 					update = &bitbucketserver.Repo{Public: true}
 				case "other":
 					return testCase{}
+				case "phabricator":
+					update = &phabricator.Repo{Status: "active"}
 				default:
 					panic("test must be extended with new external service kind")
 				}

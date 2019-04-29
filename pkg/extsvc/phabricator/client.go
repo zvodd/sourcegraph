@@ -3,7 +3,6 @@ package phabricator
 
 import (
 	"context"
-	"encoding/json"
 	"strconv"
 	"strings"
 	"time"
@@ -76,26 +75,26 @@ type URI struct {
 //
 
 type apiRepo struct {
-	ID          *uint64            `json:"id"`
-	PHID        *string            `json:"phid"`
+	ID          uint64             `json:"id"`
+	PHID        string             `json:"phid"`
 	Fields      apiRepoFields      `json:"fields"`
 	Attachments apiRepoAttachments `json:"attachments"`
 }
 
 type apiRepoFields struct {
-	Name         *string       `json:"name"`
-	VCS          *string       `json:"vcs"`
-	Callsign     *string       `json:"callsign"`
-	Shortname    *string       `json:"shortname"`
-	Status       *string       `json:"status"`
+	Name         string        `json:"name"`
+	VCS          string        `json:"vcs"`
+	Callsign     string        `json:"callsign"`
+	Shortname    string        `json:"shortname"`
+	Status       string        `json:"status"`
 	Policy       apiRepoPolicy `json:"policy"`
 	DateCreated  unixTime      `json:"dateCreated"`
 	DateModified unixTime      `json:"dateModified"`
 }
 
 type apiRepoPolicy struct {
-	View *string `json:"view"`
-	Edit *string `json:"edit"`
+	View string `json:"view"`
+	Edit string `json:"edit"`
 }
 
 type apiRepoAttachments struct {
@@ -103,7 +102,7 @@ type apiRepoAttachments struct {
 }
 
 type apiURIsContainer struct {
-	URIs *[]apiURI `json:"uris"`
+	URIs []apiURI `json:"uris"`
 }
 
 type apiURI struct {
@@ -129,64 +128,6 @@ type apiURIs struct {
 type apiURIBultin struct {
 	Protocol   string `json:"protocol"`
 	Identifier string `json:"identifier"`
-}
-
-// UnmarshalJSON implements the json.Unmarshaler interface.
-func (r *Repo) UnmarshalJSON(data []byte) error {
-	var uris []apiURI
-	err := json.Unmarshal(data, &apiRepo{
-		ID:   &r.ID,
-		PHID: &r.PHID,
-		Fields: apiRepoFields{
-			Name:      &r.Name,
-			VCS:       &r.VCS,
-			Callsign:  &r.Callsign,
-			Shortname: &r.Shortname,
-			Status:    &r.Status,
-			Policy: apiRepoPolicy{
-				View: &r.ViewPolicy,
-				Edit: &r.EditPolicy,
-			},
-			DateCreated:  unixTime{t: &r.DateCreated},
-			DateModified: unixTime{t: &r.DateModified},
-		},
-		Attachments: apiRepoAttachments{
-			URIs: apiURIsContainer{URIs: &uris},
-		},
-	})
-
-	if err != nil {
-		return err
-	}
-
-	if len(uris) > 0 {
-		r.URIs = make([]*URI, 0, len(uris))
-	}
-
-	for _, u := range uris {
-		uri := URI{
-			ID:                u.ID,
-			PHID:              u.PHID,
-			Display:           u.Fields.URI.Display,
-			Effective:         u.Fields.URI.Effective,
-			Normalized:        u.Fields.URI.Normalized,
-			Disabled:          u.Fields.Disabled,
-			BuiltinProtocol:   u.Fields.Builtin.Protocol,
-			BuiltinIdentifier: u.Fields.Builtin.Identifier,
-		}
-
-		if t := u.Fields.DateCreated.t; t != nil {
-			uri.DateCreated = *t
-		}
-
-		if t := u.Fields.DateModified.t; t != nil {
-			uri.DateCreated = *t
-		}
-
-		r.URIs = append(r.URIs, &uri)
-	}
-
-	return nil
 }
 
 // Cursor represents the pagination cursor on many responses.
@@ -229,8 +170,8 @@ func (c *Client) ListRepos(ctx context.Context, args ListReposArgs) ([]*Repo, *C
 	}
 
 	var res struct {
-		Data   []*Repo `json:"data"`
-		Cursor Cursor  `json:"cursor"`
+		Data   []apiRepo `json:"data"`
+		Cursor Cursor    `json:"cursor"`
 	}
 
 	err := c.conn.CallContext(ctx, "diffusion.repository.search", &req, &res)
@@ -238,7 +179,42 @@ func (c *Client) ListRepos(ctx context.Context, args ListReposArgs) ([]*Repo, *C
 		return nil, nil, err
 	}
 
-	return res.Data, &res.Cursor, nil
+	rs := make([]*Repo, 0, len(res.Data))
+	for _, r := range res.Data {
+		repo := &Repo{
+			ID:           r.ID,
+			PHID:         r.PHID,
+			Name:         r.Fields.Name,
+			VCS:          r.Fields.VCS,
+			Callsign:     r.Fields.Callsign,
+			Shortname:    r.Fields.Shortname,
+			Status:       r.Fields.Status,
+			ViewPolicy:   r.Fields.Policy.View,
+			EditPolicy:   r.Fields.Policy.Edit,
+			DateCreated:  time.Time(r.Fields.DateCreated),
+			DateModified: time.Time(r.Fields.DateModified),
+			URIs:         make([]*URI, 0, len(r.Attachments.URIs.URIs)),
+		}
+
+		for _, u := range r.Attachments.URIs.URIs {
+			repo.URIs = append(repo.URIs, &URI{
+				ID:                u.ID,
+				PHID:              u.PHID,
+				Display:           u.Fields.URI.Display,
+				Effective:         u.Fields.URI.Effective,
+				Normalized:        u.Fields.URI.Normalized,
+				Disabled:          u.Fields.Disabled,
+				BuiltinProtocol:   u.Fields.Builtin.Protocol,
+				BuiltinIdentifier: u.Fields.Builtin.Identifier,
+				DateCreated:       time.Time(u.Fields.DateCreated),
+				DateModified:      time.Time(u.Fields.DateModified),
+			})
+		}
+
+		rs = append(rs, repo)
+	}
+
+	return rs, &res.Cursor, nil
 }
 
 // GetRawDiff retrieves the raw diff of the diff with the given id.
@@ -291,14 +267,14 @@ func (c *Client) GetDiffInfo(ctx context.Context, diffID int) (*DiffInfo, error)
 		return nil, err
 	}
 
-	info.Date = *date
+	info.Date = date
 
 	return info, nil
 }
 
-type unixTime struct{ t *time.Time }
+type unixTime time.Time
 
-func (d *unixTime) UnmarshalJSON(data []byte) error {
+func (t *unixTime) UnmarshalJSON(data []byte) error {
 	ts := string(data)
 
 	// Ignore null, like in the main JSON package.
@@ -306,26 +282,20 @@ func (d *unixTime) UnmarshalJSON(data []byte) error {
 		return nil
 	}
 
-	t, err := ParseDate(strings.Trim(ts, `"`))
+	d, err := ParseDate(strings.Trim(ts, `"`))
 	if err != nil {
 		return err
 	}
 
-	if d.t == nil {
-		d.t = t
-	} else {
-		*d.t = *t
-	}
-
+	*t = unixTime(d)
 	return nil
 }
 
 // ParseDate parses the given unix timestamp into a time.Time pointer.
-func ParseDate(secStr string) (*time.Time, error) {
+func ParseDate(secStr string) (time.Time, error) {
 	seconds, err := strconv.ParseInt(secStr, 10, 64)
 	if err != nil {
-		return nil, errors.Wrap(err, "phabricator: could not parse date")
+		return time.Time{}, errors.Wrap(err, "phabricator: could not parse date")
 	}
-	t := time.Unix(seconds, 0).UTC()
-	return &t, nil
+	return time.Unix(seconds, 0).UTC(), nil
 }

@@ -81,14 +81,14 @@ func (s *Syncer) Sync(ctx context.Context, kinds ...string) (diff Diff, err erro
 		return Diff{}, errors.Wrap(err, "syncer.sync.store.list-repos")
 	}
 
-	diff = NewDiff(sourced, stored)
-	upserts := s.upserts(diff)
-
 	bs, _ := json.Marshal(sourced)
 	stdlog.Printf("syncer.sync.sourced:\n%s", string(bs))
 
 	bs, _ = json.Marshal(stored)
 	stdlog.Printf("syncer.sync.stored:\n%s", string(bs))
+
+	diff = NewDiff(sourced, stored)
+	upserts := s.upserts(diff)
 
 	set := make(map[api.ExternalRepoSpec]Repos, len(upserts))
 	for _, r := range upserts {

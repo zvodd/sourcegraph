@@ -1,3 +1,9 @@
+---
+navText: Home
+navShow: true
+navWeight: 100
+---
+
 # Sourcegraph documentation
 
 [Sourcegraph](https://sourcegraph.com) is a web-based, open-source, self-hosted code search and navigation tool for developers, used by Uber, Lyft, Yelp, and more.

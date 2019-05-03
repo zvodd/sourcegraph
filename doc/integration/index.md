@@ -1,3 +1,9 @@
+---
+navText: Integrations
+navShow: true
+navWeight: 70
+---
+
 # Integrations
 
 Sourcegraph integrates with your other tools to help you search, navigate, and review your code.

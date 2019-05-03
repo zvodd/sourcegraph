@@ -1,3 +1,9 @@
+---
+navText: Sourcegraph development
+navShow: true
+navWeight: 30
+---
+
 # Sourcegraph development documentation
 
 This documentation is for developers contributing to Sourcegraph itself.

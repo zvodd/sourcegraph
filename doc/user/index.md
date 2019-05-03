@@ -1,3 +1,9 @@
+---
+navText: Usage
+navShow: true
+navWeight: 90
+---
+
 # User documentation
 
 Welcome to Sourcegraph! As a developer, you can use Sourcegraph to get help while writing and reviewing code.

@@ -1,3 +1,9 @@
+---
+navText: Extensions
+navShow: true
+navWeight: 60
+---
+
 # Sourcegraph extensions
 
 Sourcegraph extensions add code intelligence, test coverage information, trace/log information, and other similar information, to Sourcegraph and (using the [Chrome/Firefox browser extensions](../integration/browser_extension.md)) your code host and review tools.

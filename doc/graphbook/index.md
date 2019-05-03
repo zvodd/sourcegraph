@@ -1,3 +1,9 @@
+---
+navText: Graphbook
+navShow: false
+navWeight: 0
+---
+
 # Graphbook
 
 The Graphbook is the Sourcegraph handbook, the reference manual for Sourcegraph team members.

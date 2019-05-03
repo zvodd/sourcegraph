@@ -1,3 +1,9 @@
+---
+navText: Why code search
+navShow: true
+navWeight: 40
+---
+
 # Adopting Sourcegraph
 
 - Why should my company use Sourcegraph?

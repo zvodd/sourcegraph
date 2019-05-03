@@ -1,3 +1,9 @@
+---
+navText: Administration
+navShow: true
+navWeight: 80
+---
+
 # Site administration documentation
 
 > NOTE: Upgrading to `3.0.1+`? Read our [migration guide](migration/3_0.md) for `2.x` and `3.0.0`.

@@ -1,3 +1,10 @@
+---
+navText: APIs
+navShow: true
+navWeight: 50
+---
+
+
 # Sourcegraph APIs
 
 Sourcegraph exposes the following APIs:

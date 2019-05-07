@@ -14,6 +14,7 @@ import (
 	opentracing "github.com/opentracing/opentracing-go"
 	"github.com/sourcegraph/sourcegraph/cmd/repo-updater/repos"
 	"github.com/sourcegraph/sourcegraph/pkg/api"
+	"github.com/sourcegraph/sourcegraph/pkg/extsvc/awscodecommit"
 	"github.com/sourcegraph/sourcegraph/pkg/extsvc/bitbucketserver"
 	"github.com/sourcegraph/sourcegraph/pkg/extsvc/github"
 	"github.com/sourcegraph/sourcegraph/pkg/extsvc/gitlab"
@@ -74,6 +75,14 @@ func testStoreListExternalServices(store repos.Store) func(*testing.T) {
 		UpdatedAt:   now,
 	}
 
+	awsCodeCommit := repos.ExternalService{
+		Kind:        "AWSCODECOMMIT",
+		DisplayName: "AWS CodeCommit - Test",
+		Config:      `{"region": "us-west-1"}`,
+		CreatedAt:   now,
+		UpdatedAt:   now,
+	}
+
 	otherService := repos.ExternalService{
 		Kind:        "OTHER",
 		DisplayName: "Other code hosts",
@@ -86,6 +95,7 @@ func testStoreListExternalServices(store repos.Store) func(*testing.T) {
 		&github,
 		&gitlab,
 		&bitbucketServer,
+		&awsCodeCommit,
 		&otherService,
 	}
 
@@ -209,6 +219,14 @@ func testStoreUpsertExternalServices(store repos.Store) func(*testing.T) {
 			UpdatedAt:   now,
 		}
 
+		awsCodeCommit := repos.ExternalService{
+			Kind:        "AWSCODECOMMIT",
+			DisplayName: "AWS CodeCommit - Test",
+			Config:      `{"region": "us-west-1"}`,
+			CreatedAt:   now,
+			UpdatedAt:   now,
+		}
+
 		otherService := repos.ExternalService{
 			Kind:        "OTHER",
 			DisplayName: "Other code hosts",
@@ -221,6 +239,7 @@ func testStoreUpsertExternalServices(store repos.Store) func(*testing.T) {
 			&github,
 			&gitlab,
 			&bitbucketServer,
+			&awsCodeCommit,
 			&otherService,
 		}
 
@@ -303,6 +322,7 @@ func testStoreUpsertRepos(store repos.Store) func(*testing.T) {
 			"github",
 			"gitlab",
 			"bitbucketserver",
+			"awscodecommit",
 			"other",
 		}
 
@@ -366,6 +386,26 @@ func testStoreUpsertRepos(store repos.Store) func(*testing.T) {
 			Metadata: new(bitbucketserver.Repo),
 		}
 
+		awsCodeCommit := repos.Repo{
+			Name:        "git-codecommit.us-west-1.amazonaws.com/stripe-go",
+			Description: "The description",
+			Language:    "barlang",
+			Enabled:     true,
+			CreatedAt:   now,
+			ExternalRepo: api.ExternalRepoSpec{
+				ID:          "f001337a-3450-46fd-b7d2-650c0EXAMPLE",
+				ServiceType: "awscodecommit",
+				ServiceID:   "arn:aws:codecommit:us-west-1:999999999999:",
+			},
+			Sources: map[string]*repos.SourceInfo{
+				"extsvc:4": {
+					ID:       "extsvc:4",
+					CloneURL: "git@git-codecommit.us-west-1.amazonaws.com/v1/repos/stripe-go",
+				},
+			},
+			Metadata: new(awscodecommit.Repository),
+		}
+
 		otherRepo := repos.Repo{
 			Name: "git-host.com/org/foo",
 			ExternalRepo: api.ExternalRepoSpec{
@@ -374,8 +414,8 @@ func testStoreUpsertRepos(store repos.Store) func(*testing.T) {
 				ServiceType: "other",
 			},
 			Sources: map[string]*repos.SourceInfo{
-				"extsvc:4": {
-					ID:       "extsvc:3",
+				"extsvc:5": {
+					ID:       "extsvc:5",
 					CloneURL: "https://git-host.com/org/foo",
 				},
 			},
@@ -385,6 +425,7 @@ func testStoreUpsertRepos(store repos.Store) func(*testing.T) {
 			&github,
 			&gitlab,
 			&bitbucketServer,
+			&awsCodeCommit,
 			&otherRepo,
 		}
 
@@ -515,6 +556,22 @@ func testStoreListRepos(store repos.Store) func(*testing.T) {
 		Metadata: new(bitbucketserver.Repo),
 	}
 
+	awsCodeCommit := repos.Repo{
+		Name: "git-codecommit.us-west-1.amazonaws.com/stripe-go",
+		ExternalRepo: api.ExternalRepoSpec{
+			ID:          "f001337a-3450-46fd-b7d2-650c0EXAMPLE",
+			ServiceType: "awscodecommit",
+			ServiceID:   "arn:aws:codecommit:us-west-1:999999999999:",
+		},
+		Sources: map[string]*repos.SourceInfo{
+			"extsvc:4": {
+				ID:       "extsvc:4",
+				CloneURL: "git@git-codecommit.us-west-1.amazonaws.com/v1/repos/stripe-go",
+			},
+		},
+		Metadata: new(awscodecommit.Repository),
+	}
+
 	otherRepo := repos.Repo{
 		Name: "git-host.com/org/foo",
 		ExternalRepo: api.ExternalRepoSpec{
@@ -534,6 +591,7 @@ func testStoreListRepos(store repos.Store) func(*testing.T) {
 		&github,
 		&gitlab,
 		&bitbucketServer,
+		&awsCodeCommit,
 		&otherRepo,
 	}
 
@@ -541,6 +599,7 @@ func testStoreListRepos(store repos.Store) func(*testing.T) {
 		"github",
 		"gitlab",
 		"bitbucketserver",
+		"awscodecommit",
 		"other",
 	}
 

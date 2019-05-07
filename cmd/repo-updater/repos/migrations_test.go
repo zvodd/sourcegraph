@@ -8,6 +8,7 @@ import (
 
 	"github.com/sourcegraph/sourcegraph/cmd/repo-updater/repos"
 	"github.com/sourcegraph/sourcegraph/pkg/api"
+	"github.com/sourcegraph/sourcegraph/pkg/extsvc/awscodecommit"
 	"github.com/sourcegraph/sourcegraph/pkg/extsvc/bitbucketserver"
 	"github.com/sourcegraph/sourcegraph/pkg/extsvc/github"
 	"github.com/sourcegraph/sourcegraph/pkg/extsvc/gitlab"
@@ -115,6 +116,33 @@ func testEnabledStateDeprecationMigration(store repos.Store) func(*testing.T) {
 		Metadata: new(bitbucketserver.Repo),
 	}
 
+	awsCodeCommitService := repos.ExternalService{
+		ID:          9,
+		Kind:        "AWSCODECOMMIT",
+		DisplayName: "AWS CodeCommit - Test",
+		Config: formatJSON(`
+		{
+			"region": "us-west-1",
+			"accessKeyID": "secret-accessKeyID",
+			"secretAccessKey": "secret-secretAccessKey",
+		}`),
+	}
+
+	awsCodeCommitRepo := repos.Repo{
+		Name:    "git-codecommit.us-west-1.amazonaws.com/stripe-go",
+		Enabled: false,
+		ExternalRepo: api.ExternalRepoSpec{
+			ID:          "f001337a-3450-46fd-b7d2-650c0EXAMPLE",
+			ServiceType: "awscodecommit",
+			ServiceID:   "arn:aws:codecommit:us-west-1:999999999999:",
+		},
+		Sources: map[string]*repos.SourceInfo{},
+		Metadata: awscodecommit.Repository{
+			ID:   "f001337a-3450-46fd-b7d2-650c0EXAMPLE",
+			Name: "stripe-go",
+		},
+	}
+
 	var testCases []testCase
 	for _, k := range []struct {
 		svc  repos.ExternalService
@@ -123,6 +151,7 @@ func testEnabledStateDeprecationMigration(store repos.Store) func(*testing.T) {
 		{svc: githubService, repo: githubRepo},
 		{svc: gitlabService, repo: gitlabRepo},
 		{svc: bitbucketServerService, repo: bitbucketServerRepo},
+		{svc: awsCodeCommitService, repo: awsCodeCommitRepo},
 	} {
 		repo, svc := k.repo, k.svc
 		testCases = append(testCases,

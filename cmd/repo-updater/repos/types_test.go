@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/sourcegraph/sourcegraph/pkg/api"
+	"github.com/sourcegraph/sourcegraph/pkg/extsvc/awscodecommit"
 	"github.com/sourcegraph/sourcegraph/pkg/jsonc"
 )
 
@@ -54,6 +55,19 @@ func TestExternalService_IncludeExclude(t *testing.T) {
 			"username: "admin",
 			"token": "secret",
 			"repositoryQuery": ["none"]
+		}`,
+		CreatedAt: now,
+		UpdatedAt: now,
+	}
+
+	awsCodeCommit := ExternalService{
+		ID:          9,
+		Kind:        "AWSCODECOMMIT",
+		DisplayName: "AWS CodeCommit",
+		Config: `{
+			"region": "us-west-1",
+			"accessKeyID": "secret-accessKeyID",
+			"secretAccessKey": "secret-secretAccessKey"
 		}`,
 		CreatedAt: now,
 		UpdatedAt: now,
@@ -117,6 +131,30 @@ func TestExternalService_IncludeExclude(t *testing.T) {
 			},
 		},
 		{
+			Name: "git-codecommit.us-west-1.amazonaws.com/foo",
+			ExternalRepo: api.ExternalRepoSpec{
+				ID:          "f001337a-3450-46fd-b7d2-650c0EXAMPLE",
+				ServiceType: "awscodecommit",
+				ServiceID:   "arn:aws:codecommit:us-west-1:999999999999:",
+			},
+			Metadata: awscodecommit.Repository{
+				ID:   "f001337a-3450-46fd-b7d2-650c0EXAMPLE",
+				Name: "foo",
+			},
+		},
+		{
+			Name: "git-codecommit.us-west-1.amazonaws.com/baz",
+			ExternalRepo: api.ExternalRepoSpec{
+				ID:          "b4455554-4444-5555-b7d2-888c9EXAMPLE",
+				ServiceType: "awscodecommit",
+				ServiceID:   "arn:aws:codecommit:us-west-1:999999999999:",
+			},
+			Metadata: awscodecommit.Repository{
+				ID:   "b4455554-4444-5555-b7d2-888c9EXAMPLE",
+				Name: "baz",
+			},
+		},
+		{
 			Name: "git-host.mycorp.com/org/foo",
 			ExternalRepo: api.ExternalRepoSpec{
 				ID:          "1",
@@ -176,6 +214,19 @@ func TestExternalService_IncludeExclude(t *testing.T) {
 					]
 				}`)
 			}),
+			awsCodeCommit.With(func(e *ExternalService) {
+				e.Config = formatJSON(t, `
+				{
+					// Some comment
+					"region": "us-west-1",
+					"accessKeyID": "secret-accessKeyID",
+					"secretAccessKey": "secret-secretAccessKey",
+					"exclude": [
+						{"id": "f001337a-3450-46fd-b7d2-650c0EXAMPLE"},
+						{"name": "baz"}
+					]
+				}`)
+			}),
 			&otherService,
 		}
 
@@ -223,6 +274,18 @@ func TestExternalService_IncludeExclude(t *testing.T) {
 					"repositoryQuery": ["none"],
 					"exclude": [
 						{"name": "org/boo"},
+					]
+				}`)
+			}),
+			awsCodeCommit.With(func(e *ExternalService) {
+				e.Config = formatJSON(t, `
+				{
+					// Some comment
+					"region": "us-west-1",
+					"accessKeyID": "secret-accessKeyID",
+					"secretAccessKey": "secret-secretAccessKey",
+					"exclude": [
+						{"name": "boo"}
 					]
 				}`)
 			}),
@@ -285,6 +348,20 @@ func TestExternalService_IncludeExclude(t *testing.T) {
 							{"name": "org/boo"},
 							{"id": 1, "name": "org/foo"},
 							{"name": "org/baz"}
+						]
+					}`)
+				}),
+				awsCodeCommit.With(func(e *ExternalService) {
+					e.Config = formatJSON(t, `
+					{
+						// Some comment
+						"region": "us-west-1",
+						"accessKeyID": "secret-accessKeyID",
+						"secretAccessKey": "secret-secretAccessKey",
+						"exclude": [
+							{"name": "boo"},
+							{"id": "f001337a-3450-46fd-b7d2-650c0EXAMPLE", "name": "foo"},
+							{"id": "b4455554-4444-5555-b7d2-888c9EXAMPLE", "name": "baz"}
 						]
 					}`)
 				}),

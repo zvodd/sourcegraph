@@ -125,6 +125,7 @@ func testEnabledStateDeprecationMigration(store repos.Store) func(*testing.T) {
 			"region": "us-west-1",
 			"accessKeyID": "secret-accessKeyID",
 			"secretAccessKey": "secret-secretAccessKey",
+			"gitCredentials": {"username": "user", "password": "pw"},
 		}`),
 	}
 

@@ -81,7 +81,7 @@ export class GlobalNavbar extends React.PureComponent<Props, State> {
 
     public render(): JSX.Element | null {
         let logoSrc = '/.assets/img/sourcegraph-mark.svg'
-        let logoLinkClassName = 'global-navbar__logo-link global-navbar__logo-animated'
+        let logoLinkClassName = 'global-navbar__logo-link global-navbar__logo-link--animated'
 
         const { branding } = window.context
         if (branding) {

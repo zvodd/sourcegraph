@@ -32,7 +32,7 @@ export class SearchResult extends React.Component<Props> {
     }
 
     private renderTitle = () => (
-        <div className="search-result__title">
+        <div className="search-result__title e2e-search-result">
             <span
                 dangerouslySetInnerHTML={{
                     __html: this.props.result.label.html

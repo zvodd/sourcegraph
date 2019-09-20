@@ -1161,7 +1161,7 @@ describe('e2e test suite', () => {
         test('Clicking search results tabs updates query and URL', async () => {
             for (const searchType of ['diff', 'commit', 'symbol', 'repo']) {
                 await driver.page.waitForSelector(`.e2e-search-result-tab-${searchType}`)
-                await driver.page.waitForSelector(`.e2e-search-result`)
+                await driver.page.waitForSelector('.e2e-search-result')
                 await driver.page.click(`.e2e-search-result-tab-${searchType}`)
                 await driver.assertWindowLocation(`/search?q=mux+type:${searchType}`)
             }

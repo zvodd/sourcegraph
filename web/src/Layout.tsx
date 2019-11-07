@@ -87,6 +87,8 @@ export interface LayoutProps
     // Search
     navbarSearchQuery: string
     onNavbarQueryChange: (query: string) => void
+    interactiveSearchQuery: string
+    onInteractiveQueryChange: (query: string) => void
     fetchHighlightedFileLines: (ctx: FetchFileCtx, force?: boolean) => Observable<string[]>
     searchRequest: (
         query: string,

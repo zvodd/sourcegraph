@@ -5,6 +5,7 @@ import { QuickLink } from '../../schema/settings.schema'
 import { FilterChip } from '../FilterChip'
 import { isSearchResults } from '../helpers'
 import { QuickLinks } from '../QuickLinks'
+import InteractiveFiltersRows from '../input/InteractiveFiltersRows'
 
 export interface SearchScopeWithOptionalName {
     name?: string
@@ -20,6 +21,7 @@ export const SearchResultsFilterBars: React.FunctionComponent<{
     onFilterClick: (value: string) => void
     onShowMoreResultsClick: (value: string) => void
     calculateShowMoreResultsCount: () => number
+    onInteractiveQueryChange: (value: string) => void
 }> = ({
     navbarSearchQuery,
     results,
@@ -29,6 +31,7 @@ export const SearchResultsFilterBars: React.FunctionComponent<{
     onFilterClick,
     onShowMoreResultsClick,
     calculateShowMoreResultsCount,
+    onInteractiveQueryChange,
 }) => (
     <div className="search-results-filter-bars">
         {((isSearchResults(results) && filters.length > 0) || extensionFilters) && (
@@ -95,5 +98,6 @@ export const SearchResultsFilterBars: React.FunctionComponent<{
             quickLinks={quickLinks}
             className="search-results-filter-bars__row search-results-filter-bars__quicklinks"
         />
+        <InteractiveFiltersRows isLightTheme={true} onInteractiveQueryChange={onInteractiveQueryChange} />
     </div>
 )

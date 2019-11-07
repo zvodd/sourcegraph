@@ -50,6 +50,7 @@ export interface SearchResultsProps
     ) => Observable<GQL.ISearchResults | ErrorLike>
     isSourcegraphDotCom: boolean
     deployType: DeployType
+    onInteractiveQueryChange: (query: string) => void
 }
 
 interface SearchResultsState {
@@ -217,6 +218,7 @@ export class SearchResults extends React.Component<SearchResultsProps, SearchRes
                     onFilterClick={this.onDynamicFilterClicked}
                     onShowMoreResultsClick={this.showMoreResults}
                     calculateShowMoreResultsCount={this.calculateCount}
+                    onInteractiveQueryChange={this.props.onInteractiveQueryChange}
                 />
                 <SearchResultTypeTabs {...this.props} query={this.props.navbarSearchQuery} />
                 <SearchResultsList

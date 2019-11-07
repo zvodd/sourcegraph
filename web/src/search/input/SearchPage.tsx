@@ -17,6 +17,7 @@ import { QueryBuilder } from './QueryBuilder'
 import { QueryInput } from './QueryInput'
 import { SearchButton } from './SearchButton'
 import { ISearchScope, SearchFilterChips } from './SearchFilterChips'
+import { AddFilterDropdown } from './AddFilterDropdown'
 
 interface Props extends SettingsCascadeProps, ThemeProps, ThemePreferenceProps, ActivationProps, PatternTypeProps {
     authenticatedUser: GQL.IUser | null
@@ -98,6 +99,7 @@ export class SearchPage extends React.Component<Props, State> {
                                 />
                             </div>
                             <QuickLinks quickLinks={quickLinks} className="search-page__input-sub-container" />
+                            <AddFilterDropdown />
                             <QueryBuilder
                                 onFieldsQueryChange={this.onBuilderQueryChange}
                                 isSourcegraphDotCom={window.context.sourcegraphDotComMode}
@@ -112,6 +114,7 @@ export class SearchPage extends React.Component<Props, State> {
                                 patternType={this.props.patternType}
                             />
                             <QuickLinks quickLinks={quickLinks} className="search-page__input-sub-container" />
+                            <AddFilterDropdown />
                             <div className="search-page__input-sub-container">
                                 <SearchFilterChips
                                     location={this.props.location}

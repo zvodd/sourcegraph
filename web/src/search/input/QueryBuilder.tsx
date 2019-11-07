@@ -14,7 +14,7 @@ interface Props extends Omit<PatternTypeProps, 'togglePatternType'> {
     isSourcegraphDotCom: boolean
 }
 
-interface QueryFields {
+export interface QueryFields {
     type: string
     repo: string
     file: string

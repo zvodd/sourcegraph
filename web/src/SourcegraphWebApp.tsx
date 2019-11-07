@@ -95,6 +95,12 @@ interface SourcegraphWebAppState extends SettingsCascadeProps {
      * The current search query in the navbar.
      */
     navbarSearchQuery: string
+
+    /**
+     * The current search query compiled in elements in the interactive search UI.
+     */
+    interactiveSearchQuery: string
+
     /**
      * The current search pattern type.
      */
@@ -152,6 +158,7 @@ class ColdSourcegraphWebApp extends React.Component<SourcegraphWebAppProps, Sour
             themePreference: readStoredThemePreference(),
             systemIsLightTheme: !this.darkThemeMediaList.matches,
             navbarSearchQuery: '',
+            interactiveSearchQuery: '',
             settingsCascade: EMPTY_SETTINGS_CASCADE,
             viewerSubject: SITE_SUBJECT_NO_ADMIN,
             searchPatternType: urlPatternType,
@@ -307,6 +314,8 @@ class ColdSourcegraphWebApp extends React.Component<SourcegraphWebAppProps, Sour
                                     isSourcegraphDotCom={window.context.sourcegraphDotComMode}
                                     patternType={this.state.searchPatternType}
                                     togglePatternType={this.togglePatternType}
+                                    onInteractiveQueryChange={this.onInteractiveQueryChange}
+                                    interactiveSearchQuery={this.state.interactiveSearchQuery}
                                 />
                             )}
                         />
@@ -325,6 +334,10 @@ class ColdSourcegraphWebApp extends React.Component<SourcegraphWebAppProps, Sour
 
     private onNavbarQueryChange = (navbarSearchQuery: string) => {
         this.setState({ navbarSearchQuery })
+    }
+
+    private onInteractiveQueryChange = (interactiveSearchQuery: string) => {
+        this.setState({ interactiveSearchQuery })
     }
 
     private togglePatternType = () => {

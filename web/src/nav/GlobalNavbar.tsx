@@ -29,6 +29,7 @@ interface Props
     history: H.History
     location: H.Location
     authenticatedUser: GQL.IUser | null
+    interactiveSearchQuery: string
     navbarSearchQuery: string
     onNavbarQueryChange: (query: string) => void
     isSourcegraphDotCom: boolean
@@ -120,6 +121,7 @@ export class GlobalNavbar extends React.PureComponent<Props, State> {
                                 <SearchNavbarItem
                                     {...this.props}
                                     navbarSearchQuery={this.props.navbarSearchQuery}
+                                    interactiveSearchQuery={this.props.interactiveSearchQuery}
                                     onChange={this.props.onNavbarQueryChange}
                                 />
                             </div>

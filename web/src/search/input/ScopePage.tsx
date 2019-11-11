@@ -1,10 +1,10 @@
 import MapSearchIcon from 'mdi-react/MapSearchIcon'
+import SourceRepositoryIcon from 'mdi-react/SourceRepositoryIcon'
 import * as React from 'react'
 import { RouteComponentProps } from 'react-router'
 import { Link } from 'react-router-dom'
 import { concat, of, Subject, Subscription } from 'rxjs'
 import { catchError, map, switchMap } from 'rxjs/operators'
-import { RepositoryIcon } from '../../../../shared/src/components/icons' // TODO: Switch to mdi icon
 import { RepoLink } from '../../../../shared/src/components/RepoLink'
 import * as GQL from '../../../../shared/src/graphql/schema'
 import { isSettingsValid, SettingsCascadeProps } from '../../../../shared/src/settings/settings'
@@ -15,7 +15,7 @@ import { PageTitle } from '../../components/PageTitle'
 import { SearchScope, Settings } from '../../schema/settings.schema'
 import { eventLogger } from '../../tracking/eventLogger'
 import { fetchReposByQuery } from '../backend'
-import { submitSearch } from '../helpers'
+import { submitSearch, QueryValue } from '../helpers'
 import { QueryInput, queryUpdates } from './QueryInput'
 import { SearchButton } from './SearchButton'
 import { PatternTypeProps } from '..'
@@ -39,7 +39,7 @@ interface ScopePageProps extends RouteComponentProps<{ id: GQL.ID }>, SettingsCa
 }
 
 interface State {
-    query: string
+    queryValue: QueryValue
     repositories?: { name: string; url: string }[]
     searchScopes?: SearchScope[]
     id?: string
@@ -56,7 +56,7 @@ export class ScopePage extends React.Component<ScopePageProps, State> {
     private showMoreClicks = new Subject<void>()
 
     public state: State = {
-        query: '',
+        queryValue: { query: '', cursorPosition: 0 },
         repositories: [],
         value: '',
         first: 50,
@@ -159,7 +159,7 @@ export class ScopePage extends React.Component<ScopePageProps, State> {
                             </div>
                             <QueryInput
                                 {...this.props}
-                                value={this.state.query}
+                                value={this.state.queryValue}
                                 onChange={this.onQueryChange}
                                 prependQueryForSuggestions={this.state.value}
                                 autoFocus={true}
@@ -183,9 +183,9 @@ export class ScopePage extends React.Component<ScopePageProps, State> {
                                             <p>Repositories included in this scope:</p>
                                             <div>
                                                 {this.state.repositories.slice(0, this.state.first).map((repo, i) => (
-                                                    <div key={i} className="scope-page__row">
+                                                    <div key={repo.name + String(i)} className="scope-page__row">
                                                         <Link to={repo.url} className="scope-page__link">
-                                                            <RepositoryIcon className="icon-inline scope-page__link-icon" />
+                                                            <SourceRepositoryIcon className="icon-inline scope-page__link-icon" />
                                                             <RepoLink repoName={repo.name} to={null} />
                                                         </Link>
                                                     </div>
@@ -226,14 +226,14 @@ export class ScopePage extends React.Component<ScopePageProps, State> {
         )
     }
 
-    private onQueryChange = (query: string) => this.setState({ query })
+    private onQueryChange = (queryValue: QueryValue): void => this.setState({ queryValue })
 
     private onSubmit = (event: React.FormEvent<HTMLFormElement>): void => {
         event.preventDefault()
-        submitSearch(this.props.history, `${this.state.value} ${this.state.query}`, 'home', this.props.patternType)
+        submitSearch(this.props.history, `${this.state.value} ${this.state.queryValue}`, 'home', this.props.patternType)
     }
 
-    private onShowMore = (event: React.MouseEvent<HTMLButtonElement>): void => {
+    private onShowMore = (): void => {
         this.showMoreClicks.next()
     }
 }

@@ -1,5 +1,6 @@
 import { Suggestion, SuggestionTypes, FiltersSuggestionTypes } from './input/Suggestion'
 import { assign } from 'lodash/fp'
+import { languageIcons } from '../../../shared/src/components/languageIcons'
 
 export type SearchFilterSuggestions = Record<
     FiltersSuggestionTypes,
@@ -21,63 +22,67 @@ export const searchFilterSuggestions: SearchFilterSuggestions = {
     filters: {
         values: [
             {
-                title: 'repo',
+                value: 'repo',
                 description: 'regex-pattern (include results whose repository path matches)',
             },
             {
-                title: '-repo',
+                value: '-repo',
                 description: 'regex-pattern (exclude results whose repository path matches)',
             },
             {
-                title: 'repogroup',
+                value: 'repogroup',
                 description: 'group-name (include results from the named group)',
             },
             {
-                title: 'repohasfile',
+                value: 'repohasfile',
                 description: 'regex-pattern (include results from repos that contain a matching file)',
             },
             {
-                title: 'repohascommitafter',
+                value: '-repohasfile',
+                description: 'regex-pattern (exclude results from repositories that contain a matching file)',
+            },
+            {
+                value: 'repohascommitafter',
                 description: '"string specifying time frame" (filter out stale repositories without recent commits)',
             },
             {
-                title: 'file',
+                value: 'file',
                 description: 'regex-pattern (include results whose file path matches)',
             },
             {
-                title: '-file',
+                value: '-file',
                 description: 'regex-pattern (exclude results whose file path matches)',
             },
             {
-                title: 'type',
+                value: 'type',
                 description: 'code | diff | commit | symbol',
             },
             {
-                title: 'case',
+                value: 'case',
                 description: 'yes | no (default)',
             },
             {
-                title: 'lang',
+                value: 'lang',
                 description: 'lang-name (include results from the named language)',
             },
             {
-                title: '-lang',
+                value: '-lang',
                 description: 'lang-name (exclude results from the named language)',
             },
             {
-                title: 'fork',
+                value: 'fork',
                 description: 'no | only | yes (default)',
             },
             {
-                title: 'archived',
+                value: 'archived',
                 description: 'no | only | yes (default)',
             },
             {
-                title: 'count',
+                value: 'count',
                 description: 'integer (number of results to fetch)',
             },
             {
-                title: 'timeout',
+                value: 'timeout',
                 description: '"string specifying time duration" (duration before timeout)',
             },
         ].map(
@@ -89,7 +94,7 @@ export const searchFilterSuggestions: SearchFilterSuggestions = {
     },
     type: {
         default: 'code',
-        values: [{ title: 'code' }, { title: 'diff' }, { title: 'commit' }, { title: 'symbol' }].map(
+        values: [{ value: 'code' }, { value: 'diff' }, { value: 'commit' }, { value: 'symbol' }].map(
             assign({
                 type: SuggestionTypes.type,
             })
@@ -97,7 +102,7 @@ export const searchFilterSuggestions: SearchFilterSuggestions = {
     },
     case: {
         default: 'no',
-        values: [{ title: 'yes' }, { title: 'no' }].map(
+        values: [{ value: 'yes' }, { value: 'no' }].map(
             assign({
                 type: SuggestionTypes.case,
             })
@@ -105,7 +110,7 @@ export const searchFilterSuggestions: SearchFilterSuggestions = {
     },
     fork: {
         default: 'yes',
-        values: [{ title: 'no' }, { title: 'only' }, { title: 'yes' }].map(
+        values: [{ value: 'no' }, { value: 'only' }, { value: 'yes' }].map(
             assign({
                 type: SuggestionTypes.fork,
             })
@@ -113,7 +118,7 @@ export const searchFilterSuggestions: SearchFilterSuggestions = {
     },
     archived: {
         default: 'yes',
-        values: [{ title: 'no' }, { title: 'only' }, { title: 'yes' }].map(
+        values: [{ value: 'no' }, { value: 'only' }, { value: 'yes' }].map(
             assign({
                 type: SuggestionTypes.archived,
             })
@@ -122,23 +127,23 @@ export const searchFilterSuggestions: SearchFilterSuggestions = {
     file: {
         values: [
             {
-                title: '(test|spec)',
+                value: '(test|spec)',
                 description: 'Test files',
             },
             {
-                title: '\\.json$',
+                value: '\\.json$',
                 description: 'JSON files',
             },
             {
-                title: '(vendor|node_modules)/',
+                value: '(vendor|node_modules)/',
                 description: 'Vendored code',
             },
             {
-                title: '\\.md$',
+                value: '\\.md$',
                 description: 'Markdown files',
             },
             {
-                title: '\\.(txt|md)$',
+                value: '\\.(txt|md)$',
                 description: 'Text documents',
             },
         ].map(
@@ -148,29 +153,7 @@ export const searchFilterSuggestions: SearchFilterSuggestions = {
         ),
     },
     lang: {
-        values: [
-            { title: 'c' },
-            { title: 'cpp' },
-            { title: 'csharp' },
-            { title: 'css' },
-            { title: 'go' },
-            { title: 'haskell' },
-            { title: 'html' },
-            { title: 'java' },
-            { title: 'javascript' },
-            { title: 'lua' },
-            { title: 'markdown' },
-            { title: 'php' },
-            { title: 'python' },
-            { title: 'r' },
-            { title: 'ruby' },
-            { title: 'swift' },
-            { title: 'typescript' },
-        ].map(
-            assign({
-                type: SuggestionTypes.lang,
-            })
-        ),
+        values: Object.keys(languageIcons).map(value => ({ type: SuggestionTypes.lang, value })),
     },
     repogroup: {
         values: [],
@@ -179,28 +162,28 @@ export const searchFilterSuggestions: SearchFilterSuggestions = {
         values: [],
     },
     repohasfile: {
-        values: [{ title: 'go.mod' }, { title: 'package.json' }, { title: 'Gemfile' }].map(
+        values: [{ value: 'go.mod' }, { value: 'package.json' }, { value: 'Gemfile' }].map(
             assign({
                 type: SuggestionTypes.repohasfile,
             })
         ),
     },
     repohascommitafter: {
-        values: [{ title: '1 week ago' }, { title: '1 month ago' }].map(
+        values: [{ value: '1 week ago' }, { value: '1 month ago' }].map(
             assign({
                 type: SuggestionTypes.repohascommitafter,
             })
         ),
     },
     count: {
-        values: [{ title: '100' }, { title: '1000' }].map(
+        values: [{ value: '100' }, { value: '1000' }].map(
             assign({
                 type: SuggestionTypes.count,
             })
         ),
     },
     timeout: {
-        values: [{ title: '10s' }, { title: '30s' }].map(
+        values: [{ value: '10s' }, { value: '30s' }].map(
             assign({
                 type: SuggestionTypes.timeout,
             })

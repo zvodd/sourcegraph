@@ -1,10 +1,10 @@
 import * as React from 'react'
-import { RepositoryIcon } from '../../../../shared/src/components/icons'
 import * as GQL from '../../../../shared/src/graphql/schema'
 import { LanguageIcon } from '../../../../shared/src/components/languageIcons'
 import { dirname, basename } from '../../util/path'
 import FilterIcon from 'mdi-react/FilterIcon'
 import FileIcon from 'mdi-react/FileIcon'
+import SourceRepositoryIcon from 'mdi-react/SourceRepositoryIcon'
 import { SymbolIcon } from '../../../../shared/src/symbols/SymbolIcon'
 
 export enum SuggestionTypes {
@@ -28,7 +28,12 @@ export enum SuggestionTypes {
 /**
  * Filters which use fuzzy-search for their suggestion values
  */
-export const fuzzySearchFilters = [SuggestionTypes.repo, SuggestionTypes.repogroup]
+export const fuzzySearchFilters = [
+    SuggestionTypes.repo,
+    SuggestionTypes.repogroup,
+    SuggestionTypes.file,
+    SuggestionTypes.repohasfile,
+]
 
 /**
  * dir and symbol are fetched/suggested by the fuzzy-search
@@ -37,18 +42,22 @@ export const fuzzySearchFilters = [SuggestionTypes.repo, SuggestionTypes.repogro
 export type FiltersSuggestionTypes = Exclude<SuggestionTypes, SuggestionTypes.dir | SuggestionTypes.symbol>
 
 export interface Suggestion {
-    title: string
-    description?: string
     type: SuggestionTypes
+    /** The value to be suggested and that will be added to queries */
+    value: string
+    /** Description that will be displayed together with suggestion value */
+    description?: string
+    /** Fuzzy-search suggestions may have a url for redirect when selected */
     url?: string
+    /** Label informing what will happen when suggestion is selected */
     label?: string
-    kind?: GQL.SymbolKind
+    /** For suggestions of type `symbol` */
+    symbolKind?: GQL.SymbolKind
 }
 
 interface SuggestionIconProps {
     suggestion: Suggestion
     className?: string
-    size: number
 }
 
 export function createSuggestion(item: GQL.SearchSuggestion): Suggestion | undefined {
@@ -56,7 +65,7 @@ export function createSuggestion(item: GQL.SearchSuggestion): Suggestion | undef
         case 'Repository': {
             return {
                 type: SuggestionTypes.repo,
-                title: item.name,
+                value: item.name,
                 url: `/${item.name}`,
                 label: 'go to repository',
             }
@@ -71,7 +80,7 @@ export function createSuggestion(item: GQL.SearchSuggestion): Suggestion | undef
             if (item.isDirectory) {
                 return {
                     type: SuggestionTypes.dir,
-                    title: item.name,
+                    value: item.name,
                     description: descriptionParts.join(' — '),
                     url: `${item.url}?suggestion`,
                     label: 'go to dir',
@@ -79,7 +88,7 @@ export function createSuggestion(item: GQL.SearchSuggestion): Suggestion | undef
             }
             return {
                 type: SuggestionTypes.file,
-                title: item.name,
+                value: item.name,
                 description: descriptionParts.join(' — '),
                 url: `${item.url}?suggestion`,
                 label: 'go to file',
@@ -88,8 +97,8 @@ export function createSuggestion(item: GQL.SearchSuggestion): Suggestion | undef
         case 'Symbol': {
             return {
                 type: SuggestionTypes.symbol,
-                kind: item.kind,
-                title: item.name,
+                symbolKind: item.kind,
+                value: item.name,
                 description: `${item.containerName || item.location.resource.path} — ${basename(
                     item.location.resource.repository.name
                 )}`,
@@ -102,21 +111,21 @@ export function createSuggestion(item: GQL.SearchSuggestion): Suggestion | undef
     }
 }
 
-const SuggestionIcon: React.FunctionComponent<SuggestionIconProps> = ({ suggestion, children, ...passThru }) => {
+const SuggestionIcon: React.FunctionComponent<SuggestionIconProps> = ({ suggestion, children, ...props }) => {
     switch (suggestion.type) {
         case SuggestionTypes.filters:
-            return <FilterIcon {...passThru} />
+            return <FilterIcon {...props} />
         case SuggestionTypes.repo:
-            return <RepositoryIcon {...passThru} />
+            return <SourceRepositoryIcon {...props} />
         case SuggestionTypes.file:
-            return <FileIcon {...passThru} />
+            return <FileIcon {...props} />
         case SuggestionTypes.lang:
-            return <LanguageIcon {...passThru} language={suggestion.title} {...passThru} />
+            return <LanguageIcon {...props} language={suggestion.value} {...props} />
         case SuggestionTypes.symbol:
-            if (!suggestion.kind) {
+            if (!suggestion.symbolKind) {
                 return null
             }
-            return <SymbolIcon kind={suggestion.kind} {...passThru} />
+            return <SymbolIcon kind={suggestion.symbolKind} {...props} />
         default:
             return null
     }
@@ -136,8 +145,8 @@ export const SuggestionItem: React.FunctionComponent<SuggestionProps> = ({
     ...props
 }) => (
     <li className={'suggestion' + (isSelected ? ' suggestion--selected' : '')} {...props}>
-        <SuggestionIcon size={20} className="icon-inline suggestion__icon" suggestion={suggestion} />
-        <div className="suggestion__title">{suggestion.title}</div>
+        <SuggestionIcon className="icon-inline suggestion__icon" suggestion={suggestion} />
+        <div className="suggestion__title">{suggestion.value}</div>
         <div className="suggestion__description">{suggestion.description}</div>
         {showUrlLabel && !!suggestion.label && (
             <div className="suggestion__action" hidden={!isSelected}>

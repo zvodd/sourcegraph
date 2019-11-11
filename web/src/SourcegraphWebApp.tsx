@@ -29,7 +29,6 @@ import { ExtensionAreaRoute } from './extensions/extension/ExtensionArea'
 import { ExtensionAreaHeaderNavItem } from './extensions/extension/ExtensionAreaHeader'
 import { ExtensionsAreaRoute } from './extensions/ExtensionsArea'
 import { ExtensionsAreaHeaderActionButton } from './extensions/ExtensionsAreaHeader'
-import { KeyboardShortcutsProps } from './keyboardShortcuts/keyboardShortcuts'
 import { Layout, LayoutProps } from './Layout'
 import { updateUserSessionStores } from './marketing/util'
 import { OrgAreaRoute } from './org/area/OrgArea'
@@ -43,7 +42,6 @@ import { LayoutRouteProps } from './routes'
 import { search } from './search/backend'
 import { SiteAdminAreaRoute } from './site-admin/SiteAdminArea'
 import { SiteAdminSideBarGroups } from './site-admin/SiteAdminSidebar'
-import { ThemePreference } from './theme'
 import { eventLogger } from './tracking/eventLogger'
 import { withActivation } from './tracking/withActivation'
 import { UserAreaRoute } from './user/area/UserArea'
@@ -51,6 +49,9 @@ import { UserAreaHeaderNavItem } from './user/area/UserAreaHeader'
 import { UserSettingsAreaRoute } from './user/settings/UserSettingsArea'
 import { UserSettingsSidebarItems } from './user/settings/UserSettingsSidebar'
 import { parseSearchURLPatternType } from './search'
+import { ThemePreference } from './search/theme'
+import { KeyboardShortcutsProps } from './keyboardShortcuts/keyboardShortcuts'
+import { QueryValue } from './search/helpers'
 
 export interface SourcegraphWebAppProps extends KeyboardShortcutsProps {
     exploreSections: readonly ExploreSectionDescriptor[]
@@ -92,15 +93,11 @@ interface SourcegraphWebAppState extends SettingsCascadeProps {
     systemIsLightTheme: boolean
 
     /**
-     * The current search query in the navbar.
-     */
-    navbarSearchQuery: string
-
-    /**
      * The current search query compiled in elements in the interactive search UI.
      */
     interactiveSearchQuery: string
 
+    navbarSearchQueryValue: QueryValue
     /**
      * The current search pattern type.
      */
@@ -157,8 +154,8 @@ class ColdSourcegraphWebApp extends React.Component<SourcegraphWebAppProps, Sour
         this.state = {
             themePreference: readStoredThemePreference(),
             systemIsLightTheme: !this.darkThemeMediaList.matches,
-            navbarSearchQuery: '',
             interactiveSearchQuery: '',
+            navbarSearchQueryValue: { query: '', cursorPosition: 0 },
             settingsCascade: EMPTY_SETTINGS_CASCADE,
             viewerSubject: SITE_SUBJECT_NO_ADMIN,
             searchPatternType: urlPatternType,
@@ -303,7 +300,7 @@ class ColdSourcegraphWebApp extends React.Component<SourcegraphWebAppProps, Sour
                                     themePreference={this.state.themePreference}
                                     onThemePreferenceChange={this.onThemePreferenceChange}
                                     // Search query
-                                    navbarSearchQuery={this.state.navbarSearchQuery}
+                                    navbarSearchQueryValue={this.state.navbarSearchQueryValue}
                                     onNavbarQueryChange={this.onNavbarQueryChange}
                                     fetchHighlightedFileLines={fetchHighlightedFileLines}
                                     searchRequest={search}
@@ -328,19 +325,19 @@ class ColdSourcegraphWebApp extends React.Component<SourcegraphWebAppProps, Sour
         )
     }
 
-    private onThemePreferenceChange = (themePreference: ThemePreference) => {
+    private onThemePreferenceChange = (themePreference: ThemePreference): void => {
         this.setState({ themePreference })
     }
 
-    private onNavbarQueryChange = (navbarSearchQuery: string) => {
-        this.setState({ navbarSearchQuery })
+    private onNavbarQueryChange = (navbarSearchQueryValue: QueryValue): void => {
+        this.setState({ navbarSearchQueryValue })
     }
 
     private onInteractiveQueryChange = (interactiveSearchQuery: string) => {
         this.setState({ interactiveSearchQuery })
     }
 
-    private togglePatternType = () => {
+    private togglePatternType = (): void => {
         const currentPatternType = this.state.searchPatternType
         this.setState({
             searchPatternType:

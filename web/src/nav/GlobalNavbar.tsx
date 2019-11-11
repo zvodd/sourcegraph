@@ -8,13 +8,15 @@ import * as GQL from '../../../shared/src/graphql/schema'
 import { PlatformContextProps } from '../../../shared/src/platform/context'
 import { SettingsCascadeProps } from '../../../shared/src/settings/settings'
 import { authRequired } from '../auth'
-import { KeyboardShortcutsProps } from '../keyboardShortcuts/keyboardShortcuts'
 import { parseSearchURLQuery, PatternTypeProps } from '../search'
 import { SearchNavbarItem } from '../search/input/SearchNavbarItem'
-import { ThemePreferenceProps, ThemeProps } from '../theme'
 import { EventLoggerProps } from '../tracking/eventLogger'
 import { showDotComMarketing } from '../util/features'
 import { NavLinks } from './NavLinks'
+import { ThemeProps } from '../../../shared/src/theme'
+import { ThemePreferenceProps } from '../search/theme'
+import { KeyboardShortcutsProps } from '../keyboardShortcuts/keyboardShortcuts'
+import { QueryValue } from '../search/helpers'
 
 interface Props
     extends SettingsCascadeProps,
@@ -27,11 +29,11 @@ interface Props
         ActivationProps,
         PatternTypeProps {
     history: H.History
-    location: H.Location
+    location: H.Location<{ query: string }>
     authenticatedUser: GQL.IUser | null
     interactiveSearchQuery: string
-    navbarSearchQuery: string
-    onNavbarQueryChange: (query: string) => void
+    navbarSearchQueryValue: QueryValue
+    onNavbarQueryChange: (queryValue: QueryValue) => void
     isSourcegraphDotCom: boolean
     showCampaigns: boolean
 
@@ -59,10 +61,14 @@ export class GlobalNavbar extends React.PureComponent<Props, State> {
          */
         const query = parseSearchURLQuery(props.location.search || '')
         if (query) {
-            props.onNavbarQueryChange(query)
+            props.onNavbarQueryChange({ query, cursorPosition: query.length })
         } else {
             // If we have no component state, then we may have gotten unmounted during a route change.
-            props.onNavbarQueryChange(props.location.state ? props.location.state.query : '')
+            const query = props.location.state ? props.location.state.query : ''
+            props.onNavbarQueryChange({
+                query,
+                cursorPosition: query.length,
+            })
         }
     }
 
@@ -74,7 +80,7 @@ export class GlobalNavbar extends React.PureComponent<Props, State> {
         if (prevProps.location.search !== this.props.location.search) {
             const query = parseSearchURLQuery(this.props.location.search || '')
             if (query) {
-                this.props.onNavbarQueryChange(query)
+                this.props.onNavbarQueryChange({ query, cursorPosition: query.length })
             }
         }
     }
@@ -120,8 +126,8 @@ export class GlobalNavbar extends React.PureComponent<Props, State> {
                             <div className="global-navbar__search-box-container d-none d-sm-flex">
                                 <SearchNavbarItem
                                     {...this.props}
-                                    navbarSearchQuery={this.props.navbarSearchQuery}
                                     interactiveSearchQuery={this.props.interactiveSearchQuery}
+                                    navbarSearchValue={this.props.navbarSearchQueryValue}
                                     onChange={this.props.onNavbarQueryChange}
                                 />
                             </div>

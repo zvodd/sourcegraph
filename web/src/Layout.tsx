@@ -21,7 +21,6 @@ import { ExtensionsAreaRoute } from './extensions/ExtensionsArea'
 import { ExtensionsAreaHeaderActionButton } from './extensions/ExtensionsAreaHeader'
 import { GlobalAlerts } from './global/GlobalAlerts'
 import { GlobalDebug } from './global/GlobalDebug'
-import { KEYBOARD_SHORTCUT_SHOW_HELP, KeyboardShortcutsProps } from './keyboardShortcuts/keyboardShortcuts'
 import { KeyboardShortcutsHelp } from './keyboardShortcuts/KeyboardShortcutsHelp'
 import { IntegrationsToast } from './marketing/IntegrationsToast'
 import { GlobalNavbar } from './nav/GlobalNavbar'
@@ -35,7 +34,6 @@ import { LayoutRouteProps } from './routes'
 import { parseSearchURLQuery, PatternTypeProps } from './search'
 import { SiteAdminAreaRoute } from './site-admin/SiteAdminArea'
 import { SiteAdminSideBarGroups } from './site-admin/SiteAdminSidebar'
-import { ThemePreferenceProps, ThemeProps } from './theme'
 import { EventLogger, EventLoggerProps } from './tracking/eventLogger'
 import { UserAreaRoute } from './user/area/UserArea'
 import { UserAreaHeaderNavItem } from './user/area/UserAreaHeader'
@@ -43,6 +41,10 @@ import { UserSettingsAreaRoute } from './user/settings/UserSettingsArea'
 import { UserSettingsSidebarItems } from './user/settings/UserSettingsSidebar'
 import { parseBrowserRepoURL } from './util/url'
 import LiteralSearchToast from './marketing/LiteralSearchToast'
+import { ThemeProps } from '../../shared/src/theme'
+import { ThemePreferenceProps } from './search/theme'
+import { KeyboardShortcutsProps, KEYBOARD_SHORTCUT_SHOW_HELP } from './keyboardShortcuts/keyboardShortcuts'
+import { QueryValue } from './search/helpers'
 
 export interface LayoutProps
     extends RouteComponentProps<any>,
@@ -85,13 +87,13 @@ export interface LayoutProps
     telemetryService: EventLogger
 
     // Search
-    navbarSearchQuery: string
-    onNavbarQueryChange: (query: string) => void
     interactiveSearchQuery: string
     onInteractiveQueryChange: (query: string) => void
+    navbarSearchQueryValue: QueryValue
+    onNavbarQueryChange: (queryValue: QueryValue) => void
     fetchHighlightedFileLines: (ctx: FetchFileCtx, force?: boolean) => Observable<string[]>
     searchRequest: (
-        query: string,
+        query: QueryValue['query'],
         version: string,
         patternType: GQL.SearchPatternType,
         { extensionsController }: ExtensionsControllerProps<'services'>

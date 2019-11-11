@@ -43,16 +43,11 @@ paths:
             type: string
         - name: root
           in: query
-          description: The root-relative path of the dump.
+          description: The path to the directory associated with the dump, relative to the repository root.
+          example: cmd/project1
           required: false
           schema:
             type: string
-        - name: skipValidation
-          in: query
-          description: If true, skip JSON schema validation of the input.
-          required: false
-          schema:
-            type: boolean
         - name: blocking
           in: query
           description: If true, block the request until the upload is processed.
@@ -175,6 +170,12 @@ paths:
           required: false
           schema:
             type: string
+        - name: visbleAtTip
+          in: query
+          description: If true, only show dumps visible at tip.
+          required: false
+          schema:
+            type: boolean
         - name: limit
           in: query
           description: The maximum number of dumps to return in one page.
@@ -424,7 +425,7 @@ components:
             $ref: '#/components/schemas/Dump'
         totalCount:
           type: number
-          descrpition: The total number of dumps in this result set.
+          descrpition: The total number of dumps in this set of results.
       required:
         - dumps
         - totalCount
@@ -496,7 +497,7 @@ components:
             $ref: '#/components/schemas/Job'
         totalCount:
           type: number
-          description: The total number of jobs in this result set.
+          description: The total number of jobs in this set of results.
       required:
         - jobs
       additionalProperties: false

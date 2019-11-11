@@ -2,7 +2,7 @@ import * as H from 'history'
 import React, { useCallback } from 'react'
 import { ActivationProps } from '../../../../shared/src/components/activation/Activation'
 import { Form } from '../../components/Form'
-import { submitSearch } from '../helpers'
+import { submitSearch, QueryValue } from '../helpers'
 import { QueryInput } from './QueryInput'
 import { SearchButton } from './SearchButton'
 import { PatternTypeProps } from '..'
@@ -10,9 +10,9 @@ import { PatternTypeProps } from '..'
 interface Props extends ActivationProps, PatternTypeProps {
     location: H.Location
     history: H.History
-    navbarSearchQuery: string
     interactiveSearchQuery: string
-    onChange: (newValue: string) => void
+    navbarSearchValue: QueryValue
+    onChange: (newValue: QueryValue) => void
 }
 
 /**
@@ -20,7 +20,7 @@ interface Props extends ActivationProps, PatternTypeProps {
  */
 export const SearchNavbarItem: React.FunctionComponent<Props> = ({
     interactiveSearchQuery,
-    navbarSearchQuery,
+    navbarSearchValue,
     onChange,
     activation,
     location,
@@ -32,7 +32,7 @@ export const SearchNavbarItem: React.FunctionComponent<Props> = ({
     // capture down-arrow keypresses that the user probably intends to scroll down
     // in the page).
     const autoFocus = location.pathname === '/search'
-    const query = `${interactiveSearchQuery} ${navbarSearchQuery}`
+    const query = `${interactiveSearchQuery} ${navbarSearchValue.query}`
     const onSubmit = useCallback(
         (e: React.FormEvent<HTMLFormElement>): void => {
             e.preventDefault()
@@ -44,7 +44,7 @@ export const SearchNavbarItem: React.FunctionComponent<Props> = ({
     return (
         <Form className="search search--navbar-item d-flex align-items-start" onSubmit={onSubmit}>
             <QueryInput
-                value={navbarSearchQuery}
+                value={navbarSearchValue}
                 onChange={onChange}
                 autoFocus={autoFocus ? 'cursor-at-end' : undefined}
                 hasGlobalQueryBehavior={true}

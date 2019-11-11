@@ -5,6 +5,7 @@ import AlertCircleIcon from 'mdi-react/AlertCircleIcon'
 import FileIcon from 'mdi-react/FileIcon'
 import SearchIcon from 'mdi-react/SearchIcon'
 import TimerSandIcon from 'mdi-react/TimerSandIcon'
+import SourceRepositoryIcon from 'mdi-react/SourceRepositoryIcon'
 import * as React from 'react'
 import { Link } from 'react-router-dom'
 import { Observable, Subject, Subscription } from 'rxjs'
@@ -12,7 +13,6 @@ import { debounceTime, distinctUntilChanged, filter, first, map, skip, skipUntil
 import { parseSearchURLQuery, PatternTypeProps } from '..'
 import { FetchFileCtx } from '../../../../shared/src/components/CodeExcerpt'
 import { FileMatch } from '../../../../shared/src/components/FileMatch'
-import { RepositoryIcon } from '../../../../shared/src/components/icons' // TODO: Switch to mdi icon
 import { displayRepoName } from '../../../../shared/src/components/RepoFileLink'
 import { VirtualList } from '../../../../shared/src/components/VirtualList'
 import { ExtensionsControllerProps } from '../../../../shared/src/extensions/controller'
@@ -26,7 +26,7 @@ import { buildSearchURLQuery } from '../../../../shared/src/util/url'
 import { ModalContainer } from '../../components/ModalContainer'
 import { SearchResult } from '../../components/SearchResult'
 import { SavedSearchModal } from '../../savedSearches/SavedSearchModal'
-import { ThemeProps } from '../../theme'
+import { ThemeProps } from '../../../../shared/src/theme'
 import { eventLogger } from '../../tracking/eventLogger'
 import { shouldDisplayPerformanceWarning } from '../backend'
 import { SearchResultsInfoBar } from './SearchResultsInfoBar'
@@ -76,7 +76,7 @@ interface State {
 export class SearchResultsList extends React.PureComponent<SearchResultsListProps, State> {
     /** Emits when a result was either scrolled into or out of the page */
     private visibleItemChanges = new Subject<{ isVisible: boolean; index: number }>()
-    private nextItemVisibilityChange = (isVisible: boolean, index: number) =>
+    private nextItemVisibilityChange = (isVisible: boolean, index: number): void =>
         this.visibleItemChanges.next({ isVisible, index })
 
     /** Emits with the index of the first visible result on the page */
@@ -84,14 +84,17 @@ export class SearchResultsList extends React.PureComponent<SearchResultsListProp
 
     /** Refrence to the current scrollable list element */
     private scrollableElementRef: HTMLElement | null = null
-    private setScrollableElementRef = (ref: HTMLElement | null) => (this.scrollableElementRef = ref)
+    private setScrollableElementRef = (ref: HTMLElement | null): void => {
+        this.scrollableElementRef = ref
+    }
 
     /** Emits with the <VirtualList> elements */
     private virtualListContainerElements = new Subject<HTMLElement | null>()
-    private nextVirtualListContainerElement = (ref: HTMLElement | null) => this.virtualListContainerElements.next(ref)
+    private nextVirtualListContainerElement = (ref: HTMLElement | null): void =>
+        this.virtualListContainerElements.next(ref)
 
     private jumpToTopClicks = new Subject<void>()
-    private nextJumpToTopClick = () => this.jumpToTopClicks.next()
+    private nextJumpToTopClick = (): void => this.jumpToTopClicks.next()
 
     private componentUpdates = new Subject<SearchResultsListProps>()
 
@@ -511,7 +514,7 @@ export class SearchResultsList extends React.PureComponent<SearchResultsListProp
                     <FileMatch
                         key={'file:' + result.file.url}
                         location={this.props.location}
-                        icon={result.lineMatches && result.lineMatches.length > 0 ? RepositoryIcon : FileIcon}
+                        icon={result.lineMatches && result.lineMatches.length > 0 ? SourceRepositoryIcon : FileIcon}
                         result={result}
                         onSelect={this.logEvent}
                         expanded={false}
@@ -528,7 +531,7 @@ export class SearchResultsList extends React.PureComponent<SearchResultsListProp
     }
 
     /** onBottomHit increments the amount of results to be shown when we have scrolled to the bottom of the list. */
-    private onBottomHit = (limit: number): (() => void) => () =>
+    private onBottomHit = (limit: number) => (): void =>
         this.setState(({ resultsShown }) => ({
             resultsShown: Math.min(limit, resultsShown + 10),
         }))
@@ -566,5 +569,5 @@ export class SearchResultsList extends React.PureComponent<SearchResultsListProp
         })
     }
 
-    private logEvent = () => eventLogger.log('SearchResultClicked')
+    private logEvent = (): void => eventLogger.log('SearchResultClicked')
 }

@@ -10,7 +10,7 @@ import {
     HIGHLIGHTED_FILE_LINES_REQUEST,
     NOOP_SETTINGS_CASCADE,
     OBSERVABLE_SEARCH_REQUEST,
-} from '../testHelpers'
+} from '../../../../shared/src/util/searchTestHelpers'
 import { SearchResults, SearchResultsProps } from './SearchResults'
 import { SearchPatternType } from '../../../../shared/src/graphql/schema'
 
@@ -29,7 +29,7 @@ describe('SearchResults', () => {
         authenticatedUser: null,
         location: history.location,
         history,
-        navbarSearchQuery: '',
+        navbarSearchQueryValue: { query: '', cursorPosition: 0 },
         fetchHighlightedFileLines: HIGHLIGHTED_FILE_LINES_REQUEST,
         searchRequest: OBSERVABLE_SEARCH_REQUEST,
         isLightTheme: true,

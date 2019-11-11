@@ -3,7 +3,7 @@ import CloseIcon from 'mdi-react/CloseIcon'
 import * as React from 'react'
 import { fromEvent, Subscription } from 'rxjs'
 import { filter } from 'rxjs/operators'
-import { FormatListBulletedIcon } from '../../../shared/src/components/icons' // TODO: Switch to mdi icon
+import { FormatListBulletedIcon } from '../../../shared/src/components/icons'
 import { Resizable } from '../../../shared/src/components/Resizable'
 import {
     Spacer,
@@ -136,7 +136,7 @@ export class RepoRevSidebar extends React.PureComponent<Props, State> {
         )
     }
 
-    private onSidebarToggle = () => {
+    private onSidebarToggle = (): void => {
         if (this.state.showSidebar) {
             localStorage.setItem(RepoRevSidebar.HIDDEN_STORAGE_KEY, 'true')
         } else {
@@ -145,7 +145,7 @@ export class RepoRevSidebar extends React.PureComponent<Props, State> {
         this.setState(state => ({ showSidebar: !state.showSidebar }))
     }
 
-    private onSelectTab = (tab: string) => {
+    private onSelectTab = (tab: string): void => {
         if (tab === 'symbols') {
             eventLogger.log('SidebarSymbolsTabSelected')
         } else if (tab === 'files') {

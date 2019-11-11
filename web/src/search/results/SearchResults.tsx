@@ -14,7 +14,7 @@ import { TelemetryProps } from '../../../../shared/src/telemetry/telemetryServic
 import { ErrorLike, isErrorLike } from '../../../../shared/src/util/errors'
 import { PageTitle } from '../../components/PageTitle'
 import { Settings } from '../../schema/settings.schema'
-import { ThemeProps } from '../../theme'
+import { ThemeProps } from '../../../../shared/src/theme'
 import { EventLogger } from '../../tracking/eventLogger'
 import {
     isSearchResults,
@@ -22,6 +22,7 @@ import {
     toggleSearchFilter,
     toggleSearchFilterAndReplaceSampleRepogroup,
     getSearchTypeFromQuery,
+    QueryValue,
 } from '../helpers'
 import { queryTelemetryData } from '../queryTelemetry'
 import { SearchResultsFilterBars, SearchScopeWithOptionalName } from './SearchResultsFilterBars'
@@ -39,7 +40,7 @@ export interface SearchResultsProps
     authenticatedUser: GQL.IUser | null
     location: H.Location
     history: H.History
-    navbarSearchQuery: string
+    navbarSearchQueryValue: QueryValue
     telemetryService: Pick<EventLogger, 'log' | 'logViewEvent'>
     fetchHighlightedFileLines: (ctx: FetchFileCtx, force?: boolean) => Observable<string[]>
     searchRequest: (
@@ -91,7 +92,8 @@ export class SearchResults extends React.Component<SearchResultsProps, SearchRes
         if (!patternType) {
             // If the patternType query parameter does not exist in the URL or is invalid, redirect to a URL which
             // has patternType=regexp appended. This is to ensure old URLs before requiring patternType still work.
-            const newLoc = '/search?' + buildSearchURLQuery(this.props.navbarSearchQuery, GQL.SearchPatternType.regexp)
+            const newLoc =
+                '/search?' + buildSearchURLQuery(this.props.navbarSearchQueryValue.query, GQL.SearchPatternType.regexp)
             window.location.replace(newLoc)
         }
 
@@ -184,16 +186,16 @@ export class SearchResults extends React.Component<SearchResultsProps, SearchRes
         this.subscriptions.unsubscribe()
     }
 
-    private showSaveQueryModal = () => {
+    private showSaveQueryModal = (): void => {
         this.setState({ showSavedQueryModal: true, didSaveQuery: false })
     }
 
-    private onDidCreateSavedQuery = () => {
+    private onDidCreateSavedQuery = (): void => {
         this.props.telemetryService.log('SavedQueryCreated')
         this.setState({ showSavedQueryModal: false, didSaveQuery: true })
     }
 
-    private onModalClose = () => {
+    private onModalClose = (): void => {
         this.props.telemetryService.log('SavedQueriesToggleCreating', { queries: { creating: false } })
         this.setState({ didSaveQuery: false, showSavedQueryModal: false })
     }
@@ -210,7 +212,7 @@ export class SearchResults extends React.Component<SearchResultsProps, SearchRes
             <div className="e2e-search-results search-results d-flex flex-column w-100">
                 <PageTitle key="page-title" title={query} />
                 <SearchResultsFilterBars
-                    navbarSearchQuery={this.props.navbarSearchQuery}
+                    navbarSearchQuery={this.props.navbarSearchQueryValue.query}
                     results={this.state.resultsOrError}
                     filters={filters}
                     extensionFilters={extensionFilters}
@@ -220,7 +222,7 @@ export class SearchResults extends React.Component<SearchResultsProps, SearchRes
                     calculateShowMoreResultsCount={this.calculateCount}
                     onInteractiveQueryChange={this.props.onInteractiveQueryChange}
                 />
-                <SearchResultTypeTabs {...this.props} query={this.props.navbarSearchQuery} />
+                <SearchResultTypeTabs {...this.props} query={this.props.navbarSearchQueryValue.query} />
                 <SearchResultsList
                     {...this.props}
                     resultsOrError={this.state.resultsOrError}
@@ -273,7 +275,7 @@ export class SearchResults extends React.Component<SearchResultsProps, SearchRes
 
         return Array.from(filters.values())
     }
-    private showMoreResults = () => {
+    private showMoreResults = (): void => {
         // Requery with an increased max result count.
         const params = new URLSearchParams(this.props.location.search)
         let query = params.get('q') || ''
@@ -302,7 +304,7 @@ export class SearchResults extends React.Component<SearchResultsProps, SearchRes
         return Math.max(results.resultCount * 2 || 0, 1000)
     }
 
-    private onExpandAllResultsToggle = () => {
+    private onExpandAllResultsToggle = (): void => {
         this.setState(
             state => ({ allExpanded: !state.allExpanded }),
             () => {
@@ -311,14 +313,14 @@ export class SearchResults extends React.Component<SearchResultsProps, SearchRes
         )
     }
 
-    private onDynamicFilterClicked = (value: string) => {
+    private onDynamicFilterClicked = (value: string): void => {
         this.props.telemetryService.log('DynamicFilterClicked', {
             search_filter: { value },
         })
 
         const newQuery = this.props.isSourcegraphDotCom
-            ? toggleSearchFilterAndReplaceSampleRepogroup(this.props.navbarSearchQuery, value)
-            : toggleSearchFilter(this.props.navbarSearchQuery, value)
+            ? toggleSearchFilterAndReplaceSampleRepogroup(this.props.navbarSearchQueryValue.query, value)
+            : toggleSearchFilter(this.props.navbarSearchQueryValue.query, value)
 
         submitSearch(this.props.history, newQuery, 'filter', this.props.patternType)
     }

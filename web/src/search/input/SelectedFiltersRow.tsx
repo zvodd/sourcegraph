@@ -11,7 +11,7 @@ import { SuggestionTypes } from './Suggestion'
 // Render selected filters
 interface Props {
     selectedFilters: SuggestionTypes[]
-    onInteractiveQueryChange: (query: string) => void
+    onRepoFilterQueryChange: (query: string) => void
     history: H.History
 }
 
@@ -22,7 +22,7 @@ export const SelectedFiltersRow: React.FunctionComponent<Props> = (props: Props)
                 history={props.history}
                 filter={filter}
                 key={filter}
-                onInteractiveQueryChange={props.onInteractiveQueryChange}
+                onRepoFilterQueryChange={props.onRepoFilterQueryChange}
             />
         ))}
     </div>

@@ -3,7 +3,7 @@ import { isEqual } from 'lodash'
 import * as React from 'react'
 import { concat, Observable, Subject, Subscription } from 'rxjs'
 import { catchError, distinctUntilChanged, filter, map, startWith, switchMap, tap } from 'rxjs/operators'
-import { parseSearchURLQuery, parseSearchURLPatternType, PatternTypeProps } from '..'
+import { parseSearchURLQuery, parseSearchURLPatternType, PatternTypeProps, parseSearchURLRepoFilters } from '..'
 import { Contributions, Evaluated } from '../../../../shared/src/api/protocol'
 import { FetchFileCtx } from '../../../../shared/src/components/CodeExcerpt'
 import { ExtensionsControllerProps } from '../../../../shared/src/extensions/controller'
@@ -51,7 +51,7 @@ export interface SearchResultsProps
     ) => Observable<GQL.ISearchResults | ErrorLike>
     isSourcegraphDotCom: boolean
     deployType: DeployType
-    onInteractiveQueryChange: (query: string) => void
+    onRepoFilterQueryChange: (query: string) => void
 }
 
 interface SearchResultsState {
@@ -221,7 +221,7 @@ export class SearchResults extends React.Component<SearchResultsProps, SearchRes
                     onFilterClick={this.onDynamicFilterClicked}
                     onShowMoreResultsClick={this.showMoreResults}
                     calculateShowMoreResultsCount={this.calculateCount}
-                    onInteractiveQueryChange={this.props.onInteractiveQueryChange}
+                    onRepoFilterQueryChange={this.props.onRepoFilterQueryChange}
                 />
                 <SearchResultTypeTabs {...this.props} query={this.props.navbarSearchQueryValue.query} />
                 <SearchResultsList

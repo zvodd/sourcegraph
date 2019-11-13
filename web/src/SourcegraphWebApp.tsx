@@ -6,7 +6,7 @@ import * as React from 'react'
 import { hot } from 'react-hot-loader/root'
 import { Route } from 'react-router'
 import { BrowserRouter } from 'react-router-dom'
-import { combineLatest, from, fromEventPattern, Subscription } from 'rxjs'
+import { combineLatest, from, fromEventPattern, Subscription, of } from 'rxjs'
 import { startWith } from 'rxjs/operators'
 import { setLinkComponent } from '../../shared/src/components/Link'
 import {
@@ -97,6 +97,8 @@ interface SourcegraphWebAppState extends SettingsCascadeProps {
      */
     interactiveSearchQuery: string
 
+    interactiveRepoFilterValue: string
+
     navbarSearchQueryValue: QueryValue
     /**
      * The current search pattern type.
@@ -159,6 +161,7 @@ class ColdSourcegraphWebApp extends React.Component<SourcegraphWebAppProps, Sour
             settingsCascade: EMPTY_SETTINGS_CASCADE,
             viewerSubject: SITE_SUBJECT_NO_ADMIN,
             searchPatternType: urlPatternType,
+            interactiveRepoFilterValue: '',
         }
     }
 
@@ -311,8 +314,9 @@ class ColdSourcegraphWebApp extends React.Component<SourcegraphWebAppProps, Sour
                                     isSourcegraphDotCom={window.context.sourcegraphDotComMode}
                                     patternType={this.state.searchPatternType}
                                     togglePatternType={this.togglePatternType}
-                                    onInteractiveQueryChange={this.onInteractiveQueryChange}
+                                    onRepoFilterQueryChange={this.onRepoFilterChange}
                                     interactiveSearchQuery={this.state.interactiveSearchQuery}
+                                    interactiveRepoFilterValue={this.state.interactiveRepoFilterValue}
                                 />
                             )}
                         />
@@ -333,8 +337,8 @@ class ColdSourcegraphWebApp extends React.Component<SourcegraphWebAppProps, Sour
         this.setState({ navbarSearchQueryValue })
     }
 
-    private onInteractiveQueryChange = (interactiveSearchQuery: string) => {
-        this.setState({ interactiveSearchQuery })
+    private onRepoFilterChange = (value: string): void => {
+        this.setState({ interactiveRepoFilterValue: value })
     }
 
     private togglePatternType = (): void => {

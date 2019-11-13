@@ -14,7 +14,7 @@ interface State {
 }
 
 interface Props extends ThemeProps {
-    onInteractiveQueryChange: (query: string) => void
+    onRepoFilterQueryChange: (query: string) => void
     history: H.History
 }
 
@@ -27,7 +27,7 @@ export default class InteractiveFiltersRows extends React.Component<Props, State
         }
     }
 
-    private updateSelectedFilters = (field: SuggestionTypes) => {
+    private updateSelectedFilters = (field: SuggestionTypes): void => {
         this.setState(state => ({
             selectedFilters: [...state.selectedFilters, field],
         }))
@@ -39,7 +39,7 @@ export default class InteractiveFiltersRows extends React.Component<Props, State
                 <SelectedFiltersRow
                     history={this.props.history}
                     selectedFilters={this.state.selectedFilters}
-                    onInteractiveQueryChange={this.props.onInteractiveQueryChange}
+                    onRepoFilterQueryChange={this.props.onRepoFilterQueryChange}
                 />
                 <InteractiveFilterRow onSelectFilters={this.updateSelectedFilters} />
             </div>

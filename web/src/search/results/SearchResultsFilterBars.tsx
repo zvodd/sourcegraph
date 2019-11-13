@@ -22,7 +22,7 @@ export const SearchResultsFilterBars: React.FunctionComponent<{
     onFilterClick: (value: string) => void
     onShowMoreResultsClick: (value: string) => void
     calculateShowMoreResultsCount: () => number
-    onInteractiveQueryChange: (value: string) => void
+    onRepoFilterQueryChange: (value: string) => void
     history: H.History
 }> = ({
     navbarSearchQuery,
@@ -33,7 +33,7 @@ export const SearchResultsFilterBars: React.FunctionComponent<{
     onFilterClick,
     onShowMoreResultsClick,
     calculateShowMoreResultsCount,
-    onInteractiveQueryChange,
+    onRepoFilterQueryChange,
     history,
 }) => (
     <div className="search-results-filter-bars">
@@ -104,7 +104,7 @@ export const SearchResultsFilterBars: React.FunctionComponent<{
         <InteractiveFiltersRows
             history={history}
             isLightTheme={true}
-            onInteractiveQueryChange={onInteractiveQueryChange}
+            onRepoFilterQueryChange={onRepoFilterQueryChange}
         />
     </div>
 )

@@ -86,9 +86,12 @@ export interface LayoutProps
 
     telemetryService: EventLogger
 
-    // Search
+    // Interactive search
     interactiveSearchQuery: string
-    onInteractiveQueryChange: (query: string) => void
+    onRepoFilterQueryChange: (query: string) => void
+    interactiveRepoFilterValue: string
+
+    // Search
     navbarSearchQueryValue: QueryValue
     onNavbarQueryChange: (queryValue: QueryValue) => void
     fetchHighlightedFileLines: (ctx: FetchFileCtx, force?: boolean) => Observable<string[]>

@@ -544,6 +544,13 @@ export function withWorkspaceRootInputRevision(
  */
 export function buildSearchURLQuery(query: string, patternType: SearchPatternType): string {
     const searchParams = new URLSearchParams()
+
+    const repoFilterAndNewQuery = parseRepoFiltersFromQuery(query)
+    if (repoFilterAndNewQuery) {
+        searchParams.set('repo', repoFilterAndNewQuery[0])
+        query = repoFilterAndNewQuery[1]
+    }
+
     const patternTypeInQuery = parsePatternTypeFromQuery(query)
     if (patternTypeInQuery) {
         const patternTypeRegexp = /\bpatterntype:(?<type>regexp|literal)\b/i
@@ -566,6 +573,17 @@ function parsePatternTypeFromQuery(query: string): SearchPatternType | undefined
     const matches = query.match(patternTypeRegexp)
     if (matches && matches.groups && matches.groups.type) {
         return matches.groups.type as SearchPatternType
+    }
+
+    return undefined
+}
+
+function parseRepoFiltersFromQuery(query: string): [string, string] | undefined {
+    const repoRegexp = /\brepo:(\S*)\b/i
+    const matches = query.match(repoRegexp)
+    if (matches && matches[1]) {
+        const newQuery = query.replace(repoRegexp, '')
+        return [matches[1], newQuery]
     }
 
     return undefined

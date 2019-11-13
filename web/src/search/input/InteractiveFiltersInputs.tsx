@@ -24,10 +24,36 @@ import Downshift from 'downshift'
  * Each FilterInput represents the value for a particular search filter.
  */
 
+const fetchFuzzySuggestions = (
+    query: string,
+    filterBeforeCursor: SuggestionTypes,
+    cursorPosition: QueryValue['cursorPosition']
+): ObservableInput<SuggestionsStateUpdate> =>
+    fetchSuggestions(query).pipe(
+        map(createSuggestion),
+        filter(isDefined),
+        filter(suggestion => {
+            switch (filterBeforeCursor) {
+                case SuggestionTypes.repo:
+                    return suggestion.type === SuggestionTypes.repo
+                default:
+                    return true
+            }
+        }),
+        toArray(),
+        map(suggestions => ({
+            suggestions: {
+                cursorPosition,
+                values: suggestions,
+            },
+        })),
+        catchError(() => [{ suggestions: { cursorPosition: 0, values: [] } }])
+    )
+
 interface Props {
     history: H.History
     filter: SuggestionTypes
-    onInteractiveQueryChange: (query: string) => void
+    onRepoFilterQueryChange: (query: string) => void
 }
 
 interface State {
@@ -163,14 +189,14 @@ export default class InteractiveFilterInputs extends React.Component<Props, Stat
         )
     }
 
-    private onSubmitInput = () => {
-        this.props.onInteractiveQueryChange(`${this.props.filter}:${this.state.value}`)
+    private onSubmitInput = (): void => {
+        this.props.onRepoFilterQueryChange(`${this.props.filter}:${this.state.value}`)
         this.setState(state => ({
             editable: !state.editable,
         }))
     }
 
-    private updateValue = (e: React.ChangeEvent<HTMLInputElement>) => {
+    private updateValue = (e: React.ChangeEvent<HTMLInputElement>): void => {
         this.inputUpdates.next({
             query: `${this.props.filter}:${e.currentTarget.value}`,
             cursorPosition: e.currentTarget.selectionStart || 0,
@@ -183,65 +209,19 @@ export default class InteractiveFilterInputs extends React.Component<Props, Stat
         this.setState(state => {
             if (!suggestion) {
                 return {
+                    ...state,
                     suggestions: hiddenSuggestions,
                 }
             }
             const { cursorPosition } = state.suggestions
-            const { query: newQuery, cursorPosition: newCursorPosition } = insertSuggestionInQuery(
-                state.value,
-                suggestion,
-                cursorPosition
-            )
-
+            const { query: newQuery } = insertSuggestionInQuery(state.value, suggestion, cursorPosition)
+            // We always want to just add the value to the new query, and reset suggestions.
             return {
                 value: newQuery,
                 suggestions: hiddenSuggestions,
             }
-            // if (
-            //     isFuzzyWordSearch({ query: state.value, cursorPosition: state.suggestions.cursorPosition }) &&
-            //     suggestion.url
-            // ) {
-            //     this.props.history.push(suggestion.url)
-            //     return { suggestions: hiddenSuggestions }
-            // }
         })
     }
 
     private downshiftItemToString = (suggestion?: Suggestion): string => (suggestion ? suggestion.value : '')
 }
-
-// /**
-//  * Makes any modification to the query which will only be used
-//  * for fetching suggesitons. It does not mutate the query in state.
-//  */
-// const formatQueryForFuzzySearch = (query: string): string => {
-//     // Use search results from `file` filter when suggesting for `repohasfile` filter.
-//     // Also requires the filter type to be in ./Suggestion.tsx->fuzzySearchFilters
-//     return query.replace(SuggestionTypes.repohasfile, 'file')
-// }
-
-const fetchFuzzySuggestions = (
-    query: string,
-    filterBeforeCursor: SuggestionTypes,
-    cursorPosition: QueryValue['cursorPosition']
-): ObservableInput<SuggestionsStateUpdate> =>
-    fetchSuggestions(query).pipe(
-        map(createSuggestion),
-        filter(isDefined),
-        filter(suggestion => {
-            switch (filterBeforeCursor) {
-                case SuggestionTypes.repo:
-                    return suggestion.type === SuggestionTypes.repo
-                default:
-                    return true
-            }
-        }),
-        toArray(),
-        map(suggestions => ({
-            suggestions: {
-                cursorPosition,
-                values: suggestions,
-            },
-        })),
-        catchError(() => [{ suggestions: { cursorPosition: 0, values: [] } }])
-    )

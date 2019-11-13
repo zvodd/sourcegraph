@@ -10,7 +10,7 @@ import { PatternTypeProps } from '..'
 interface Props extends ActivationProps, PatternTypeProps {
     location: H.Location
     history: H.History
-    interactiveSearchQuery: string
+    interactiveRepoFilterValue: string
     navbarSearchValue: QueryValue
     onChange: (newValue: QueryValue) => void
 }
@@ -19,7 +19,7 @@ interface Props extends ActivationProps, PatternTypeProps {
  * The search item in the navbar
  */
 export const SearchNavbarItem: React.FunctionComponent<Props> = ({
-    interactiveSearchQuery,
+    interactiveRepoFilterValue,
     navbarSearchValue,
     onChange,
     activation,
@@ -32,7 +32,9 @@ export const SearchNavbarItem: React.FunctionComponent<Props> = ({
     // capture down-arrow keypresses that the user probably intends to scroll down
     // in the page).
     const autoFocus = location.pathname === '/search'
-    const query = `${interactiveSearchQuery} ${navbarSearchValue.query}`
+    const query = interactiveRepoFilterValue
+        ? `${interactiveRepoFilterValue} ${navbarSearchValue.query}`
+        : navbarSearchValue.query
     const onSubmit = useCallback(
         (e: React.FormEvent<HTMLFormElement>): void => {
             e.preventDefault()

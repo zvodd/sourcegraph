@@ -32,6 +32,7 @@ interface Props
     location: H.Location<{ query: string }>
     authenticatedUser: GQL.IUser | null
     interactiveSearchQuery: string
+    interactiveRepoFilterValue: string
     navbarSearchQueryValue: QueryValue
     onNavbarQueryChange: (queryValue: QueryValue) => void
     isSourcegraphDotCom: boolean
@@ -126,7 +127,7 @@ export class GlobalNavbar extends React.PureComponent<Props, State> {
                             <div className="global-navbar__search-box-container d-none d-sm-flex">
                                 <SearchNavbarItem
                                     {...this.props}
-                                    interactiveSearchQuery={this.props.interactiveSearchQuery}
+                                    interactiveRepoFilterValue={this.props.interactiveRepoFilterValue}
                                     navbarSearchValue={this.props.navbarSearchQueryValue}
                                     onChange={this.props.onNavbarQueryChange}
                                 />

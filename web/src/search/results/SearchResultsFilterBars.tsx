@@ -1,3 +1,4 @@
+import * as H from 'history'
 import React from 'react'
 import { SearchFilters } from '../../../../shared/src/api/protocol'
 import * as GQL from '../../../../shared/src/graphql/schema'
@@ -22,6 +23,7 @@ export const SearchResultsFilterBars: React.FunctionComponent<{
     onShowMoreResultsClick: (value: string) => void
     calculateShowMoreResultsCount: () => number
     onInteractiveQueryChange: (value: string) => void
+    history: H.History
 }> = ({
     navbarSearchQuery,
     results,
@@ -32,6 +34,7 @@ export const SearchResultsFilterBars: React.FunctionComponent<{
     onShowMoreResultsClick,
     calculateShowMoreResultsCount,
     onInteractiveQueryChange,
+    history,
 }) => (
     <div className="search-results-filter-bars">
         {((isSearchResults(results) && filters.length > 0) || extensionFilters) && (
@@ -98,6 +101,10 @@ export const SearchResultsFilterBars: React.FunctionComponent<{
             quickLinks={quickLinks}
             className="search-results-filter-bars__row search-results-filter-bars__quicklinks"
         />
-        <InteractiveFiltersRows isLightTheme={true} onInteractiveQueryChange={onInteractiveQueryChange} />
+        <InteractiveFiltersRows
+            history={history}
+            isLightTheme={true}
+            onInteractiveQueryChange={onInteractiveQueryChange}
+        />
     </div>
 )

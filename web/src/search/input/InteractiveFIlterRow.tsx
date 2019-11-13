@@ -1,14 +1,14 @@
 import * as React from 'react'
-import { FieldOptions } from './AddFilterDropdown'
 import AddFilterButton from './AddFilterButton'
+import { SuggestionTypes } from './Suggestion'
 
 interface Props {
-    onSelectFilters: (field: FieldOptions) => void
+    onSelectFilters: (field: SuggestionTypes) => void
 }
 export const InteractiveFilterRow: React.FunctionComponent<Props> = (props: Props) => (
     <div>
-        {Object.values(FieldOptions).map(option => (
-            <AddFilterButton onClicked={props.onSelectFilters} filterType={option} key={option} />
+        {Object.values([SuggestionTypes['repo']]).map(filterType => (
+            <AddFilterButton onClicked={props.onSelectFilters} filterType={filterType} key={filterType} />
         ))}
     </div>
 )

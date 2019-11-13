@@ -75,7 +75,7 @@ interface Props extends PatternTypeProps {
  * The search suggestions and cursor position of where the last character was inserted.
  * Cursor position is used to correctly insert the suggestion when it's selected.
  */
-interface ComponentSuggestions {
+export interface ComponentSuggestions {
     values: Suggestion[]
     cursorPosition: number
 }
@@ -85,11 +85,11 @@ interface State {
     suggestions: ComponentSuggestions
 }
 
-interface SuggestionsStateUpdate {
+export interface SuggestionsStateUpdate {
     suggestions: ComponentSuggestions
 }
 
-const hiddenSuggestions: State['suggestions'] = { values: [], cursorPosition: 0 }
+export const hiddenSuggestions: State['suggestions'] = { values: [], cursorPosition: 0 }
 
 export class QueryInput extends React.Component<Props, State> {
     private componentUpdates = new Subject<Props>()
@@ -266,6 +266,7 @@ export class QueryInput extends React.Component<Props, State> {
 
     public render(): JSX.Element | null {
         const showSuggestions = this.state.suggestions.values.length > 0
+        console.log('SHOW SUGGESTIONS', showSuggestions)
         // If last typed word is not a filter type,
         // suggestions should show url label and redirect on select.
         const showUrlLabel = isFuzzyWordSearch({

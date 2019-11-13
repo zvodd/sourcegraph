@@ -1,9 +1,9 @@
 import * as React from 'react'
-import { FieldOptions } from './AddFilterDropdown'
+import { SuggestionTypes } from './Suggestion'
 
 interface Props {
-    filterType: FieldOptions
-    onClicked: (field: FieldOptions) => void
+    filterType: SuggestionTypes
+    onClicked: (field: SuggestionTypes) => void
 }
 export default class AddFilterButton extends React.PureComponent<Props> {
     constructor(props: Props) {

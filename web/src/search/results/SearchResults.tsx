@@ -212,6 +212,7 @@ export class SearchResults extends React.Component<SearchResultsProps, SearchRes
             <div className="e2e-search-results search-results d-flex flex-column w-100">
                 <PageTitle key="page-title" title={query} />
                 <SearchResultsFilterBars
+                    history={this.props.history}
                     navbarSearchQuery={this.props.navbarSearchQueryValue.query}
                     results={this.state.resultsOrError}
                     filters={filters}

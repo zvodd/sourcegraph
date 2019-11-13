@@ -1,19 +1,21 @@
+import * as H from 'history'
 import * as React from 'react'
 import { InteractiveFilterRow } from './InteractiveFIlterRow'
 import { SelectedFiltersRow } from './SelectedFiltersRow'
-import { FieldOptions } from './AddFilterDropdown'
-import { ThemeProps } from '../../theme'
+import { SuggestionTypes } from './Suggestion'
+import { ThemeProps } from '../../../../shared/src/theme'
 /**
  * InteractiveFiltersRow displays buttons to add filters to the query in interactive mode.
  *
  */
 
 interface State {
-    selectedFilters: FieldOptions[]
+    selectedFilters: SuggestionTypes[]
 }
 
 interface Props extends ThemeProps {
     onInteractiveQueryChange: (query: string) => void
+    history: H.History
 }
 
 export default class InteractiveFiltersRows extends React.Component<Props, State> {
@@ -25,7 +27,7 @@ export default class InteractiveFiltersRows extends React.Component<Props, State
         }
     }
 
-    private updateSelectedFilters = (field: FieldOptions) => {
+    private updateSelectedFilters = (field: SuggestionTypes) => {
         this.setState(state => ({
             selectedFilters: [...state.selectedFilters, field],
         }))
@@ -35,6 +37,7 @@ export default class InteractiveFiltersRows extends React.Component<Props, State
         return (
             <div>
                 <SelectedFiltersRow
+                    history={this.props.history}
                     selectedFilters={this.state.selectedFilters}
                     onInteractiveQueryChange={this.props.onInteractiveQueryChange}
                 />

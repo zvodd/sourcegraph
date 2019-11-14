@@ -1,6 +1,6 @@
 import { LoadingSpinner } from '@sourcegraph/react-loading-spinner'
 import * as H from 'history'
-import { uniq, upperFirst } from 'lodash'
+import { uniq } from 'lodash'
 import * as React from 'react'
 import { combineLatest, merge, Observable, of, Subject, Subscription } from 'rxjs'
 import {
@@ -23,6 +23,7 @@ import { asError, ErrorLike, isErrorLike } from '../../../shared/src/util/errors
 import { pluralize } from '../../../shared/src/util/strings'
 import { Form } from './Form'
 import { RadioButtons } from './RadioButtons'
+import { ErrorMessage } from './alerts'
 
 /** Checks if the passed value satisfies the GraphQL Node interface */
 const hasID = (obj: any): obj is { id: GQL.ID } => obj && typeof obj.id === 'string'
@@ -42,7 +43,12 @@ interface FilterState {}
 
 class FilteredConnectionFilterControl extends React.PureComponent<FilterProps, FilterState> {
     public render(): React.ReactFragment {
-        return <RadioButtons nodes={this.props.filters} selected={this.props.value} onChange={this.onChange} />
+        return (
+            <div className="filtered-connection-filter-control">
+                <RadioButtons nodes={this.props.filters} selected={this.props.value} onChange={this.onChange} />
+                {this.props.children}
+            </div>
+        )
     }
 
     private onChange: React.ChangeEventHandler<HTMLInputElement> = e => {
@@ -109,6 +115,9 @@ interface ConnectionPropsCommon<N, NP = {}> extends ConnectionDisplayProps {
 
     /** Props to pass to each nodeComponent in addition to `{ node: N }`. */
     nodeComponentProps?: NP
+
+    /** An element rendered as a sibling of the filters. */
+    additionalFilterElement?: React.ReactElement
 }
 
 /** State related to the ConnectionNodes component. */
@@ -291,8 +300,8 @@ interface FilteredConnectionDisplayProps extends ConnectionDisplayProps {
     /** Autofocuses the filter input field. */
     autoFocus?: boolean
 
-    /** Whether we will update the URL query string to reflect the filter and pagination state or not. */
-    shouldUpdateURLQuery?: boolean
+    /** Whether we will use the URL query string to reflect the filter and pagination state or not. */
+    useURLQuery?: boolean
 
     /**
      * Filters to display next to the filter input field.
@@ -411,7 +420,7 @@ export class FilteredConnection<N, NP = {}, C extends Connection<N> = Connection
 > {
     public static defaultProps: Partial<FilteredConnectionProps<any, any>> = {
         defaultFirst: 20,
-        shouldUpdateURLQuery: true,
+        useURLQuery: true,
     }
 
     private queryInputChanges = new Subject<string>()
@@ -441,10 +450,10 @@ export class FilteredConnection<N, NP = {}, C extends Connection<N> = Connection
 
         this.state = {
             loading: true,
-            query: (!this.props.hideSearch && q.get(QUERY_KEY)) || '',
-            activeFilter: getFilterFromURL(q, this.props.filters),
-            first: parseQueryInt(q, 'first') || this.props.defaultFirst!,
-            visible: parseQueryInt(q, 'visible') || 0,
+            query: (!this.props.hideSearch && this.props.useURLQuery && q.get(QUERY_KEY)) || '',
+            activeFilter: (this.props.useURLQuery && getFilterFromURL(q, this.props.filters)) || undefined,
+            first: (this.props.useURLQuery && parseQueryInt(q, 'first')) || this.props.defaultFirst!,
+            visible: (this.props.useURLQuery && parseQueryInt(q, 'visible')) || 0,
         }
     }
 
@@ -488,7 +497,9 @@ export class FilteredConnection<N, NP = {}, C extends Connection<N> = Connection
             combineLatest([
                 queryChanges,
                 activeFilterChanges,
-                refreshRequests.pipe(startWith<{ forceRefresh: boolean }>({ forceRefresh: false })),
+                refreshRequests.pipe(
+                    startWith<{ forceRefresh: boolean }>({ forceRefresh: false })
+                ),
             ])
                 .pipe(
                     // Track whether the query or the active filter changed
@@ -581,7 +592,7 @@ export class FilteredConnection<N, NP = {}, C extends Connection<N> = Connection
                 )
                 .subscribe(
                     ({ connectionOrError, previousPage, ...rest }) => {
-                        if (this.props.shouldUpdateURLQuery) {
+                        if (this.props.useURLQuery) {
                             this.props.history.replace({
                                 search: this.urlQuery({ visible: previousPage.length }),
                                 hash: this.props.location.hash,
@@ -737,16 +748,17 @@ export class FilteredConnection<N, NP = {}, C extends Connection<N> = Connection
                                 filters={this.props.filters}
                                 onDidSelectFilter={this.onDidSelectFilter}
                                 value={this.state.activeFilter.id}
-                            />
+                            >
+                                {this.props.additionalFilterElement}
+                            </FilteredConnectionFilterControl>
                         )}
                     </Form>
                 )}
                 {errors.length > 0 && (
                     <div className="alert alert-danger filtered-connection__error">
-                        {errors.map((m, i) => (
+                        {errors.map((error, i) => (
                             <React.Fragment key={i}>
-                                {upperFirst(m)}
-                                <br />
+                                <ErrorMessage error={error} />
                             </React.Fragment>
                         ))}
                     </div>

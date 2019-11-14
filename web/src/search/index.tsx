@@ -7,9 +7,13 @@ import { SearchPatternType } from '../../../shared/src/graphql/schema'
  */
 export function parseSearchURLQuery(query: string): string | undefined {
     const searchParams = new URLSearchParams(query)
-    let repoFilters = searchParams.get('repo')
-    repoFilters = repoFilters ? `repo:${repoFilters}` : ''
-    return [searchParams.get('q'), repoFilters].join(' ') || undefined
+    const rawQuery = searchParams.get('q')
+    let repoQuery = searchParams.get('repo')
+    repoQuery = repoQuery ? `repo:${repoQuery}` : repoQuery
+    let params = [rawQuery, repoQuery]
+    params = params.filter(partialQuery => !!partialQuery)
+
+    return params.join(' ') || undefined
 }
 
 /**

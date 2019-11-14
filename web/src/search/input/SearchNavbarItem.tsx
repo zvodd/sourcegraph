@@ -2,7 +2,7 @@ import * as H from 'history'
 import React, { useCallback } from 'react'
 import { ActivationProps } from '../../../../shared/src/components/activation/Activation'
 import { Form } from '../../components/Form'
-import { submitSearch, QueryValue } from '../helpers'
+import { submitSearch, QueryState } from '../helpers'
 import { QueryInput } from './QueryInput'
 import { SearchButton } from './SearchButton'
 import { PatternTypeProps } from '..'
@@ -11,8 +11,8 @@ interface Props extends ActivationProps, PatternTypeProps {
     location: H.Location
     history: H.History
     interactiveRepoFilterValue: string
-    navbarSearchValue: QueryValue
-    onChange: (newValue: QueryValue) => void
+    navbarSearchState: QueryState
+    onChange: (newValue: QueryState) => void
 }
 
 /**
@@ -20,7 +20,7 @@ interface Props extends ActivationProps, PatternTypeProps {
  */
 export const SearchNavbarItem: React.FunctionComponent<Props> = ({
     interactiveRepoFilterValue,
-    navbarSearchValue,
+    navbarSearchState,
     onChange,
     activation,
     location,
@@ -33,20 +33,20 @@ export const SearchNavbarItem: React.FunctionComponent<Props> = ({
     // in the page).
     const autoFocus = location.pathname === '/search'
     const query = interactiveRepoFilterValue
-        ? `${interactiveRepoFilterValue} ${navbarSearchValue.query}`
-        : navbarSearchValue.query
+        ? `${interactiveRepoFilterValue} ${navbarSearchState.query}`
+        : navbarSearchState.query
     const onSubmit = useCallback(
         (e: React.FormEvent<HTMLFormElement>): void => {
             e.preventDefault()
-            submitSearch(history, query, 'nav', patternType, activation)
+            submitSearch(history, navbarSearchState.query, 'nav', patternType, activation)
         },
-        [history, query, patternType, activation]
+        [history, navbarSearchState.query, patternType, activation]
     )
 
     return (
         <Form className="search search--navbar-item d-flex align-items-start" onSubmit={onSubmit}>
             <QueryInput
-                value={navbarSearchValue}
+                value={navbarSearchState}
                 onChange={onChange}
                 autoFocus={autoFocus ? 'cursor-at-end' : undefined}
                 hasGlobalQueryBehavior={true}

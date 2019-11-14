@@ -10,85 +10,76 @@ export type SearchFilterSuggestions = Record<
     }
 >
 
-export const filterAliases = {
-    r: SuggestionTypes.repo,
-    g: SuggestionTypes.repogroup,
-    f: SuggestionTypes.file,
-    l: SuggestionTypes.lang,
-    language: SuggestionTypes.lang,
-}
-
 export const searchFilterSuggestions: SearchFilterSuggestions = {
     filters: {
         values: [
             {
-                value: 'repo',
+                value: 'repo:',
                 description: 'regex-pattern (include results whose repository path matches)',
             },
             {
-                value: '-repo',
+                value: '-repo:',
                 description: 'regex-pattern (exclude results whose repository path matches)',
             },
             {
-                value: 'repogroup',
+                value: 'repogroup:',
                 description: 'group-name (include results from the named group)',
             },
             {
-                value: 'repohasfile',
+                value: 'repohasfile:',
                 description: 'regex-pattern (include results from repos that contain a matching file)',
             },
             {
-                value: '-repohasfile',
+                value: '-repohasfile:',
                 description: 'regex-pattern (exclude results from repositories that contain a matching file)',
             },
             {
-                value: 'repohascommitafter',
+                value: 'repohascommitafter:',
                 description: '"string specifying time frame" (filter out stale repositories without recent commits)',
             },
             {
-                value: 'file',
+                value: 'file:',
                 description: 'regex-pattern (include results whose file path matches)',
             },
             {
-                value: '-file',
+                value: '-file:',
                 description: 'regex-pattern (exclude results whose file path matches)',
             },
             {
-                value: 'type',
+                value: 'type:',
                 description: 'code | diff | commit | symbol',
             },
             {
-                value: 'case',
+                value: 'case:',
                 description: 'yes | no (default)',
             },
             {
-                value: 'lang',
+                value: 'lang:',
                 description: 'lang-name (include results from the named language)',
             },
             {
-                value: '-lang',
+                value: '-lang:',
                 description: 'lang-name (exclude results from the named language)',
             },
             {
-                value: 'fork',
+                value: 'fork:',
                 description: 'no | only | yes (default)',
             },
             {
-                value: 'archived',
+                value: 'archived:',
                 description: 'no | only | yes (default)',
             },
             {
-                value: 'count',
+                value: 'count:',
                 description: 'integer (number of results to fetch)',
             },
             {
-                value: 'timeout',
+                value: 'timeout:',
                 description: '"string specifying time duration" (duration before timeout)',
             },
         ].map(
             assign({
                 type: SuggestionTypes.filters,
-                label: 'add to query',
             })
         ),
     },
@@ -125,32 +116,7 @@ export const searchFilterSuggestions: SearchFilterSuggestions = {
         ),
     },
     file: {
-        values: [
-            {
-                value: '(test|spec)',
-                description: 'Test files',
-            },
-            {
-                value: '\\.json$',
-                description: 'JSON files',
-            },
-            {
-                value: '(vendor|node_modules)/',
-                description: 'Vendored code',
-            },
-            {
-                value: '\\.md$',
-                description: 'Markdown files',
-            },
-            {
-                value: '\\.(txt|md)$',
-                description: 'Text documents',
-            },
-        ].map(
-            assign({
-                type: SuggestionTypes.file,
-            })
-        ),
+        values: [],
     },
     lang: {
         values: Object.keys(languageIcons).map(value => ({ type: SuggestionTypes.lang, value })),
@@ -162,11 +128,7 @@ export const searchFilterSuggestions: SearchFilterSuggestions = {
         values: [],
     },
     repohasfile: {
-        values: [{ value: 'go.mod' }, { value: 'package.json' }, { value: 'Gemfile' }].map(
-            assign({
-                type: SuggestionTypes.repohasfile,
-            })
-        ),
+        values: [],
     },
     repohascommitafter: {
         values: [{ value: '1 week ago' }, { value: '1 month ago' }].map(

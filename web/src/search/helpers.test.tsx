@@ -1,13 +1,16 @@
 import {
     getSearchTypeFromQuery,
     toggleSearchType,
-    filterSearchSuggestions,
+    filterStaticSuggestions,
     insertSuggestionInQuery,
-    getFilterTypedBeforeCursor,
+    lastFilterAndValueBeforeCursor,
     isFuzzyWordSearch,
+    formatQueryForFuzzySearch,
+    filterAliasForSearch,
 } from './helpers'
 import { SearchType } from './results/SearchResults'
-import { searchFilterSuggestions, filterAliases } from './searchFilterSuggestions'
+import { searchFilterSuggestions } from './searchFilterSuggestions'
+import { filterAliases, isolatedFuzzySearchFilters } from './input/Suggestion'
 
 describe('search/helpers', () => {
     describe('queryIndexOfScope()', () => {
@@ -25,7 +28,7 @@ describe('search/helpers', () => {
         })
     })
 
-    const searchTypes: SearchType[] = ['diff', 'commit', 'symbol', 'repo']
+    const searchTypes: SearchType[] = ['diff', 'commit', 'symbol', 'repo', 'path']
 
     describe('getSearchTypeFromQuery()', () => {
         test('parses the search type in simple queries', () => {
@@ -98,14 +101,16 @@ describe('search/helpers', () => {
     describe('suggestions', () => {
         const filterQuery = 'test r test'
 
-        const getArchivedSuggestions = () => filterSearchSuggestions('archived:', 9, searchFilterSuggestions)
-        const getFilterSuggestionStartingWithR = () => filterSearchSuggestions(filterQuery, 6, searchFilterSuggestions)
+        const getArchivedSuggestions = () =>
+            filterStaticSuggestions({ query: 'archived:', cursorPosition: 9 }, searchFilterSuggestions)
+        const getFilterSuggestionStartingWithR = () =>
+            filterStaticSuggestions({ query: filterQuery, cursorPosition: 6 }, searchFilterSuggestions)
 
         describe('filterSearchSuggestions()', () => {
             test('filters suggestions for filters starting with "r"', () => {
-                const filtersStartingWithR = Object.keys(searchFilterSuggestions).filter(filter =>
-                    filter.startsWith('r')
-                )
+                const filtersStartingWithR = searchFilterSuggestions.filters.values
+                    .map(filter => filter.value)
+                    .filter(filter => filter.startsWith('r'))
                 expect(getFilterSuggestionStartingWithR().map(suggestion => suggestion.value)).toEqual(
                     expect.arrayContaining(filtersStartingWithR)
                 )
@@ -113,17 +118,24 @@ describe('search/helpers', () => {
 
             test('filters suggestions for filter aliases', () => {
                 for (const [alias, filter] of Object.entries(filterAliases)) {
-                    const [{ value }] = filterSearchSuggestions(alias, alias.length, searchFilterSuggestions)
-                    expect(value).toBe(filter)
+                    const [{ value }] = filterStaticSuggestions(
+                        { query: alias, cursorPosition: alias.length },
+                        searchFilterSuggestions
+                    )
+                    expect(value).toBe(filter + ':')
                 }
             })
 
             test('does not throw for query ":"', () => {
-                expect(() => filterSearchSuggestions(':', 1, searchFilterSuggestions)).not.toThrowError()
+                expect(() =>
+                    filterStaticSuggestions({ query: ':', cursorPosition: 1 }, searchFilterSuggestions)
+                ).not.toThrowError()
             })
 
             test('filters suggestions for word "test"', () => {
-                expect(filterSearchSuggestions(filterQuery, 4, searchFilterSuggestions)).toHaveLength(0)
+                expect(
+                    filterStaticSuggestions({ query: filterQuery, cursorPosition: 4 }, searchFilterSuggestions)
+                ).toHaveLength(0)
             })
 
             test('filters suggestions for the "archived:" filter', () => {
@@ -134,9 +146,9 @@ describe('search/helpers', () => {
 
         describe('insertSuggestionInQuery()', () => {
             describe('inserts suggestions for a filter name', () => {
-                const suggestion = getFilterSuggestionStartingWithR().filter(({ value: title }) => title === 'repo')[0]
+                const [suggestion] = getFilterSuggestionStartingWithR().filter(({ value }) => value === 'repo:')
                 const { query: newQuery } = insertSuggestionInQuery('test r test', suggestion, 6)
-                expect(newQuery).toBe(`test ${suggestion.value}: test`)
+                expect(newQuery).toBe(`test ${suggestion.value} test`)
             })
             test('inserts suggestion for a filter value', () => {
                 const [suggestion] = getArchivedSuggestions()
@@ -149,20 +161,24 @@ describe('search/helpers', () => {
     describe('getFilterTypedBeforeCursor', () => {
         const query = 'archived:yes QueryInput'
         it('returns values when a filter value is being typed', () => {
-            expect(getFilterTypedBeforeCursor({ query, cursorPosition: 10 })).toStrictEqual({
+            expect(lastFilterAndValueBeforeCursor({ query, cursorPosition: 10 })).toEqual({
+                filterIndex: 0,
                 filterAndValue: 'archived:y',
                 filter: 'archived',
+                value: 'y',
             })
         })
         it('returns values when a filter is selected but no value char is typed yet', () => {
-            expect(getFilterTypedBeforeCursor({ query, cursorPosition: 9 })).toStrictEqual({
+            expect(lastFilterAndValueBeforeCursor({ query, cursorPosition: 9 })).toEqual({
+                filterIndex: 0,
                 filterAndValue: 'archived:',
                 filter: 'archived',
+                value: '',
             })
-            getFilterTypedBeforeCursor({ query, cursorPosition: 9 })
+            lastFilterAndValueBeforeCursor({ query, cursorPosition: 9 })
         })
         it('does not return a value if typed whitespace char', () => {
-            expect(getFilterTypedBeforeCursor({ query, cursorPosition: 13 })).toStrictEqual({})
+            expect(lastFilterAndValueBeforeCursor({ query, cursorPosition: 13 })).toStrictEqual(null)
         })
     })
 
@@ -172,5 +188,33 @@ describe('search/helpers', () => {
             expect(isFuzzyWordSearch({ query, cursorPosition: 12 })).toBe(false))
         it('returns true if typing a non filter type or value', () =>
             expect(isFuzzyWordSearch({ query, cursorPosition: 5 })).toBe(true))
+    })
+
+    describe('formatQueryForFuzzySearch', () => {
+        const formatForSearchWithFilter = (filter: string) =>
+            formatQueryForFuzzySearch({
+                query: `archived:Yes ${filter}:value Props`,
+                // 19 is position until after ':value'
+                cursorPosition: 19 + filter.length,
+            })
+
+        it('isolates filters that are in isolatedFuzzySearchFilters', () => {
+            expect(isolatedFuzzySearchFilters.map(formatForSearchWithFilter)).toStrictEqual(
+                isolatedFuzzySearchFilters.map(filterType => filterType + ':value')
+            )
+        })
+        it('replaces filter being typed with its `filterAliasForSearch`', () => {
+            expect(Object.keys(filterAliasForSearch).map(formatForSearchWithFilter)).toStrictEqual(
+                Object.values(filterAliasForSearch).map(alias => `archived:Yes ${alias}:value Props`)
+            )
+        })
+        it('return absolute filter if filter being typed is negated (e.g: `-file`)', () => {
+            expect(
+                formatQueryForFuzzySearch({
+                    query: 'l:javascript -file:index.js archived:No',
+                    cursorPosition: 27,
+                })
+            ).toBe('l:javascript file:index.js archived:No')
+        })
     })
 })

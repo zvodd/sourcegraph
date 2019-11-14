@@ -51,7 +51,9 @@ import { UserSettingsSidebarItems } from './user/settings/UserSettingsSidebar'
 import { parseSearchURLPatternType } from './search'
 import { ThemePreference } from './search/theme'
 import { KeyboardShortcutsProps } from './keyboardShortcuts/keyboardShortcuts'
-import { QueryValue } from './search/helpers'
+import { QueryState } from './search/helpers'
+import { RepoSettingsAreaRoute } from './repo/settings/RepoSettingsArea'
+import { RepoSettingsSideBarItem } from './repo/settings/RepoSettingsSidebar'
 
 export interface SourcegraphWebAppProps extends KeyboardShortcutsProps {
     exploreSections: readonly ExploreSectionDescriptor[]
@@ -71,6 +73,8 @@ export interface SourcegraphWebAppProps extends KeyboardShortcutsProps {
     repoContainerRoutes: readonly RepoContainerRoute[]
     repoRevContainerRoutes: readonly RepoRevContainerRoute[]
     repoHeaderActionButtons: readonly RepoHeaderActionButton[]
+    repoSettingsAreaRoutes: readonly RepoSettingsAreaRoute[]
+    repoSettingsSidebarItems: readonly RepoSettingsSideBarItem[]
     routes: readonly LayoutRouteProps[]
     showCampaigns: boolean
 }
@@ -99,7 +103,7 @@ interface SourcegraphWebAppState extends SettingsCascadeProps {
 
     interactiveRepoFilterValue: string
 
-    navbarSearchQueryValue: QueryValue
+    navbarSearchQueryState: QueryState
     /**
      * The current search pattern type.
      */
@@ -157,7 +161,7 @@ class ColdSourcegraphWebApp extends React.Component<SourcegraphWebAppProps, Sour
             themePreference: readStoredThemePreference(),
             systemIsLightTheme: !this.darkThemeMediaList.matches,
             interactiveSearchQuery: '',
-            navbarSearchQueryValue: { query: '', cursorPosition: 0 },
+            navbarSearchQueryState: { query: '', cursorPosition: 0 },
             settingsCascade: EMPTY_SETTINGS_CASCADE,
             viewerSubject: SITE_SUBJECT_NO_ADMIN,
             searchPatternType: urlPatternType,
@@ -303,7 +307,7 @@ class ColdSourcegraphWebApp extends React.Component<SourcegraphWebAppProps, Sour
                                     themePreference={this.state.themePreference}
                                     onThemePreferenceChange={this.onThemePreferenceChange}
                                     // Search query
-                                    navbarSearchQueryValue={this.state.navbarSearchQueryValue}
+                                    navbarSearchQueryState={this.state.navbarSearchQueryState}
                                     onNavbarQueryChange={this.onNavbarQueryChange}
                                     fetchHighlightedFileLines={fetchHighlightedFileLines}
                                     searchRequest={search}
@@ -333,12 +337,12 @@ class ColdSourcegraphWebApp extends React.Component<SourcegraphWebAppProps, Sour
         this.setState({ themePreference })
     }
 
-    private onNavbarQueryChange = (navbarSearchQueryValue: QueryValue): void => {
-        this.setState({ navbarSearchQueryValue })
-    }
-
     private onRepoFilterChange = (value: string): void => {
         this.setState({ interactiveRepoFilterValue: value })
+    }
+
+    private onNavbarQueryChange = (navbarSearchQueryState: QueryState): void => {
+        this.setState({ navbarSearchQueryState })
     }
 
     private togglePatternType = (): void => {

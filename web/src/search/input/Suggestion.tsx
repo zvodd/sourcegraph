@@ -25,6 +25,14 @@ export enum SuggestionTypes {
     symbol = 'symbol',
 }
 
+export const filterAliases = {
+    r: SuggestionTypes.repo,
+    g: SuggestionTypes.repogroup,
+    f: SuggestionTypes.file,
+    l: SuggestionTypes.lang,
+    language: SuggestionTypes.lang,
+}
+
 /**
  * Filters which use fuzzy-search for their suggestion values
  */
@@ -34,6 +42,12 @@ export const fuzzySearchFilters = [
     SuggestionTypes.file,
     SuggestionTypes.repohasfile,
 ]
+
+/**
+ * Some filter types should have their suggestions searched without influence
+ * from the rest of the query, as they will then influence the scope of other filters.
+ */
+export const isolatedFuzzySearchFilters = [SuggestionTypes.repo, SuggestionTypes.repogroup]
 
 /**
  * dir and symbol are fetched/suggested by the fuzzy-search
@@ -53,6 +67,8 @@ export interface Suggestion {
     label?: string
     /** For suggestions of type `symbol` */
     symbolKind?: GQL.SymbolKind
+    /** If the suggestion was loaded from the fuzzy-search */
+    fromFuzzySearch?: true
 }
 
 interface SuggestionIconProps {
@@ -135,22 +151,26 @@ interface SuggestionProps {
     suggestion: Suggestion
     isSelected?: boolean
     onClick?: () => void
+    /** If suggestion.label should be shown, else show defaultLabel  */
     showUrlLabel: boolean
+    /** Suggestion label to show if(!showUrlLabel || !suggestion.label) */
+    defaultLabel?: string
 }
 
 export const SuggestionItem: React.FunctionComponent<SuggestionProps> = ({
     suggestion,
     isSelected,
     showUrlLabel,
+    defaultLabel,
     ...props
 }) => (
     <li className={'suggestion' + (isSelected ? ' suggestion--selected' : '')} {...props}>
         <SuggestionIcon className="icon-inline suggestion__icon" suggestion={suggestion} />
         <div className="suggestion__title">{suggestion.value}</div>
         <div className="suggestion__description">{suggestion.description}</div>
-        {showUrlLabel && !!suggestion.label && (
+        {(showUrlLabel || defaultLabel) && (
             <div className="suggestion__action" hidden={!isSelected}>
-                <kbd>enter</kbd> {suggestion.label}
+                <kbd>enter</kbd> {(showUrlLabel && suggestion?.label) || defaultLabel}
             </div>
         )}
     </li>

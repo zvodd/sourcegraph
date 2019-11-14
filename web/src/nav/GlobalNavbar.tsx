@@ -16,7 +16,7 @@ import { NavLinks } from './NavLinks'
 import { ThemeProps } from '../../../shared/src/theme'
 import { ThemePreferenceProps } from '../search/theme'
 import { KeyboardShortcutsProps } from '../keyboardShortcuts/keyboardShortcuts'
-import { QueryValue } from '../search/helpers'
+import { QueryState } from '../search/helpers'
 
 interface Props
     extends SettingsCascadeProps,
@@ -33,8 +33,8 @@ interface Props
     authenticatedUser: GQL.IUser | null
     interactiveSearchQuery: string
     interactiveRepoFilterValue: string
-    navbarSearchQueryValue: QueryValue
-    onNavbarQueryChange: (queryValue: QueryValue) => void
+    navbarSearchQueryState: QueryState
+    onNavbarQueryChange: (queryState: QueryState) => void
     isSourcegraphDotCom: boolean
     showCampaigns: boolean
 
@@ -128,7 +128,7 @@ export class GlobalNavbar extends React.PureComponent<Props, State> {
                                 <SearchNavbarItem
                                     {...this.props}
                                     interactiveRepoFilterValue={this.props.interactiveRepoFilterValue}
-                                    navbarSearchValue={this.props.navbarSearchQueryValue}
+                                    navbarSearchState={this.props.navbarSearchQueryState}
                                     onChange={this.props.onNavbarQueryChange}
                                 />
                             </div>

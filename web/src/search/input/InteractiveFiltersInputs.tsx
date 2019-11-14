@@ -1,10 +1,10 @@
 import * as H from 'history'
 import * as React from 'react'
 import { Form } from '../../components/Form'
-import { Subject, ObservableInput, Subscription, fromEvent } from 'rxjs'
-import { QueryValue, insertSuggestionInQuery } from '../helpers'
+import { Subject, Subscription, fromEvent } from 'rxjs'
+import { insertSuggestionInQuery, filterStaticSuggestions, lastFilterAndValueBeforeCursor } from '../helpers'
 import { SuggestionTypes, createSuggestion, SuggestionItem, Suggestion } from './Suggestion'
-import { ComponentSuggestions, SuggestionsStateUpdate, hiddenSuggestions } from './QueryInput'
+import { ComponentSuggestions, noSuggestions } from './QueryInput'
 import { fetchSuggestions } from '../backend'
 import {
     map,
@@ -19,36 +19,11 @@ import {
 } from 'rxjs/operators'
 import { isDefined } from '../../../../shared/src/util/types'
 import Downshift from 'downshift'
+import { searchFilterSuggestions } from '../searchFilterSuggestions'
 /**
  * InteractiveFilterInputs is a component that allows users to input a value for a particular search filter.
  * Each FilterInput represents the value for a particular search filter.
  */
-
-const fetchFuzzySuggestions = (
-    query: string,
-    filterBeforeCursor: SuggestionTypes,
-    cursorPosition: QueryValue['cursorPosition']
-): ObservableInput<SuggestionsStateUpdate> =>
-    fetchSuggestions(query).pipe(
-        map(createSuggestion),
-        filter(isDefined),
-        filter(suggestion => {
-            switch (filterBeforeCursor) {
-                case SuggestionTypes.repo:
-                    return suggestion.type === SuggestionTypes.repo
-                default:
-                    return true
-            }
-        }),
-        toArray(),
-        map(suggestions => ({
-            suggestions: {
-                cursorPosition,
-                values: suggestions,
-            },
-        })),
-        catchError(() => [{ suggestions: { cursorPosition: 0, values: [] } }])
-    )
 
 interface Props {
     history: H.History
@@ -66,7 +41,7 @@ interface State {
 export default class InteractiveFilterInputs extends React.Component<Props, State> {
     private subscriptions = new Subscription()
     /** Emits new input values */
-    private inputUpdates = new Subject<QueryValue>()
+    private inputUpdates = new Subject<QueryState>()
 
     private suggestionsHidden = new Subject<void>()
 
@@ -90,12 +65,48 @@ export default class InteractiveFilterInputs extends React.Component<Props, Stat
                     // tap(queryValue => this.props.onChange(queryValue)),
                     distinctUntilChanged(),
                     debounceTime(200),
-                    switchMap(queryValue => {
-                        if (queryValue.query.length === 0) {
-                            return [{ suggestions: hiddenSuggestions }]
+                    switchMap(queryState => {
+                        if (queryState.query.length === 0) {
+                            return [{ suggestions: noSuggestions }]
                         }
 
-                        return fetchFuzzySuggestions(queryValue.query, this.props.filter, queryValue.cursorPosition)
+                        const staticSuggestions = {
+                            cursorPosition: queryState.cursorPosition,
+                            values: filterStaticSuggestions(queryState, searchFilterSuggestions),
+                        }
+
+                        return fetchSuggestions(queryState.query).pipe(
+                            map(createSuggestion),
+                            filter(isDefined),
+                            map((suggestion): Suggestion => ({ ...suggestion, fromFuzzySearch: true })),
+                            filter(suggestion => {
+                                const filterAndValueBeforeCursor = lastFilterAndValueBeforeCursor(queryState)
+
+                                // Only show fuzzy-suggestions that are relevant to the typed filter
+                                if (filterAndValueBeforeCursor?.filter) {
+                                    switch (filterAndValueBeforeCursor.filter) {
+                                        case SuggestionTypes.repohasfile:
+                                            return suggestion.type === SuggestionTypes.file
+                                        default:
+                                            return suggestion.type === filterAndValueBeforeCursor.filter
+                                    }
+                                }
+                                return true
+                            }),
+                            toArray(),
+                            map(suggestions => ({
+                                suggestions: {
+                                    cursorPosition: queryState.cursorPosition,
+                                    values: staticSuggestions.values.concat(suggestions),
+                                },
+                            })),
+                            catchError(error => {
+                                console.error(error)
+                                // If fuzzy-search is not capable of returning suggestions for the query
+                                // or there is an internal error, then at least return the static suggestions
+                                return [{ suggestions: staticSuggestions }]
+                            })
+                        )
                     }),
                     // Abort suggestion display on route change or suggestion hiding
                     takeUntil(this.suggestionsHidden),
@@ -130,7 +141,7 @@ export default class InteractiveFilterInputs extends React.Component<Props, Stat
 
     private hideSuggestions = (): void => {
         this.suggestionsHidden.next()
-        this.setState({ suggestions: hiddenSuggestions })
+        this.setState({ suggestions: noSuggestions })
     }
 
     public render(): JSX.Element | null {
@@ -210,7 +221,7 @@ export default class InteractiveFilterInputs extends React.Component<Props, Stat
             if (!suggestion) {
                 return {
                     ...state,
-                    suggestions: hiddenSuggestions,
+                    suggestions: noSuggestions,
                 }
             }
             const { cursorPosition } = state.suggestions
@@ -218,7 +229,7 @@ export default class InteractiveFilterInputs extends React.Component<Props, Stat
             // We always want to just add the value to the new query, and reset suggestions.
             return {
                 value: newQuery,
-                suggestions: hiddenSuggestions,
+                suggestions: noSuggestions,
             }
         })
     }

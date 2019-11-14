@@ -545,11 +545,11 @@ export function withWorkspaceRootInputRevision(
 export function buildSearchURLQuery(query: string, patternType: SearchPatternType): string {
     const searchParams = new URLSearchParams()
 
-    const repoFilterAndNewQuery = parseRepoFiltersFromQuery(query)
-    if (repoFilterAndNewQuery) {
-        searchParams.set('repo', repoFilterAndNewQuery[0])
-        query = repoFilterAndNewQuery[1]
-    }
+    // const repoFilterAndNewQuery = parseRepoFiltersFromQuery(query)
+    // if (repoFilterAndNewQuery) {
+    //     searchParams.set('repo', repoFilterAndNewQuery[0])
+    //     query = repoFilterAndNewQuery[1]
+    // }
 
     const patternTypeInQuery = parsePatternTypeFromQuery(query)
     if (patternTypeInQuery) {

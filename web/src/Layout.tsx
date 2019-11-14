@@ -44,7 +44,9 @@ import LiteralSearchToast from './marketing/LiteralSearchToast'
 import { ThemeProps } from '../../shared/src/theme'
 import { ThemePreferenceProps } from './search/theme'
 import { KeyboardShortcutsProps, KEYBOARD_SHORTCUT_SHOW_HELP } from './keyboardShortcuts/keyboardShortcuts'
-import { QueryValue } from './search/helpers'
+import { QueryState } from './search/helpers'
+import { RepoSettingsAreaRoute } from './repo/settings/RepoSettingsArea'
+import { RepoSettingsSideBarItem } from './repo/settings/RepoSettingsSidebar'
 
 export interface LayoutProps
     extends RouteComponentProps<any>,
@@ -74,6 +76,8 @@ export interface LayoutProps
     repoContainerRoutes: readonly RepoContainerRoute[]
     repoRevContainerRoutes: readonly RepoRevContainerRoute[]
     repoHeaderActionButtons: readonly RepoHeaderActionButton[]
+    repoSettingsAreaRoutes: readonly RepoSettingsAreaRoute[]
+    repoSettingsSidebarItems: readonly RepoSettingsSideBarItem[]
     routes: readonly LayoutRouteProps[]
 
     authenticatedUser: GQL.IUser | null
@@ -92,11 +96,11 @@ export interface LayoutProps
     interactiveRepoFilterValue: string
 
     // Search
-    navbarSearchQueryValue: QueryValue
-    onNavbarQueryChange: (queryValue: QueryValue) => void
+    navbarSearchQueryState: QueryState
+    onNavbarQueryChange: (queryState: QueryState) => void
     fetchHighlightedFileLines: (ctx: FetchFileCtx, force?: boolean) => Observable<string[]>
     searchRequest: (
-        query: QueryValue['query'],
+        query: QueryState['query'],
         version: string,
         patternType: GQL.SearchPatternType,
         { extensionsController }: ExtensionsControllerProps<'services'>

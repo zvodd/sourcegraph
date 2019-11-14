@@ -38,9 +38,9 @@ export const SearchNavbarItem: React.FunctionComponent<Props> = ({
     const onSubmit = useCallback(
         (e: React.FormEvent<HTMLFormElement>): void => {
             e.preventDefault()
-            submitSearch(history, navbarSearchState.query, 'nav', patternType, activation)
+            submitSearch(history, query, 'nav', patternType, activation)
         },
-        [history, navbarSearchState.query, patternType, activation]
+        [history, query, patternType, activation]
     )
 
     return (

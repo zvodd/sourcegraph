@@ -70,11 +70,6 @@ export default class InteractiveFilterInputs extends React.Component<Props, Stat
                             return [{ suggestions: noSuggestions }]
                         }
 
-                        const staticSuggestions = {
-                            cursorPosition: queryState.cursorPosition,
-                            values: filterStaticSuggestions(queryState, searchFilterSuggestions),
-                        }
-
                         return fetchSuggestions(queryState.query).pipe(
                             map(createSuggestion),
                             filter(isDefined),
@@ -97,14 +92,12 @@ export default class InteractiveFilterInputs extends React.Component<Props, Stat
                             map(suggestions => ({
                                 suggestions: {
                                     cursorPosition: queryState.cursorPosition,
-                                    values: staticSuggestions.values.concat(suggestions),
+                                    values: suggestions,
                                 },
                             })),
                             catchError(error => {
                                 console.error(error)
-                                // If fuzzy-search is not capable of returning suggestions for the query
-                                // or there is an internal error, then at least return the static suggestions
-                                return [{ suggestions: staticSuggestions }]
+                                return [{ suggestions: noSuggestions }]
                             })
                         )
                     }),

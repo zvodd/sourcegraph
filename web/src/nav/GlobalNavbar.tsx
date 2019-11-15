@@ -17,6 +17,7 @@ import { ThemeProps } from '../../../shared/src/theme'
 import { ThemePreferenceProps } from '../search/theme'
 import { KeyboardShortcutsProps } from '../keyboardShortcuts/keyboardShortcuts'
 import { QueryState } from '../search/helpers'
+import InteractiveModeInput from '../search/input/InteractiveModeInput'
 
 interface Props
     extends SettingsCascadeProps,
@@ -123,7 +124,13 @@ export class GlobalNavbar extends React.PureComponent<Props, State> {
                                 {logo}
                             </Link>
                         )}
-                        {!this.state.authRequired && (
+                        {!this.state.authRequired && this.props.interactiveSearchMode ? (
+                            <InteractiveModeInput
+                                {...this.props}
+                                navbarSearchState={this.props.navbarSearchQueryState}
+                                onNavbarQueryChange={this.props.onNavbarQueryChange}
+                            />
+                        ) : (
                             <div className="global-navbar__search-box-container d-none d-sm-flex">
                                 <SearchNavbarItem
                                     {...this.props}

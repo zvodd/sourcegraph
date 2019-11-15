@@ -104,6 +104,10 @@ interface SourcegraphWebAppState extends SettingsCascadeProps {
      * The current search pattern type.
      */
     searchPatternType: GQL.SearchPatternType
+    /**
+     * Whether interactive search mode is activated
+     */
+    interactiveSearchMode: boolean
 }
 
 const LIGHT_THEME_LOCAL_STORAGE_KEY = 'light-theme'
@@ -160,6 +164,8 @@ class ColdSourcegraphWebApp extends React.Component<SourcegraphWebAppProps, Sour
             settingsCascade: EMPTY_SETTINGS_CASCADE,
             viewerSubject: SITE_SUBJECT_NO_ADMIN,
             searchPatternType: urlPatternType,
+            // INTERACTIVE_SEARCH_TODO: set to true for building, will need to default to false and toggle later.
+            interactiveSearchMode: true,
         }
     }
 
@@ -312,6 +318,7 @@ class ColdSourcegraphWebApp extends React.Component<SourcegraphWebAppProps, Sour
                                     isSourcegraphDotCom={window.context.sourcegraphDotComMode}
                                     patternType={this.state.searchPatternType}
                                     togglePatternType={this.togglePatternType}
+                                    interactiveSearchMode={this.state.interactiveSearchMode}
                                 />
                             )}
                         />

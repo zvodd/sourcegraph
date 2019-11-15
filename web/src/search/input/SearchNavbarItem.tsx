@@ -12,6 +12,7 @@ interface Props extends ActivationProps, PatternTypeProps {
     history: H.History
     navbarSearchState: QueryState
     onChange: (newValue: QueryState) => void
+    interactiveSearchMode: boolean
 }
 
 /**
@@ -25,6 +26,7 @@ export const SearchNavbarItem: React.FunctionComponent<Props> = ({
     history,
     patternType,
     togglePatternType,
+    interactiveSearchMode,
 }) => {
     // Only autofocus the query input on search result pages (otherwise we
     // capture down-arrow keypresses that the user probably intends to scroll down

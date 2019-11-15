@@ -41,6 +41,8 @@ interface Props
      * homepage.
      */
     lowProfile: boolean
+
+    interactiveSearchMode: boolean
 }
 
 interface State {

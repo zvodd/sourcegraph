@@ -5,6 +5,7 @@ import { SearchPatternType } from '../../../../shared/src/graphql/schema'
 import { Form } from '../../components/Form'
 import { QueryInput } from './QueryInput'
 import { SearchNavbarItem } from './SearchNavbarItem'
+import InteractiveModeAddFilterRow from './InteractiveModeAddFilterRow'
 
 interface InteractiveModeProps {
     location: H.Location
@@ -19,13 +20,18 @@ interface InteractiveInputState {
     // This query compiles the raw query + individual selected filter
     // queries so we can build the URL.
     finalInteractiveQuery: string
+    fieldValues: { [key: string]: { type: string; value: string } }
 }
 
 // INTERACTIVE_SEARCH_TODO: This component is being built for the navbar use case.
 // Need to add a mode for search page.
-export default class InteractiveModeInput extends React.Component<InteractiveModeProps> {
+export default class InteractiveModeInput extends React.Component<InteractiveModeProps, InteractiveInputState> {
     constructor(props: InteractiveModeProps) {
         super(props)
+        this.state = {
+            finalInteractiveQuery: '',
+            fieldValues: {},
+        }
     }
 
     public componentDidMount(): void {}
@@ -45,6 +51,11 @@ export default class InteractiveModeInput extends React.Component<InteractiveMod
                     onChange={this.props.onNavbarQueryChange}
                     patternType={this.props.patternType}
                     togglePatternType={this.props.togglePatternType}
+                />
+                <InteractiveModeAddFilterRow
+                    onAddNewFilter={() => {
+                        console.log('add filter')
+                    }}
                 />
             </Form>
         )

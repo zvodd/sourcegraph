@@ -124,21 +124,24 @@ export class GlobalNavbar extends React.PureComponent<Props, State> {
                                 {logo}
                             </Link>
                         )}
-                        {!this.state.authRequired && this.props.interactiveSearchMode ? (
-                            <InteractiveModeInput
-                                {...this.props}
-                                navbarSearchState={this.props.navbarSearchQueryState}
-                                onNavbarQueryChange={this.props.onNavbarQueryChange}
-                            />
-                        ) : (
-                            <div className="global-navbar__search-box-container d-none d-sm-flex">
-                                <SearchNavbarItem
-                                    {...this.props}
-                                    navbarSearchState={this.props.navbarSearchQueryState}
-                                    onChange={this.props.onNavbarQueryChange}
-                                />
-                            </div>
-                        )}
+                        {!this.state.authRequired &&
+                            (this.props.interactiveSearchMode ? (
+                                <div className="global-navbar__search-box-container d-none d-sm-flex">
+                                    <InteractiveModeInput
+                                        {...this.props}
+                                        navbarSearchState={this.props.navbarSearchQueryState}
+                                        onNavbarQueryChange={this.props.onNavbarQueryChange}
+                                    />
+                                </div>
+                            ) : (
+                                <div className="global-navbar__search-box-container d-none d-sm-flex">
+                                    <SearchNavbarItem
+                                        {...this.props}
+                                        navbarSearchState={this.props.navbarSearchQueryState}
+                                        onChange={this.props.onNavbarQueryChange}
+                                    />
+                                </div>
+                            ))}
                     </>
                 )}
                 {!this.state.authRequired && <NavLinks {...this.props} showDotComMarketing={showDotComMarketing} />}

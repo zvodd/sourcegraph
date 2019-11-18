@@ -1,10 +1,11 @@
 import * as React from 'react'
 
 interface RowProps {
-    onAddNewFilter: () => void
+    // A callback that adds a new filter to the SelectedFilterRow when one of the buttons are clicked.
+    onAddNewFilter: (filter: DefaultFilterTypes) => void
 }
 
-enum DefaultFilterTypes {
+export enum DefaultFilterTypes {
     repo = 'repo',
 }
 
@@ -22,11 +23,23 @@ export default class InteractiveModeAddFilterRow extends React.PureComponent<Row
 
 interface ButtonProps {
     type: DefaultFilterTypes
-    onAddNewFilter: () => void
+    onAddNewFilter: (filter: DefaultFilterTypes) => void
 }
 
-const AddFilterButton: React.FunctionComponent<ButtonProps> = ({ type, onAddNewFilter }) => (
-    <button type="button" onClick={onAddNewFilter}>
-        {type}
-    </button>
-)
+class AddFilterButton extends React.Component<ButtonProps> {
+    constructor(props: ButtonProps) {
+        super(props)
+    }
+
+    private onAddNewFilter = (e: React.MouseEvent<HTMLButtonElement>) => {
+        this.props.onAddNewFilter(this.props.type)
+    }
+
+    public render(): JSX.Element | null {
+        return (
+            <button type="button" onClick={this.onAddNewFilter}>
+                {this.props.type}
+            </button>
+        )
+    }
+}

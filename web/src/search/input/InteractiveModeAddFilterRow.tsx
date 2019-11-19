@@ -27,11 +27,7 @@ interface ButtonProps {
 }
 
 class AddFilterButton extends React.Component<ButtonProps> {
-    constructor(props: ButtonProps) {
-        super(props)
-    }
-
-    private onAddNewFilter = (e: React.MouseEvent<HTMLButtonElement>) => {
+    private onAddNewFilter = (): void => {
         this.props.onAddNewFilter(this.props.type)
     }
 

@@ -7,6 +7,7 @@ import { QueryInput } from './QueryInput'
 import { SearchNavbarItem } from './SearchNavbarItem'
 import InteractiveModeAddFilterRow, { DefaultFilterTypes } from './InteractiveModeAddFilterRow'
 import InteractiveModeSelectedFiltersRow from './InteractiveModeSelectedFiltersRow'
+import { SearchButton } from './SearchButton'
 
 interface InteractiveModeProps {
     location: H.Location
@@ -57,6 +58,14 @@ export default class InteractiveModeInput extends React.Component<InteractiveMod
         }))
     }
 
+    private onFilterDeleted = (filterKey: string): void => {
+        this.setState(state => {
+            const newState = state.fieldValues
+            delete newState[filterKey]
+            return { fieldValues: newState }
+        })
+    }
+
     public render(): JSX.Element | null {
         return (
             <Form
@@ -64,21 +73,22 @@ export default class InteractiveModeInput extends React.Component<InteractiveMod
                     console.log('submitted')
                 }}
             >
-                <QueryInput
-                    location={this.props.location}
-                    history={this.props.history}
-                    value={this.props.navbarSearchState}
-                    hasGlobalQueryBehavior={true}
-                    onChange={this.props.onNavbarQueryChange}
-                    patternType={this.props.patternType}
-                    togglePatternType={this.props.togglePatternType}
-                />
+                <div className="d-flex align-items-start">
+                    <QueryInput
+                        location={this.props.location}
+                        history={this.props.history}
+                        value={this.props.navbarSearchState}
+                        hasGlobalQueryBehavior={true}
+                        onChange={this.props.onNavbarQueryChange}
+                        patternType={this.props.patternType}
+                        togglePatternType={this.props.togglePatternType}
+                    />
+                    <SearchButton />
+                </div>
                 <InteractiveModeSelectedFiltersRow
                     fieldValues={this.state.fieldValues}
                     onFilterEdited={this.onFilterEdited}
-                    onFilterDeleted={() => {
-                        console.log('deleted')
-                    }}
+                    onFilterDeleted={this.onFilterDeleted}
                 />
                 <InteractiveModeAddFilterRow onAddNewFilter={this.addNewFilter} />
             </Form>

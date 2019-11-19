@@ -1,10 +1,10 @@
 import * as React from 'react'
 import * as H from 'history'
-import { QueryState } from '../helpers'
+import { QueryState, submitSearch } from '../helpers'
 import { SearchPatternType } from '../../../../shared/src/graphql/schema'
 import { Form } from '../../components/Form'
 import { QueryInput } from './QueryInput'
-import { SearchNavbarItem } from './SearchNavbarItem'
+
 import InteractiveModeAddFilterRow, { DefaultFilterTypes } from './InteractiveModeAddFilterRow'
 import InteractiveModeSelectedFiltersRow from './InteractiveModeSelectedFiltersRow'
 import { SearchButton } from './SearchButton'
@@ -66,13 +66,26 @@ export default class InteractiveModeInput extends React.Component<InteractiveMod
         })
     }
 
+    private onSubmit = (e: React.FormEvent<HTMLFormElement>): void => {
+        e.preventDefault()
+        const navbarQuery = this.props.navbarSearchState.query
+        const fieldsQuery = this.generateFieldsQuery()
+        const queries = [navbarQuery, fieldsQuery].filter(query => query.length > 0)
+        submitSearch(this.props.history, queries.join(' '), 'nav', this.props.patternType)
+    }
+
+    private generateFieldsQuery = (): string => {
+        const fieldKeys = Object.keys(this.state.fieldValues)
+        const individualTokens: string[] = []
+        for (const field of fieldKeys) {
+            individualTokens.push(`${this.state.fieldValues[field].type}:${this.state.fieldValues[field].value}`)
+        }
+        return individualTokens.join(' ')
+    }
+
     public render(): JSX.Element | null {
         return (
-            <Form
-                onSubmit={() => {
-                    console.log('submitted')
-                }}
-            >
+            <Form onSubmit={this.onSubmit}>
                 <div className="d-flex align-items-start">
                     <QueryInput
                         location={this.props.location}

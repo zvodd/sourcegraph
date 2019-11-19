@@ -26,13 +26,12 @@ export function submitSearch(
     activation?: ActivationProps['activation'],
     interactiveMode?: boolean
 ): void {
-    // Go to search results page
-
-    const builtQuery = interactiveMode
+    const searchQueryParam = interactiveMode
         ? interactiveBuildSearchURLQuery(query, patternType)
         : buildSearchURLQuery(query, patternType)
-    // const path = '/search?' + buildSearchURLQuery(query, patternType)
-    const path = '/search?' + builtQuery
+
+    // Go to search results page
+    const path = '/search?' + searchQueryParam
     eventLogger.log('SearchSubmitted', {
         code_search: {
             pattern: query,

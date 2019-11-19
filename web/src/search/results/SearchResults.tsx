@@ -3,7 +3,7 @@ import { isEqual } from 'lodash'
 import * as React from 'react'
 import { concat, Observable, Subject, Subscription } from 'rxjs'
 import { catchError, distinctUntilChanged, filter, map, startWith, switchMap, tap } from 'rxjs/operators'
-import { parseSearchURLQuery, parseSearchURLPatternType, PatternTypeProps } from '..'
+import { parseSearchURLQuery, parseSearchURLPatternType, PatternTypeProps, interactiveParseSearchURLQuery } from '..'
 import { Contributions, Evaluated } from '../../../../shared/src/api/protocol'
 import { FetchFileCtx } from '../../../../shared/src/components/CodeExcerpt'
 import { ExtensionsControllerProps } from '../../../../shared/src/extensions/controller'
@@ -51,6 +51,7 @@ export interface SearchResultsProps
     ) => Observable<GQL.ISearchResults | ErrorLike>
     isSourcegraphDotCom: boolean
     deployType: DeployType
+    interactiveSearchMode: boolean
 }
 
 interface SearchResultsState {
@@ -103,7 +104,9 @@ export class SearchResults extends React.Component<SearchResultsProps, SearchRes
                 .pipe(
                     startWith(this.props),
                     map(props => [
-                        parseSearchURLQuery(props.location.search),
+                        props.interactiveSearchMode
+                            ? interactiveParseSearchURLQuery(props.location.search)
+                            : parseSearchURLQuery(props.location.search),
                         parseSearchURLPatternType(props.location.search),
                     ]),
                     // Search when a new search query was specified in the URL

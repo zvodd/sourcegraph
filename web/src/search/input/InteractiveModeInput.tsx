@@ -71,7 +71,7 @@ export default class InteractiveModeInput extends React.Component<InteractiveMod
         const navbarQuery = this.props.navbarSearchState.query
         const fieldsQuery = this.generateFieldsQuery()
         const queries = [navbarQuery, fieldsQuery].filter(query => query.length > 0)
-        submitSearch(this.props.history, queries.join(' '), 'nav', this.props.patternType)
+        submitSearch(this.props.history, queries.join(' '), 'nav', this.props.patternType, undefined, true)
     }
 
     private generateFieldsQuery = (): string => {

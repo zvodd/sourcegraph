@@ -10,6 +10,29 @@ export function parseSearchURLQuery(query: string): string | undefined {
     return searchParams.get('q') || undefined
 }
 
+export function interactiveParseSearchURLQuery(query: string): string | undefined {
+    const searchParams = new URLSearchParams(query)
+    const repoSearchParams = searchParams.getAll('repo')
+    const querySearchParams = searchParams.get('q')
+
+    const finalQueryParts = []
+    if (repoSearchParams) {
+        for (const repoFilter of repoSearchParams) {
+            finalQueryParts.push(`repo:${repoFilter}`)
+        }
+    }
+
+    if (querySearchParams) {
+        finalQueryParts.push(querySearchParams)
+    }
+
+    if (finalQueryParts.length > 0) {
+        return finalQueryParts.join(' ')
+    }
+
+    return undefined
+}
+
 /**
  * Parses the pattern type out of the URL search params (the 'patternType' parameter). If the 'pattern' parameter
  * is not present, or it is an invalid value, it returns undefined.

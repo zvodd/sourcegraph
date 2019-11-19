@@ -561,6 +561,46 @@ export function buildSearchURLQuery(query: string, patternType: SearchPatternTyp
         .replace(/%3A/g, ':')
 }
 
+export function interactiveBuildSearchURLQuery(query: string, patternType: SearchPatternType): string {
+    const searchParams = new URLSearchParams()
+
+    const repoFiltersInQuery = parseRepoFiltersFromQuery(query)
+    if (repoFiltersInQuery) {
+        for (const repoFilter of repoFiltersInQuery) {
+            searchParams.append('repo', repoFilter)
+        }
+        query = query.replace(/\b(repo|r):(\S+)/gi, '')
+    }
+
+    const patternTypeInQuery = parsePatternTypeFromQuery(query)
+    if (patternTypeInQuery) {
+        const patternTypeRegexp = /\bpatterntype:(?<type>regexp|literal)\b/i
+        const newQuery = query.replace(patternTypeRegexp, '')
+        searchParams.set('q', newQuery)
+        searchParams.set('patternType', patternTypeInQuery.toLowerCase())
+    } else {
+        searchParams.set('q', query)
+        searchParams.set('patternType', patternType)
+    }
+
+    return searchParams
+        .toString()
+        .replace(/%2F/g, '/')
+        .replace(/%3A/g, ':')
+}
+
+function parseRepoFiltersFromQuery(query: string): string[] | undefined {
+    const repoFilterRegexp = /\b(?<=repo:|r:)(\S+)\b/g
+    const matches = query.match(repoFilterRegexp)
+    const results = []
+    if (matches) {
+        for (const match of matches) {
+            results.push(match)
+        }
+    }
+    return results
+}
+
 function parsePatternTypeFromQuery(query: string): SearchPatternType | undefined {
     const patternTypeRegexp = /\bpatterntype:(?<type>regexp|literal)\b/i
     const matches = query.match(patternTypeRegexp)

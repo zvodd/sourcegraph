@@ -2,7 +2,7 @@ import * as H from 'history'
 import _ from 'lodash'
 import { ActivationProps } from '../../../shared/src/components/activation/Activation'
 import * as GQL from '../../../shared/src/graphql/schema'
-import { buildSearchURLQuery } from '../../../shared/src/util/url'
+import { buildSearchURLQuery, interactiveBuildSearchURLQuery } from '../../../shared/src/util/url'
 import { eventLogger } from '../tracking/eventLogger'
 import { SearchType } from './results/SearchResults'
 import { SearchFilterSuggestions } from './searchFilterSuggestions'
@@ -23,10 +23,16 @@ export function submitSearch(
     query: string,
     source: 'home' | 'nav' | 'repo' | 'tree' | 'filter' | 'type',
     patternType: GQL.SearchPatternType,
-    activation?: ActivationProps['activation']
+    activation?: ActivationProps['activation'],
+    interactiveMode?: boolean
 ): void {
     // Go to search results page
-    const path = '/search?' + buildSearchURLQuery(query, patternType)
+
+    const builtQuery = interactiveMode
+        ? interactiveBuildSearchURLQuery(query, patternType)
+        : buildSearchURLQuery(query, patternType)
+    // const path = '/search?' + buildSearchURLQuery(query, patternType)
+    const path = '/search?' + builtQuery
     eventLogger.log('SearchSubmitted', {
         code_search: {
             pattern: query,

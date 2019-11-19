@@ -27,7 +27,10 @@ export default class InteractiveModeFilterChip extends React.Component<Props, St
         this.props.onFilterEdited(this.props.mapKey, e.target.value)
     }
 
-    private onSubmitInput = (): void => {
+    private onSubmitInput = (e: React.FormEvent<HTMLFormElement>): void => {
+        e.preventDefault()
+        e.stopPropagation()
+
         this.setState({ editable: false })
     }
 

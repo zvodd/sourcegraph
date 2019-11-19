@@ -569,7 +569,7 @@ export function interactiveBuildSearchURLQuery(query: string, patternType: Searc
         for (const repoFilter of repoFiltersInQuery) {
             searchParams.append('repo', repoFilter)
         }
-        query = query.replace(/\b(repo|r):(\S+)/gi, '')
+        query = query.replace(/\b(repo|r):(\S+)/gi, '').trim()
     }
 
     const patternTypeInQuery = parsePatternTypeFromQuery(query)

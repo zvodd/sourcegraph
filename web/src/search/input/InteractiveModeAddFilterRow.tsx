@@ -8,6 +8,7 @@ interface RowProps {
 
 export enum DefaultFilterTypes {
     repo = 'repo',
+    file = 'file',
 }
 
 export const InteractiveModeAddFilterRow: React.FunctionComponent<RowProps> = ({ onAddNewFilter }) => (

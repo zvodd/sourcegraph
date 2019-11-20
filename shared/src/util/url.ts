@@ -563,13 +563,20 @@ export function buildSearchURLQuery(query: string, patternType: SearchPatternTyp
 
 export function interactiveBuildSearchURLQuery(query: string, patternType: SearchPatternType): string {
     const searchParams = new URLSearchParams()
-
     const repoFiltersInQuery = parseRepoFiltersFromQuery(query)
     if (repoFiltersInQuery) {
         for (const repoFilter of repoFiltersInQuery) {
             searchParams.append('repo', repoFilter)
         }
         query = query.replace(/\b(repo|r):(\S+)/gi, '').trim()
+    }
+
+    const fileFiltersInQuery = parseFileFiltersFromQuery(query)
+    if (fileFiltersInQuery) {
+        for (const fileFilter of fileFiltersInQuery) {
+            searchParams.append('file', fileFilter)
+        }
+        query = query.replace(/\b(file|f):(\S+)/gi, '').trim()
     }
 
     const patternTypeInQuery = parsePatternTypeFromQuery(query)
@@ -590,14 +597,30 @@ export function interactiveBuildSearchURLQuery(query: string, patternType: Searc
 }
 
 function parseRepoFiltersFromQuery(query: string): string[] | undefined {
-    const repoFilterRegexp = /\b(?<=repo:|r:)(\S+)\b/g
-    const matches = query.match(repoFilterRegexp)
+    const repoFilterRegexp = /\b(repo:|r:)(\S+)\b/gi
+    const matches = repoFilterRegexp.exec(query)
     const results = []
     if (matches) {
-        for (const match of matches) {
+        // First two items will match the entire regex and the first capture group of the regex.
+        for (const match of matches.slice(2, matches.length)) {
             results.push(match)
         }
     }
+
+    return results
+}
+
+function parseFileFiltersFromQuery(query: string): string[] | undefined {
+    const fileFilterRegexp = /\b(file:|f:)(\S+)\b/gi
+    const matches = fileFilterRegexp.exec(query)
+    const results = []
+    if (matches) {
+        // First two items will match the entire regex and the first capture group of the regex.
+        for (const match of matches.slice(2, matches.length)) {
+            results.push(match)
+        }
+    }
+
     return results
 }
 

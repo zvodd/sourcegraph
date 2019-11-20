@@ -149,6 +149,7 @@ export default class InteractiveModeInput extends React.Component<InteractiveMod
             .map(key =>
                 individualTokens.push(`${this.state.fieldValues[key].type}:${this.state.fieldValues[key].value}`)
             )
+
         return individualTokens.join(' ')
     }
 

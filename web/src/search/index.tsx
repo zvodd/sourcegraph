@@ -13,12 +13,19 @@ export function parseSearchURLQuery(query: string): string | undefined {
 export function interactiveParseSearchURLQuery(query: string): string | undefined {
     const searchParams = new URLSearchParams(query)
     const repoSearchParams = searchParams.getAll('repo')
+    const fileSearchParams = searchParams.getAll('file')
     const querySearchParams = searchParams.get('q')
 
     const finalQueryParts = []
     if (repoSearchParams) {
         for (const repoFilter of repoSearchParams) {
             finalQueryParts.push(`repo:${repoFilter}`)
+        }
+    }
+
+    if (fileSearchParams) {
+        for (const fileFilter of fileSearchParams) {
+            finalQueryParts.push(`file:${fileFilter}`)
         }
     }
 

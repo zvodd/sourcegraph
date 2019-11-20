@@ -1,28 +1,19 @@
 import * as React from 'react'
-import { Subject, Subscription } from 'rxjs'
 import { Form } from '../../components/Form'
 import CloseIcon from 'mdi-react/CloseIcon'
 
 interface Props {
+    /** The key of this filter in the top-level fieldValues map. */
     mapKey: string
-    onFilterEdited: (filterKey: string, value: string) => void
-    onFilterDeleted: (filterKey: string) => void
     value: string
     filterType: string
-}
-
-interface State {
     editable: boolean
+    onFilterEdited: (filterKey: string, value: string) => void
+    onFilterDeleted: (filterKey: string) => void
+    toggleFilterEditable: (filterKey: string) => void
 }
 
-export default class InteractiveModeFilterChip extends React.Component<Props, State> {
-    constructor(props: Props) {
-        super(props)
-        this.state = {
-            editable: true,
-        }
-    }
-
+export default class InteractiveModeFilterChip extends React.Component<Props> {
     private onInputUpdate = (e: React.ChangeEvent<HTMLInputElement>): void => {
         this.props.onFilterEdited(this.props.mapKey, e.target.value)
     }
@@ -31,11 +22,11 @@ export default class InteractiveModeFilterChip extends React.Component<Props, St
         e.preventDefault()
         e.stopPropagation()
 
-        this.setState({ editable: false })
+        this.props.toggleFilterEditable(this.props.mapKey)
     }
 
     private onClickSelected = (): void => {
-        this.setState({ editable: true })
+        this.props.toggleFilterEditable(this.props.mapKey)
     }
 
     private onClickDelete = (): void => {
@@ -45,7 +36,7 @@ export default class InteractiveModeFilterChip extends React.Component<Props, St
     public render(): JSX.Element | null {
         return (
             <>
-                {this.state.editable ? (
+                {this.props.editable ? (
                     <Form onSubmit={this.onSubmitInput}>
                         <div>
                             <input onChange={this.onInputUpdate} value={this.props.value} />

@@ -1,23 +1,17 @@
 import * as React from 'react'
 import InteractiveModeFilterChip from './InteractiveModeFilterChip'
-import { Subscription, Subject } from 'rxjs'
+import { FiltersToTypeAndValue } from './InteractiveModeInput'
 
 interface Props {
-    fieldValues: { [key: string]: { type: string; value: string } }
+    fieldValues: FiltersToTypeAndValue
     /**  A callback to handle a filter's value being edited. */
     onFilterEdited: (filterKey: string, value: string) => void
     /** A callback to handle a filter being deleted from the selected filter row */
     onFilterDeleted: (filterKey: string) => void
+    toggleFilterEditable: (filterKey: string) => void
 }
 
-export default class InteractiveModeSelectedFiltersRow extends React.Component<Props> {
-    constructor(props: Props) {
-        super(props)
-    }
-
-    private subscriptions = new Subscription()
-    private componentUpdates = new Subject<Props>()
-
+export default class InteractiveModeSelectedFiltersRow extends React.PureComponent<Props> {
     public render(): JSX.Element | null {
         const fieldValueKeys = Array.from(Object.keys(this.props.fieldValues))
         return (
@@ -32,8 +26,10 @@ export default class InteractiveModeSelectedFiltersRow extends React.Component<P
                                     mapKey={field}
                                     filterType={this.props.fieldValues[field].type}
                                     value={this.props.fieldValues[field].value}
+                                    editable={this.props.fieldValues[field].editable}
                                     onFilterDeleted={this.props.onFilterDeleted}
                                     onFilterEdited={this.props.onFilterEdited}
+                                    toggleFilterEditable={this.props.toggleFilterEditable}
                                 />
                             ))}
                     </div>

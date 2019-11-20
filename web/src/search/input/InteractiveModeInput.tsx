@@ -8,6 +8,10 @@ import { QueryInput } from './QueryInput'
 import InteractiveModeAddFilterRow, { DefaultFilterTypes } from './InteractiveModeAddFilterRow'
 import InteractiveModeSelectedFiltersRow from './InteractiveModeSelectedFiltersRow'
 import { SearchButton } from './SearchButton'
+import { interactiveParseSearchURLQuery } from '..'
+import { SuggestionTypes } from './Suggestion'
+import { Subscription, Subject } from 'rxjs'
+import { map, distinctUntilChanged, switchMap } from 'rxjs/operators'
 
 interface InteractiveModeProps {
     location: H.Location
@@ -18,43 +22,74 @@ interface InteractiveModeProps {
     togglePatternType: () => void
 }
 
+export interface FiltersToTypeAndValue {
+    [key: string]: { type: string; value: string; editable: boolean }
+}
+
 interface InteractiveInputState {
-    // This query compiles the raw query + individual selected filter
-    // queries so we can build the URL.
-    finalInteractiveQuery: string
     // This is the source of truth for the selected filters. The key is a unique key to match
     // the particular selected filter with its value. This is important to be unique because we
     // will need to edit and delete selected filters. The type is the raw type of filter, as listed
     // in SuggestionTypes. The value is the current value of that particular filter.
-    fieldValues: { [key: string]: { type: string; value: string } }
+    fieldValues: FiltersToTypeAndValue
 }
 
+const ALL_SUGGESTION_TYPES = Object.keys(SuggestionTypes)
 // INTERACTIVE_SEARCH_TODO: This component is being built for the navbar use case.
 // Need to add a mode for search page.
 export default class InteractiveModeInput extends React.Component<InteractiveModeProps, InteractiveInputState> {
     private numFieldValuesAdded = 0
+    private subscriptions = new Subscription()
+    private componentUpdates = new Subject<InteractiveModeProps>()
 
     constructor(props: InteractiveModeProps) {
         super(props)
+
         this.state = {
-            finalInteractiveQuery: '',
             fieldValues: {},
         }
+        this.subscriptions.add(
+            this.componentUpdates.subscribe(props => {
+                const searchParams = new URLSearchParams(props.location.search)
+                const fieldValues: FiltersToTypeAndValue = {}
+                for (const t of ALL_SUGGESTION_TYPES) {
+                    const itemsOfType = searchParams.getAll(t)
+                    itemsOfType.map((item, i) => {
+                        fieldValues[`${t} ${i}`] = { type: t, value: item, editable: false }
+                    })
+                }
+                this.numFieldValuesAdded = Object.keys(fieldValues).length
+                this.setState({ fieldValues })
+            })
+        )
     }
 
-    public componentDidMount(): void {}
+    public componentDidMount(): void {
+        this.componentUpdates.next(this.props)
+    }
+
+    public componentDidUnmount(): void {
+        this.subscriptions.unsubscribe()
+    }
 
     private addNewFilter = (filterType: DefaultFilterTypes): void => {
         const filterKey = `${filterType} ${this.numFieldValuesAdded}`
         this.numFieldValuesAdded++
         this.setState(state => ({
-            fieldValues: { ...state.fieldValues, [filterKey]: { type: filterType, value: '' } },
+            fieldValues: { ...state.fieldValues, [filterKey]: { type: filterType, value: '', editable: true } },
         }))
     }
 
     private onFilterEdited = (filterKey: string, value: string): void => {
         this.setState(state => ({
-            fieldValues: { ...state.fieldValues, [filterKey]: { ...state.fieldValues[filterKey], value } },
+            fieldValues: {
+                ...state.fieldValues,
+                [filterKey]: {
+                    ...state.fieldValues[filterKey],
+                    value,
+                    editable: state.fieldValues[filterKey].editable,
+                },
+            },
         }))
     }
 
@@ -64,6 +99,15 @@ export default class InteractiveModeInput extends React.Component<InteractiveMod
             delete newState[filterKey]
             return { fieldValues: newState }
         })
+    }
+
+    private toggleFilterEditable = (filterKey: string): void => {
+        this.setState(state => ({
+            fieldValues: {
+                ...state.fieldValues,
+                [filterKey]: { ...state.fieldValues[filterKey], editable: !state.fieldValues[filterKey].editable },
+            },
+        }))
     }
 
     private onSubmit = (e: React.FormEvent<HTMLFormElement>): void => {
@@ -102,6 +146,7 @@ export default class InteractiveModeInput extends React.Component<InteractiveMod
                     fieldValues={this.state.fieldValues}
                     onFilterEdited={this.onFilterEdited}
                     onFilterDeleted={this.onFilterDeleted}
+                    toggleFilterEditable={this.toggleFilterEditable}
                 />
                 <InteractiveModeAddFilterRow onAddNewFilter={this.addNewFilter} />
             </Form>

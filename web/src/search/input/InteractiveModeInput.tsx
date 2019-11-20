@@ -145,7 +145,7 @@ export default class InteractiveModeInput extends React.Component<InteractiveMod
         const fieldKeys = Object.keys(this.state.fieldValues)
         const individualTokens: string[] = []
         fieldKeys
-            .filter(key => this.state.fieldValues[key].value.length > 0)
+            .filter(key => this.state.fieldValues[key].value.trim().length > 0)
             .map(key =>
                 individualTokens.push(`${this.state.fieldValues[key].type}:${this.state.fieldValues[key].value}`)
             )

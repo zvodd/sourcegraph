@@ -1,0 +1,18 @@
+.interactive-mode-selected-filters-row {
+    padding: 0.5rem;
+    display: flex;
+    flex: 0 0 auto;
+    padding-left: 1rem;
+    align-items: center;
+    color: #93a9c8;
+    background: #151c28;
+    border-bottom: 1px solid #2b3750;
+}
+
+.theme-light {
+    .interactive-mode-selected-filters-row {
+        color: #6d727c;
+        background: #ffffff;
+        border-bottom: 1px solid #cad2e2;
+    }
+}

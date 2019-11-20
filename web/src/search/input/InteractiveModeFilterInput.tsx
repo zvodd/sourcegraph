@@ -13,7 +13,7 @@ interface Props {
     toggleFilterEditable: (filterKey: string) => void
 }
 
-export default class InteractiveModeFilterChip extends React.Component<Props> {
+export default class InteractiveModeFilterInput extends React.Component<Props> {
     private onInputUpdate = (e: React.ChangeEvent<HTMLInputElement>): void => {
         this.props.onFilterEdited(this.props.mapKey, e.target.value)
     }
@@ -35,25 +35,29 @@ export default class InteractiveModeFilterChip extends React.Component<Props> {
 
     public render(): JSX.Element | null {
         return (
-            <>
+            <div className="interactive-mode-filter-input">
                 {this.props.editable ? (
-                    <Form onSubmit={this.onSubmitInput}>
-                        <div>
-                            <input onChange={this.onInputUpdate} value={this.props.value} />
-                            <div onClick={this.onClickDelete}>
-                                <CloseIcon />
-                            </div>
+                    <Form onSubmit={this.onSubmitInput} className="interactive-mode-filter-input">
+                        {this.props.filterType}:
+                        <input
+                            onChange={this.onInputUpdate}
+                            value={this.props.value}
+                            required={true}
+                            className="form-control"
+                        />
+                        <div onClick={this.onClickDelete} className="icon-inline">
+                            <CloseIcon />
                         </div>
                     </Form>
                 ) : (
                     <div className="d-flex">
                         <div onClick={this.onClickSelected}>{this.props.value}</div>
-                        <div onClick={this.onClickDelete}>
+                        <div onClick={this.onClickDelete} className="icon-inline">
                             <CloseIcon />
                         </div>
                     </div>
                 )}
-            </>
+            </div>
         )
     }
 }

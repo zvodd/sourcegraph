@@ -1,5 +1,5 @@
 import * as React from 'react'
-import InteractiveModeFilterChip from './InteractiveModeFilterChip'
+import InteractiveModeFilterInput from './InteractiveModeFilterInput'
 import { FiltersToTypeAndValue } from './InteractiveModeInput'
 
 interface Props {
@@ -21,11 +21,11 @@ export const InteractiveModeSelectedFiltersRow: React.FunctionComponent<Props> =
     return (
         <>
             {fieldValueKeys.length > 0 && (
-                <div className="search-results-filter-bars__row">
+                <div className="interactive-mode-selected-filters-row">
                     {fieldValues &&
                         fieldValueKeys.map(field => (
                             /** Replace this with new input component, which can be an input when editable, and button when non-editable */
-                            <InteractiveModeFilterChip
+                            <InteractiveModeFilterInput
                                 key={field}
                                 mapKey={field}
                                 filterType={fieldValues[field].type}

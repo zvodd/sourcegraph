@@ -1,23 +1,48 @@
 import * as React from 'react'
 import * as H from 'history'
 import { QueryState, submitSearch } from '../helpers'
-import { SearchPatternType } from '../../../../shared/src/graphql/schema'
+import * as GQL from '../../../../shared/src/graphql/schema'
 import { Form } from '../../components/Form'
 import { QueryInput } from './QueryInput'
-
 import { InteractiveModeAddFilterRow, DefaultFilterTypes } from './InteractiveModeAddFilterRow'
 import { InteractiveModeSelectedFiltersRow } from './InteractiveModeSelectedFiltersRow'
 import { SearchButton } from './SearchButton'
 import { SuggestionTypes } from './Suggestion'
 import { Subscription, Subject } from 'rxjs'
+import { ThemeProps } from '../../../../shared/src/theme'
+import { Link } from '../../../../shared/src/components/Link'
+import { NavLinks } from '../../nav/NavLinks'
+import { showDotComMarketing } from '../../util/features'
+import { SettingsCascadeProps } from '../../../../shared/src/settings/settings'
+import { KeyboardShortcutsProps } from '../../keyboardShortcuts/keyboardShortcuts'
+import { ExtensionsControllerProps } from '../../../../shared/src/extensions/controller'
+import { PlatformContextProps } from '../../../../shared/src/platform/context'
+import { ThemePreferenceProps } from '../theme'
+import { EventLoggerProps } from '../../tracking/eventLogger'
+import { ActivationProps } from '../../../../shared/src/components/activation/Activation'
 
-interface InteractiveModeProps {
+interface InteractiveModeProps
+    extends SettingsCascadeProps,
+        KeyboardShortcutsProps,
+        ExtensionsControllerProps<'executeCommand' | 'services'>,
+        PlatformContextProps<'forceUpdateTooltip'>,
+        ThemeProps,
+        ThemePreferenceProps,
+        EventLoggerProps,
+        ActivationProps {
     location: H.Location
     history: H.History
     navbarSearchState: QueryState
     onNavbarQueryChange: (userQuery: QueryState) => void
-    patternType: SearchPatternType
+    patternType: GQL.SearchPatternType
     togglePatternType: () => void
+
+    // For NavLinks
+    authRequired?: boolean
+    authenticatedUser: GQL.IUser | null
+    showDotComMarketing: boolean
+    showCampaigns: boolean
+    isSourcegraphDotCom: boolean
 }
 
 export interface FiltersToTypeAndValue {
@@ -119,35 +144,72 @@ export default class InteractiveModeInput extends React.Component<InteractiveMod
     private generateFieldsQuery = (): string => {
         const fieldKeys = Object.keys(this.state.fieldValues)
         const individualTokens: string[] = []
-        for (const field of fieldKeys) {
-            individualTokens.push(`${this.state.fieldValues[field].type}:${this.state.fieldValues[field].value}`)
-        }
+        fieldKeys
+            .filter(key => this.state.fieldValues[key].value.length > 0)
+            .map(key =>
+                individualTokens.push(`${this.state.fieldValues[key].type}:${this.state.fieldValues[key].value}`)
+            )
         return individualTokens.join(' ')
     }
 
     public render(): JSX.Element | null {
+        let logoSrc = '/.assets/img/sourcegraph-mark.svg'
+        let logoLinkClassName = 'global-navbar__logo-link global-navbar__logo-animated'
+
+        const { branding } = window.context
+        if (branding) {
+            if (this.props.isLightTheme) {
+                if (branding.light && branding.light.symbol) {
+                    logoSrc = branding.light.symbol
+                }
+            } else if (branding.dark && branding.dark.symbol) {
+                logoSrc = branding.dark.symbol
+            }
+            if (branding.disableSymbolSpin) {
+                logoLinkClassName = 'global-navbar__logo-link'
+            }
+        }
+
+        const logo = <img className="global-navbar__logo" src={logoSrc} />
+
         return (
-            <Form onSubmit={this.onSubmit}>
-                <div className="d-flex align-items-start">
-                    <QueryInput
-                        location={this.props.location}
-                        history={this.props.history}
-                        value={this.props.navbarSearchState}
-                        hasGlobalQueryBehavior={true}
-                        onChange={this.props.onNavbarQueryChange}
-                        patternType={this.props.patternType}
-                        togglePatternType={this.props.togglePatternType}
-                    />
-                    <SearchButton />
+            <div className="interactive-mode-input">
+                <div className="interactive-mode-input__top-nav">
+                    {this.props.authRequired ? (
+                        <div className={logoLinkClassName}>{logo}</div>
+                    ) : (
+                        <Link to="/search" className={logoLinkClassName}>
+                            {logo}
+                        </Link>
+                    )}
+                    <div className="global-navbar__search-box-container d-none d-sm-flex">
+                        <Form onSubmit={this.onSubmit}>
+                            <div className="d-flex align-items-start">
+                                <QueryInput
+                                    location={this.props.location}
+                                    history={this.props.history}
+                                    value={this.props.navbarSearchState}
+                                    hasGlobalQueryBehavior={true}
+                                    onChange={this.props.onNavbarQueryChange}
+                                    patternType={this.props.patternType}
+                                    togglePatternType={this.props.togglePatternType}
+                                />
+                                <SearchButton />
+                            </div>
+                        </Form>
+                    </div>
+                    {!this.props.authRequired && <NavLinks {...this.props} showDotComMarketing={showDotComMarketing} />}
                 </div>
-                <InteractiveModeSelectedFiltersRow
-                    fieldValues={this.state.fieldValues}
-                    onFilterEdited={this.onFilterEdited}
-                    onFilterDeleted={this.onFilterDeleted}
-                    toggleFilterEditable={this.toggleFilterEditable}
-                />
-                <InteractiveModeAddFilterRow onAddNewFilter={this.addNewFilter} />
-            </Form>
+                <div>
+                    <InteractiveModeSelectedFiltersRow
+                        fieldValues={this.state.fieldValues}
+                        onFilterEdited={this.onFilterEdited}
+                        onFilterDeleted={this.onFilterDeleted}
+                        toggleFilterEditable={this.toggleFilterEditable}
+                    />
+                    <InteractiveModeAddFilterRow onAddNewFilter={this.addNewFilter} />
+                </div>
+            </div>
         )
     }
 }

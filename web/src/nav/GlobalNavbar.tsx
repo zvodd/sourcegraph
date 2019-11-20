@@ -117,34 +117,41 @@ export class GlobalNavbar extends React.PureComponent<Props, State> {
                     <div className="flex-1" />
                 ) : (
                     <>
-                        {this.state.authRequired ? (
-                            <div className={logoLinkClassName}>{logo}</div>
+                        {this.props.interactiveSearchMode ? (
+                            !this.state.authRequired && (
+                                <InteractiveModeInput
+                                    {...this.props}
+                                    authRequired={this.state.authRequired}
+                                    navbarSearchState={this.props.navbarSearchQueryState}
+                                    onNavbarQueryChange={this.props.onNavbarQueryChange}
+                                    showDotComMarketing={showDotComMarketing}
+                                />
+                            )
                         ) : (
-                            <Link to="/search" className={logoLinkClassName}>
-                                {logo}
-                            </Link>
+                            <>
+                                {this.state.authRequired ? (
+                                    <div className={logoLinkClassName}>{logo}</div>
+                                ) : (
+                                    <Link to="/search" className={logoLinkClassName}>
+                                        {logo}
+                                    </Link>
+                                )}
+                                {!this.state.authRequired && (
+                                    <div className="global-navbar__search-box-container d-none d-sm-flex">
+                                        <SearchNavbarItem
+                                            {...this.props}
+                                            navbarSearchState={this.props.navbarSearchQueryState}
+                                            onChange={this.props.onNavbarQueryChange}
+                                        />
+                                    </div>
+                                )}
+                                {!this.state.authRequired && (
+                                    <NavLinks {...this.props} showDotComMarketing={showDotComMarketing} />
+                                )}
+                            </>
                         )}
-                        {!this.state.authRequired &&
-                            (this.props.interactiveSearchMode ? (
-                                <div className="global-navbar__search-box-container d-none d-sm-flex">
-                                    <InteractiveModeInput
-                                        {...this.props}
-                                        navbarSearchState={this.props.navbarSearchQueryState}
-                                        onNavbarQueryChange={this.props.onNavbarQueryChange}
-                                    />
-                                </div>
-                            ) : (
-                                <div className="global-navbar__search-box-container d-none d-sm-flex">
-                                    <SearchNavbarItem
-                                        {...this.props}
-                                        navbarSearchState={this.props.navbarSearchQueryState}
-                                        onChange={this.props.onNavbarQueryChange}
-                                    />
-                                </div>
-                            ))}
                     </>
                 )}
-                {!this.state.authRequired && <NavLinks {...this.props} showDotComMarketing={showDotComMarketing} />}
             </div>
         )
     }

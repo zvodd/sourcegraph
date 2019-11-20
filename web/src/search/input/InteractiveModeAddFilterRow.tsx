@@ -31,7 +31,11 @@ class AddFilterButton extends React.Component<ButtonProps> {
 
     public render(): JSX.Element | null {
         return (
-            <button type="button" className="btn btn-outline-primary" onClick={this.onAddNewFilter}>
+            <button
+                type="button"
+                className="interactive-mode-add-filter-row__button btn btn-outline-primary"
+                onClick={this.onAddNewFilter}
+            >
                 + {startCase(this.props.type)} filter
             </button>
         )

@@ -1,4 +1,8 @@
 .interactive-mode-add-filter-row {
     padding: 0.5rem 0;
     padding-left: 1rem;
+
+    &__button {
+        margin-left: 0.25rem;
+    }
 }

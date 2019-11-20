@@ -11,30 +11,33 @@ interface Props {
     toggleFilterEditable: (filterKey: string) => void
 }
 
-export default class InteractiveModeSelectedFiltersRow extends React.PureComponent<Props> {
-    public render(): JSX.Element | null {
-        const fieldValueKeys = Array.from(Object.keys(this.props.fieldValues))
-        return (
-            <>
-                {fieldValueKeys.length > 0 && (
-                    <div className="search-results-filter-bars__row">
-                        {this.props.fieldValues &&
-                            fieldValueKeys.map(field => (
-                                /** Replace this with new input component, which can be an input when editable, and button when non-editable */
-                                <InteractiveModeFilterChip
-                                    key={field}
-                                    mapKey={field}
-                                    filterType={this.props.fieldValues[field].type}
-                                    value={this.props.fieldValues[field].value}
-                                    editable={this.props.fieldValues[field].editable}
-                                    onFilterDeleted={this.props.onFilterDeleted}
-                                    onFilterEdited={this.props.onFilterEdited}
-                                    toggleFilterEditable={this.props.toggleFilterEditable}
-                                />
-                            ))}
-                    </div>
-                )}
-            </>
-        )
-    }
+export const InteractiveModeSelectedFiltersRow: React.FunctionComponent<Props> = ({
+    fieldValues,
+    onFilterEdited,
+    onFilterDeleted,
+    toggleFilterEditable,
+}) => {
+    const fieldValueKeys = Array.from(Object.keys(fieldValues))
+    return (
+        <>
+            {fieldValueKeys.length > 0 && (
+                <div className="search-results-filter-bars__row">
+                    {fieldValues &&
+                        fieldValueKeys.map(field => (
+                            /** Replace this with new input component, which can be an input when editable, and button when non-editable */
+                            <InteractiveModeFilterChip
+                                key={field}
+                                mapKey={field}
+                                filterType={fieldValues[field].type}
+                                value={fieldValues[field].value}
+                                editable={fieldValues[field].editable}
+                                onFilterDeleted={onFilterDeleted}
+                                onFilterEdited={onFilterEdited}
+                                toggleFilterEditable={toggleFilterEditable}
+                            />
+                        ))}
+                </div>
+            )}
+        </>
+    )
 }

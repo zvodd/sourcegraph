@@ -5,13 +5,11 @@ import { SearchPatternType } from '../../../../shared/src/graphql/schema'
 import { Form } from '../../components/Form'
 import { QueryInput } from './QueryInput'
 
-import InteractiveModeAddFilterRow, { DefaultFilterTypes } from './InteractiveModeAddFilterRow'
-import InteractiveModeSelectedFiltersRow from './InteractiveModeSelectedFiltersRow'
+import { InteractiveModeAddFilterRow, DefaultFilterTypes } from './InteractiveModeAddFilterRow'
+import { InteractiveModeSelectedFiltersRow } from './InteractiveModeSelectedFiltersRow'
 import { SearchButton } from './SearchButton'
-import { interactiveParseSearchURLQuery } from '..'
 import { SuggestionTypes } from './Suggestion'
 import { Subscription, Subject } from 'rxjs'
-import { map, distinctUntilChanged, switchMap } from 'rxjs/operators'
 
 interface InteractiveModeProps {
     location: H.Location

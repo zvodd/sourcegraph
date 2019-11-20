@@ -1,6 +1,24 @@
 .interactive-mode-filter-input {
     margin-right: 0.5rem;
-    vertical-align: bottom;
-    display: inline-flex;
-    align-items: center;
+    border: 1px solid $color-border;
+    padding: 0.25rem;
+    border-radius: 2px;
+    background-color: $color-bg-3;
+
+    &__form {
+        display: inline-flex;
+        vertical-align: bottom;
+        align-items: center;
+    }
+
+    &__input-field {
+        margin: 0 0.25rem;
+    }
+}
+
+.theme-light {
+    .interactive-mode-filter-input {
+        background-color: $color-light-bg-2;
+        border: 1px solid $color-light-border;
+    }
 }

@@ -37,13 +37,13 @@ export default class InteractiveModeFilterInput extends React.Component<Props> {
         return (
             <div className="interactive-mode-filter-input">
                 {this.props.editable ? (
-                    <Form onSubmit={this.onSubmitInput} className="interactive-mode-filter-input">
-                        {this.props.filterType}:
+                    <Form onSubmit={this.onSubmitInput} className="interactive-mode-filter-input__form">
+                        <span>{this.props.filterType}:</span>
                         <input
                             onChange={this.onInputUpdate}
                             value={this.props.value}
                             required={true}
-                            className="form-control"
+                            className="form-control interactive-mode-filter-input__input-field"
                         />
                         <div onClick={this.onClickDelete} className="icon-inline">
                             <CloseIcon />
@@ -51,7 +51,9 @@ export default class InteractiveModeFilterInput extends React.Component<Props> {
                     </Form>
                 ) : (
                     <div className="d-flex">
-                        <div onClick={this.onClickSelected}>{this.props.value}</div>
+                        <div onClick={this.onClickSelected}>
+                            {this.props.filterType}:{this.props.value}
+                        </div>
                         <div onClick={this.onClickDelete} className="icon-inline">
                             <CloseIcon />
                         </div>

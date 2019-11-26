@@ -84,7 +84,7 @@ export async function importLsif(
 ): Promise<{ packages: Package[]; references: SymbolReferences[] }> {
     // Correlate input data into in-memory maps
     const correlator = new Correlator(ctx)
-    await logAndTraceCall(ctx, 'correlating LSIF data', async () => {
+    await logAndTraceCall(ctx, 'Correlating LSIF data', async () => {
         for await (const element of readGzippedJsonElementsFromFile(path) as AsyncIterable<lsif.Vertex | lsif.Edge>) {
             correlator.insert(element)
         }
@@ -98,7 +98,7 @@ export async function importLsif(
     // reference result for each set so that we can remap all identifiers to the
     // chosen one.
 
-    const canonicalReferenceResultIds = await logAndTraceCall(ctx, 'canonicalizing reference results', () =>
+    const canonicalReferenceResultIds = await logAndTraceCall(ctx, 'Canonicalizing reference results', () =>
         canonicalizeReferenceResults(correlator)
     )
 
@@ -117,7 +117,7 @@ export async function importLsif(
     await metaInserter.flush()
 
     // Insert documents
-    await logAndTraceCall(ctx, 'populating documents', async () => {
+    await logAndTraceCall(ctx, 'Populating documents', async () => {
         const documentInserter = new TableInserter(
             entityManager,
             dumpModels.DocumentModel,
@@ -129,7 +129,7 @@ export async function importLsif(
     })
 
     // Insert result chunks
-    await logAndTraceCall(ctx, 'populating result chunks', async () => {
+    await logAndTraceCall(ctx, 'Populating result chunks', async () => {
         const resultChunkInserter = new TableInserter(
             entityManager,
             dumpModels.ResultChunkModel,
@@ -141,7 +141,7 @@ export async function importLsif(
     })
 
     // Insert definitions and references
-    await logAndTraceCall(ctx, 'populating definitions and references', async () => {
+    await logAndTraceCall(ctx, 'Populating definitions and references', async () => {
         const definitionInserter = new TableInserter(
             entityManager,
             dumpModels.DefinitionModel,
@@ -311,7 +311,7 @@ async function populateDefinitionsAndReferencesTables(
 
     const insertMonikerRanges = async (
         data: Map<dumpModels.DefinitionReferenceResultId, Map<dumpModels.DocumentId, lsif.RangeId[]>>,
-        monikers: Map<dumpModels.MonikerId, Set<lsif.RangeId>>,
+        monikers: Map<dumpModels.DefinitionReferenceResultId, Set<lsif.RangeId>>,
         inserter: TableInserter<
             dumpModels.DefinitionModel | dumpModels.ReferenceModel,
             new () => dumpModels.DefinitionModel | dumpModels.ReferenceModel
@@ -468,7 +468,7 @@ function canonicalizeReferenceResults(
 
             if (linkedId !== canonicalId) {
                 // If it's a different identifier, then normalize all data from the linked result
-                // set into the canoical one.
+                // set into the canonical one.
                 for (const [documentId, rangeIds] of mustGet(correlator.referenceData, linkedId, 'referenceResult')) {
                     canonicalReferenceResult.getOrDefault(documentId).push(...rangeIds)
                 }
@@ -636,5 +636,5 @@ function assertId<T extends lsif.Id>(id: T | undefined): T {
         return id
     }
 
-    throw new Error('id is undefined')
+    throw new Error('Id is undefined')
 }

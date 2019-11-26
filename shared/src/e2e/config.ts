@@ -22,6 +22,7 @@ export interface Config {
     sourcegraphBaseUrl: string
     managementConsoleUrl: string
     includeAdminOnboarding: boolean
+    init: boolean
     testUserPassword: string
     noCleanup: boolean
     logStatusMessages: boolean
@@ -29,6 +30,7 @@ export interface Config {
     slowMo: number
     headless: boolean
     keepBrowser: boolean
+    bitbucketCloudUserBobAppPassword: string
 }
 
 interface Field<T = string> {
@@ -138,6 +140,12 @@ const configFields: ConfigFields = {
         description:
             'If true, include admin onboarding tests, which assume none of the admin onboarding steps have yet completed on the instance. If those steps have already been completed, this test will fail.',
     },
+    init: {
+        envVar: 'E2E_INIT',
+        parser: parseBool,
+        defaultValue: false,
+        description: 'If true, run the test for initializing a brand new instance of Sourcegraph',
+    },
     testUserPassword: {
         envVar: 'TEST_USER_PASSWORD',
         description:
@@ -178,6 +186,11 @@ const configFields: ConfigFields = {
         parser: parseBool,
         description: 'Run Puppeteer in headless mode',
         defaultValue: false,
+    },
+    bitbucketCloudUserBobAppPassword: {
+        envVar: 'BITBUCKET_CLOUD_USER_BOB_APP_PASSWORD',
+        description:
+            'A Bitbucket Cloud app password associated with the Bitbucket Cloud user sg-e2e-regression-test-bob, that will be used to sync Bitbucket Cloud repositories.',
     },
 }
 

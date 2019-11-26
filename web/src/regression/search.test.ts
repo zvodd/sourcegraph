@@ -73,7 +73,7 @@ describe('Search regression test suite', () => {
         'tuna/tunasync',
         'mthbernardes/GTRS',
         'antonmedv/expr',
-        'kshvakov/clickhouse',
+        'ClickHouse/clickhouse-go',
         'xwb1989/sqlparser',
         'henrylee2cn/pholcus_lib',
         'itcloudy/ERP',
@@ -177,12 +177,12 @@ describe('Search regression test suite', () => {
                             },
                             waitForRepos: testRepoSlugs.map(slug => 'github.com/' + slug),
                         },
-                        config
+                        { ...config, timeout: 3 * 60 * 1000, indexed: true }
                     )
                 )
             },
-            // Cloning the repositories takes ~1 minute, so give initialization 2 minutes
-            2 * 60 * 1000
+            // Cloning the repositories takes ~1 minute, so give initialization ~3 minutes
+            3 * 60 * 1000 + 30 * 1000
         )
 
         afterAll(async () => {
@@ -230,6 +230,12 @@ describe('Search regression test suite', () => {
         test('Global text search (repohasfile:copying), expect many results.', async () => {
             await driver.page.goto(config.sourcegraphBaseUrl + '/search?q=repohasfile:copying')
             await driver.page.waitForFunction(() => document.querySelectorAll('.e2e-search-result').length >= 2)
+        })
+        test('Global text search (repohascommitafter:"5 years ago")', async () => {
+            await driver.page.goto(
+                config.sourcegraphBaseUrl + '/search?q=repohascommitafter:"5+months+ago"+test&patternType=literal'
+            )
+            await driver.page.waitForFunction(() => document.querySelectorAll('.e2e-search-result').length >= 10)
         })
         test('Global text search for something with more than 1000 results and use "count:1000".', async () => {
             await driver.page.goto(config.sourcegraphBaseUrl + '/search?q=.+count:1000')

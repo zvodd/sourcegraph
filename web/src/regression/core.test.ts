@@ -165,7 +165,7 @@ describe('Core functionality regression test suite', () => {
         await driver.page.waitForFunction(
             displayName => {
                 const el = document.querySelector('.e2e-user-area-header__display-name')
-                return el && el.textContent && el.textContent.trim() === displayName
+                return el?.textContent && el.textContent.trim() === displayName
             },
             undefined,
             displayName
@@ -184,7 +184,11 @@ describe('Core functionality regression test suite', () => {
         await driver.replaceText({ selector: '.e2e-user-email-add-input', newText: 'sg-test-account@protonmail.com' })
         await (await driver.findElementWithText('Add')).click()
         await driver.findElementWithText(testEmail, { wait: true })
-        await driver.findElementWithText('Verification pending')
+        try {
+            await driver.findElementWithText('Verification pending')
+        } catch (err) {
+            await driver.findElementWithText('Not verified')
+        }
         await setUserEmailVerified(gqlClient, testUsername, testEmail, true)
         await driver.page.reload()
         await driver.findElementWithText('Verified', { wait: true })

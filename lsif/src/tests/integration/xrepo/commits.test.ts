@@ -4,9 +4,9 @@ import { XrepoDatabase } from '../../../shared/xrepo/xrepo'
 
 describe('discoverAndUpdateCommit', () => {
     it('should update tracked commits', async () => {
-        const ca = util.createCommit(0)
-        const cb = util.createCommit(1)
-        const cc = util.createCommit(2)
+        const ca = util.createCommit()
+        const cb = util.createCommit()
+        const cc = util.createCommit()
 
         nock('http://gitserver1')
             .post('/exec')
@@ -15,15 +15,17 @@ describe('discoverAndUpdateCommit', () => {
         const { connection, cleanup } = await util.createCleanPostgresDatabase()
 
         try {
-            const xrepoDatabase = new XrepoDatabase('', connection)
+            const xrepoDatabase = new XrepoDatabase(connection, '')
             await xrepoDatabase.insertDump('test-repo', ca, '')
 
-            await xrepoDatabase.discoverAndUpdateCommit({
-                repository: 'test-repo', // hashes to gitserver1
-                commit: cc,
-                gitserverUrls: ['gitserver0', 'gitserver1', 'gitserver2'],
-                ctx: {},
-            })
+            await xrepoDatabase.updateCommits(
+                'test-repo',
+                await xrepoDatabase.discoverCommits({
+                    repository: 'test-repo', // hashes to gitserver1
+                    commit: cc,
+                    gitserverUrls: ['gitserver0', 'gitserver1', 'gitserver2'],
+                })
+            )
 
             // Ensure all commits are now tracked
             expect(await xrepoDatabase.isCommitTracked('test-repo', ca)).toBeTruthy()
@@ -35,49 +37,56 @@ describe('discoverAndUpdateCommit', () => {
     })
 
     it('should early-out if commit is tracked', async () => {
-        const ca = util.createCommit(0)
-        const cb = util.createCommit(1)
+        const ca = util.createCommit()
+        const cb = util.createCommit()
 
         const { connection, cleanup } = await util.createCleanPostgresDatabase()
 
         try {
-            const xrepoDatabase = new XrepoDatabase('', connection)
+            const xrepoDatabase = new XrepoDatabase(connection, '')
             await xrepoDatabase.insertDump('test-repo', ca, '')
-            await xrepoDatabase.updateCommits('test-repo', [[cb, undefined]])
+            await xrepoDatabase.updateCommits(
+                'test-repo',
+                new Map<string, Set<string>>([[cb, new Set()]])
+            )
 
             // This test ensures the following does not make a gitserver request.
             // As we did not register a nock interceptor, any request will result
             // in an exception being thrown.
 
-            await xrepoDatabase.discoverAndUpdateCommit({
-                repository: 'test-repo', // hashes to gitserver1
-                commit: cb,
-                gitserverUrls: ['gitserver0', 'gitserver1', 'gitserver2'],
-                ctx: {},
-            })
+            await xrepoDatabase.updateCommits(
+                'test-repo',
+                await xrepoDatabase.discoverCommits({
+                    repository: 'test-repo', // hashes to gitserver1
+                    commit: cb,
+                    gitserverUrls: ['gitserver0', 'gitserver1', 'gitserver2'],
+                })
+            )
         } finally {
             await cleanup()
         }
     })
 
     it('should early-out if repository is unknown', async () => {
-        const ca = util.createCommit(0)
+        const ca = util.createCommit()
 
         const { connection, cleanup } = await util.createCleanPostgresDatabase()
 
         try {
-            const xrepoDatabase = new XrepoDatabase('', connection)
+            const xrepoDatabase = new XrepoDatabase(connection, '')
 
             // This test ensures the following does not make a gitserver request.
             // As we did not register a nock interceptor, any request will result
             // in an exception being thrown.
 
-            await xrepoDatabase.discoverAndUpdateCommit({
-                repository: 'test-repo', // hashes to gitserver1
-                commit: ca,
-                gitserverUrls: ['gitserver0', 'gitserver1', 'gitserver2'],
-                ctx: {},
-            })
+            await xrepoDatabase.updateCommits(
+                'test-repo',
+                await xrepoDatabase.discoverCommits({
+                    repository: 'test-repo', // hashes to gitserver1
+                    commit: ca,
+                    gitserverUrls: ['gitserver0', 'gitserver1', 'gitserver2'],
+                })
+            )
         } finally {
             await cleanup()
         }
@@ -86,11 +95,11 @@ describe('discoverAndUpdateCommit', () => {
 
 describe('discoverAndUpdateTips', () => {
     it('should update tips', async () => {
-        const ca = util.createCommit(0)
-        const cb = util.createCommit(1)
-        const cc = util.createCommit(2)
-        const cd = util.createCommit(3)
-        const ce = util.createCommit(4)
+        const ca = util.createCommit()
+        const cb = util.createCommit()
+        const cc = util.createCommit()
+        const cd = util.createCommit()
+        const ce = util.createCommit()
 
         nock('http://gitserver0')
             .post('/exec', { repo: 'test-repo', args: ['rev-parse', 'HEAD'] })
@@ -99,22 +108,29 @@ describe('discoverAndUpdateTips', () => {
         const { connection, cleanup } = await util.createCleanPostgresDatabase()
 
         try {
-            const xrepoDatabase = new XrepoDatabase('', connection)
-            await xrepoDatabase.updateCommits('test-repo', [
-                [ca, undefined],
-                [cb, ca],
-                [cc, cb],
-                [cd, cc],
-                [ce, cd],
-            ])
+            const xrepoDatabase = new XrepoDatabase(connection, '')
+            await xrepoDatabase.updateCommits(
+                'test-repo',
+                new Map<string, Set<string>>([
+                    [ca, new Set<string>()],
+                    [cb, new Set<string>([ca])],
+                    [cc, new Set<string>([cb])],
+                    [cd, new Set<string>([cc])],
+                    [ce, new Set<string>([cd])],
+                ])
+            )
             await xrepoDatabase.insertDump('test-repo', ca, 'foo')
             await xrepoDatabase.insertDump('test-repo', cb, 'foo')
             await xrepoDatabase.insertDump('test-repo', cc, 'bar')
 
-            await xrepoDatabase.discoverAndUpdateTips({
+            const tipCommit = await xrepoDatabase.discoverTip({
+                repository: 'test-repo',
                 gitserverUrls: ['gitserver0'],
-                ctx: {},
             })
+            if (!tipCommit) {
+                throw new Error('Expected a tip commit')
+            }
+            await xrepoDatabase.updateDumpsVisibleFromTip('test-repo', tipCommit)
 
             const d1 = await xrepoDatabase.getDump('test-repo', ca, 'foo/test.ts')
             const d2 = await xrepoDatabase.getDump('test-repo', cb, 'foo/test.ts')
@@ -148,7 +164,7 @@ describe('discoverTips', () => {
         }
 
         // Map repo to the payloads above
-        const expected = new Map<string, string>()
+        const expected = new Map<string, string | undefined>()
         for (let i = 0; i < 15; i++) {
             expected.set(`test-repo-${i}`, `c${i}`)
         }
@@ -156,17 +172,22 @@ describe('discoverTips', () => {
         const { connection, cleanup } = await util.createCleanPostgresDatabase()
 
         try {
-            const xrepoDatabase = new XrepoDatabase('', connection)
+            const xrepoDatabase = new XrepoDatabase(connection, '')
 
             for (let i = 0; i < 15; i++) {
-                await xrepoDatabase.insertDump(`test-repo-${i}`, util.createCommit(0), '')
+                await xrepoDatabase.insertDump(`test-repo-${i}`, util.createCommit(), '')
             }
 
-            const tips = await xrepoDatabase.discoverTips({
-                gitserverUrls: ['gitserver0', 'gitserver1', 'gitserver2'],
-                ctx: {},
-                batchSize: 5,
-            })
+            const tips = new Map<string, string | undefined>()
+            for (let i = 0; i < 15; i++) {
+                tips.set(
+                    `test-repo-${i}`,
+                    await xrepoDatabase.discoverTip({
+                        repository: `test-repo-${i}`,
+                        gitserverUrls: ['gitserver0', 'gitserver1', 'gitserver2'],
+                    })
+                )
+            }
 
             expect(tips).toEqual(expected)
         } finally {

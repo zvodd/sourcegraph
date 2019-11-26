@@ -16,7 +16,7 @@ describe('XrepoDatabase', () => {
     beforeAll(async () => {
         ;({ connection, cleanup } = await util.createCleanPostgresDatabase())
         storageRoot = await util.createStorageRoot()
-        xrepoDatabase = new XrepoDatabase(storageRoot, connection)
+        xrepoDatabase = new XrepoDatabase(connection, storageRoot)
     })
 
     afterAll(async () => {
@@ -44,27 +44,30 @@ describe('XrepoDatabase', () => {
         //       |              |           |
         //       +-- [c] -- d --+           +--- h
 
-        const ca = util.createCommit(0)
-        const cb = util.createCommit(1)
-        const cc = util.createCommit(2)
-        const cd = util.createCommit(3)
-        const ce = util.createCommit(4)
-        const cf = util.createCommit(5)
-        const cg = util.createCommit(6)
-        const ch = util.createCommit(7)
+        const ca = util.createCommit()
+        const cb = util.createCommit()
+        const cc = util.createCommit()
+        const cd = util.createCommit()
+        const ce = util.createCommit()
+        const cf = util.createCommit()
+        const cg = util.createCommit()
+        const ch = util.createCommit()
 
         // Add relations
-        await xrepoDatabase.updateCommits('foo', [
-            [ca, undefined],
-            [cb, ca],
-            [cc, ca],
-            [cd, cc],
-            [ce, cb],
-            [ce, cd],
-            [cf, ce],
-            [cg, cf],
-            [ch, cf],
-        ])
+        await xrepoDatabase.updateCommits(
+            'foo',
+            new Map<string, Set<string>>([
+                [ca, new Set()],
+                [cb, new Set([ca])],
+                [cc, new Set([ca])],
+                [cd, new Set([cc])],
+                [ce, new Set([cb])],
+                [ce, new Set([cd])],
+                [cf, new Set([ce])],
+                [cg, new Set([cf])],
+                [ch, new Set([cf])],
+            ])
+        )
 
         // Add dumps
         await xrepoDatabase.insertDump('foo', ca, '')
@@ -106,26 +109,29 @@ describe('XrepoDatabase', () => {
         //              |
         //              +-- g -- h
 
-        const ca = util.createCommit(0)
-        const cb = util.createCommit(1)
-        const cc = util.createCommit(2)
-        const cd = util.createCommit(3)
-        const ce = util.createCommit(4)
-        const cf = util.createCommit(5)
-        const cg = util.createCommit(6)
-        const ch = util.createCommit(7)
+        const ca = util.createCommit()
+        const cb = util.createCommit()
+        const cc = util.createCommit()
+        const cd = util.createCommit()
+        const ce = util.createCommit()
+        const cf = util.createCommit()
+        const cg = util.createCommit()
+        const ch = util.createCommit()
 
         // Add relations
-        await xrepoDatabase.updateCommits('foo', [
-            [ca, undefined],
-            [cb, ca],
-            [cc, cb],
-            [cd, ca],
-            [ce, cd],
-            [cf, ce],
-            [cg, cd],
-            [ch, cg],
-        ])
+        await xrepoDatabase.updateCommits(
+            'foo',
+            new Map<string, Set<string>>([
+                [ca, new Set()],
+                [cb, new Set([ca])],
+                [cc, new Set([cb])],
+                [cd, new Set([ca])],
+                [ce, new Set([cd])],
+                [cf, new Set([ce])],
+                [cg, new Set([cd])],
+                [ch, new Set([cg])],
+            ])
+        )
 
         // Add dumps
         await xrepoDatabase.insertDump('foo', cb, '')
@@ -156,15 +162,18 @@ describe('XrepoDatabase', () => {
         //
         // Where LSIF dumps exist at b at roots: root1/ and root2/.
 
-        const ca = util.createCommit(0)
-        const cb = util.createCommit(1)
+        const ca = util.createCommit()
+        const cb = util.createCommit()
         const fields = ['repository', 'commit', 'root']
 
         // Add relations
-        await xrepoDatabase.updateCommits('foo', [
-            [ca, undefined],
-            [cb, ca],
-        ])
+        await xrepoDatabase.updateCommits(
+            'foo',
+            new Map<string, Set<string>>([
+                [ca, new Set()],
+                [cb, new Set([ca])],
+            ])
+        )
 
         // Add dumps
         await xrepoDatabase.insertDump('foo', cb, 'root1/')
@@ -220,10 +229,12 @@ describe('XrepoDatabase', () => {
         const cpen = util.createCommit(MAX_TRAVERSAL_LIMIT / 2 - 1)
         const cmax = util.createCommit(MAX_TRAVERSAL_LIMIT / 2)
 
-        const commits: [string, string][] = Array.from({ length: MAX_TRAVERSAL_LIMIT }, (_, i) => [
-            util.createCommit(i),
-            util.createCommit(i + 1),
-        ])
+        const commits = new Map<string, Set<string>>(
+            Array.from({ length: MAX_TRAVERSAL_LIMIT }, (_, i) => [
+                util.createCommit(i),
+                new Set([util.createCommit(i + 1)]),
+            ])
+        )
 
         // Add relations
         await xrepoDatabase.updateCommits('foo', commits)
@@ -271,24 +282,27 @@ describe('XrepoDatabase', () => {
         //
         // a -- b -- c -- d -- e -- f -- g
 
-        const ca = util.createCommit(0)
-        const cb = util.createCommit(1)
-        const cc = util.createCommit(2)
-        const cd = util.createCommit(3)
-        const ce = util.createCommit(4)
-        const cf = util.createCommit(5)
-        const cg = util.createCommit(6)
+        const ca = util.createCommit()
+        const cb = util.createCommit()
+        const cc = util.createCommit()
+        const cd = util.createCommit()
+        const ce = util.createCommit()
+        const cf = util.createCommit()
+        const cg = util.createCommit()
 
         // Add relations
-        await xrepoDatabase.updateCommits('foo', [
-            [ca, undefined],
-            [cb, ca],
-            [cc, cb],
-            [cd, cc],
-            [ce, cd],
-            [cf, ce],
-            [cg, cf],
-        ])
+        await xrepoDatabase.updateCommits(
+            'foo',
+            new Map<string, Set<string>>([
+                [ca, new Set()],
+                [cb, new Set([ca])],
+                [cc, new Set([cb])],
+                [cd, new Set([cc])],
+                [ce, new Set([cd])],
+                [cf, new Set([ce])],
+                [cg, new Set([cf])],
+            ])
+        )
 
         // Add dumps
         await xrepoDatabase.insertDump('foo', ca, 'r1')
@@ -312,30 +326,31 @@ describe('XrepoDatabase', () => {
         //     |                           |
         //     +-- [f] --- g --------------+
 
-        const ca = util.createCommit(0)
-        const cb = util.createCommit(1)
-        const cc = util.createCommit(2)
-        const cd = util.createCommit(3)
-        const ce = util.createCommit(4)
-        const ch = util.createCommit(5)
-        const ci = util.createCommit(6)
-        const cf = util.createCommit(7)
-        const cg = util.createCommit(8)
+        const ca = util.createCommit()
+        const cb = util.createCommit()
+        const cc = util.createCommit()
+        const cd = util.createCommit()
+        const ce = util.createCommit()
+        const ch = util.createCommit()
+        const ci = util.createCommit()
+        const cf = util.createCommit()
+        const cg = util.createCommit()
 
         // Add relations
-        await xrepoDatabase.updateCommits('foo', [
-            [ca, undefined],
-            [cb, ca],
-            [cc, cb],
-            [cd, ca],
-            [ce, cd],
-            [ch, cc],
-            [ch, ce],
-            [ci, ch],
-            [ci, cg],
-            [cf, ca],
-            [cg, cf],
-        ])
+        await xrepoDatabase.updateCommits(
+            'foo',
+            new Map<string, Set<string>>([
+                [ca, new Set()],
+                [cb, new Set([ca])],
+                [cc, new Set([cb])],
+                [cd, new Set([ca])],
+                [ce, new Set([cd])],
+                [ch, new Set([cc, ce])],
+                [ci, new Set([ch, cg])],
+                [cf, new Set([ca])],
+                [cg, new Set([cf])],
+            ])
+        )
 
         // Add dumps
         await xrepoDatabase.insertDump('foo', cb, 'r2')
@@ -373,10 +388,12 @@ describe('XrepoDatabase', () => {
         const cpen = util.createCommit(MAX_TRAVERSAL_LIMIT - 1)
         const cmax = util.createCommit(MAX_TRAVERSAL_LIMIT)
 
-        const commits: [string, string][] = Array.from({ length: MAX_TRAVERSAL_LIMIT + 1 }, (_, i) => [
-            util.createCommit(i),
-            util.createCommit(i + 1),
-        ])
+        const commits = new Map<string, Set<string>>(
+            Array.from({ length: MAX_TRAVERSAL_LIMIT + 1 }, (_, i) => [
+                util.createCommit(i),
+                new Set([util.createCommit(i + 1)]),
+            ])
+        )
 
         // Add relations
         await xrepoDatabase.updateCommits('foo', commits)
@@ -406,12 +423,12 @@ describe('XrepoDatabase', () => {
     })
 
     it('should respect bloom filter', async () => {
-        const ca = util.createCommit(0)
-        const cb = util.createCommit(1)
-        const cc = util.createCommit(2)
-        const cd = util.createCommit(3)
-        const ce = util.createCommit(4)
-        const cf = util.createCommit(5)
+        const ca = util.createCommit()
+        const cb = util.createCommit()
+        const cc = util.createCommit()
+        const cd = util.createCommit()
+        const ce = util.createCommit()
+        const cf = util.createCommit()
 
         const updatePackages = (commit: string, root: string, identifiers: string[]): Promise<xrepoModels.LsifDump> =>
             xrepoDatabase.addPackagesAndReferences(
@@ -454,14 +471,17 @@ describe('XrepoDatabase', () => {
             return references.map(reference => reference.dump_id).sort()
         }
 
-        await xrepoDatabase.updateCommits('foo', [
-            [ca, undefined],
-            [cb, ca],
-            [cc, cb],
-            [cd, cc],
-            [ce, cd],
-            [cf, ce],
-        ])
+        await xrepoDatabase.updateCommits(
+            'foo',
+            new Map<string, Set<string>>([
+                [ca, new Set()],
+                [cb, new Set([ca])],
+                [cc, new Set([cb])],
+                [cd, new Set([cc])],
+                [ce, new Set([cd])],
+                [cf, new Set([ce])],
+            ])
+        )
         await xrepoDatabase.updateDumpsVisibleFromTip('foo', cf)
 
         // only references containing identifier y
@@ -496,7 +516,7 @@ describe('XrepoDatabase', () => {
             // uses the identifier. In all, there are fifty uses spread over 5 pages.
             const isUse = i >= 100 && i % 3 === 0
 
-            const dump = await updatePackages(util.createCommit(0), `r${i}`, ['x', isUse ? 'y' : 'z'])
+            const dump = await updatePackages(util.createCommit(), `r${i}`, ['x', isUse ? 'y' : 'z'])
             dump.visibleAtTip = true
             await connection.getRepository(xrepoModels.LsifDump).save(dump)
 
@@ -520,9 +540,9 @@ describe('XrepoDatabase', () => {
     })
 
     it('references only returned if dumps visible at tip', async () => {
-        const ca = util.createCommit(0)
-        const cb = util.createCommit(1)
-        const cc = util.createCommit(2)
+        const ca = util.createCommit()
+        const cb = util.createCommit()
+        const cc = util.createCommit()
 
         const references = [
             {

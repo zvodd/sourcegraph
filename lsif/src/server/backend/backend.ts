@@ -2,26 +2,13 @@ import * as dumpModels from '../../shared/models/dump'
 import * as lsp from 'vscode-languageserver-protocol'
 import * as settings from '../settings'
 import * as xrepoModels from '../../shared/models/xrepo'
-import { addTags, logAndTraceCall, logSpan, TracingContext } from '../../shared/tracing'
+import { addTags, logSpan, TracingContext } from '../../shared/tracing'
 import { ConnectionCache, DocumentCache, ResultChunkCache } from './cache'
-import { createRemoteUri, Database, sortMonikers } from './database'
+import { Database, sortMonikers, InternalLocation } from './database'
 import { dbFilename } from '../../shared/paths'
 import { isEqual, uniqWith } from 'lodash'
 import { mustGet } from '../../shared/maps'
 import { XrepoDatabase } from '../../shared/xrepo/xrepo'
-
-/**
- * No matching LSIF dump was found. This could be because:
- *
- * - You're currently browsing while on a commit that is too far away from the
- *   last uploaded LSIF dump
- * - You're currently viewing a file that is under a different root from what
- *   the LSIF dump is associated with (i.e. the current file is not contained in
- *   the dump)
- * - You're currently viewing a file that is not part of the LSIF dump (e.g. due
- *   to tsconfig.json exclude rules)
- */
-export class NoLSIFDumpError extends Error {}
 
 /**
  * Context describing the current request for paginated results.
@@ -87,6 +74,49 @@ export interface ReferencePaginationCursor {
 }
 
 /**
+ * Converts a file in the repository to the corresponding file in the
+ * database.
+ *
+ * @param root The root of the dump.
+ * @param path The path within the dump.
+ */
+const pathToDatabase = (root: string, path: string): string => (path.startsWith(root) ? path.slice(root.length) : path)
+
+/**
+ * Converts a location in a dump to the corresponding location in the repository.
+ *
+ * @param root The root of the dump.
+ * @param location The original location.
+ */
+const locationFromDatabase = (root: string, { dump, path, range }: InternalLocation): InternalLocation => ({
+    dump,
+    path: `${root}${path}`,
+    range,
+})
+
+/**
+ * Convert an `InternalLocation` to an LSP location object. The URI of the resulting
+ * location object will be a relative if the dump describes a location in the source
+ * repository and wil be an absolute URI otherwise.
+ *
+ * @param repository The source repository.
+ * @param location The location object.
+ */
+export const internalLocationToLocation = (
+    repository: string,
+    { dump, path, range }: InternalLocation
+): lsp.Location => {
+    if (dump.repository !== repository) {
+        const url = new URL(`git://${dump.repository}`)
+        url.search = dump.commit
+        url.hash = path
+        path = url.href
+    }
+
+    return lsp.Location.create(path, range)
+}
+
+/**
  * A wrapper around code intelligence operations.
  */
 export class Backend {
@@ -136,6 +166,15 @@ export class Backend {
     }
 
     /**
+     * Delete a dump.
+     *
+     * @param dump The dump.
+     */
+    public deleteDump(dump: xrepoModels.LsifDump): Promise<void> {
+        return this.xrepoDatabase.deleteDump(dump)
+    }
+
+    /**
      * Determine if data exists for a particular document in this database.
      *
      * @param repository The repository name.
@@ -144,19 +183,17 @@ export class Backend {
      * @param ctx The tracing context.
      */
     public async exists(repository: string, commit: string, path: string, ctx: TracingContext = {}): Promise<boolean> {
-        try {
-            const { database, dump } = await this.loadClosestDatabase(repository, commit, path, ctx)
-            return await database.exists(this.pathToDatabase(dump.root, path))
-        } catch (error) {
-            if (error instanceof NoLSIFDumpError) {
-                return false
-            }
-            throw error
+        const closestDatabaseAndDump = await this.loadClosestDatabase(repository, commit, path, ctx)
+        if (!closestDatabaseAndDump) {
+            return false
         }
+        const { database, dump } = closestDatabaseAndDump
+        return database.exists(pathToDatabase(dump.root, path))
     }
 
     /**
-     * Return the location for the definition of the reference at the given position.
+     * Return the location for the definition of the reference at the given position. Returns
+     * undefined if no dump can be loaded to answer this query.
      *
      * @param repository The repository name.
      * @param commit The commit.
@@ -170,25 +207,46 @@ export class Backend {
         path: string,
         position: lsp.Position,
         ctx: TracingContext = {}
-    ): Promise<lsp.Location[]> {
-        const { database, dump, ctx: newCtx } = await this.loadClosestDatabase(repository, commit, path, ctx)
+    ): Promise<lsp.Location[] | undefined> {
+        const result = await this.internalDefinitions(repository, commit, path, position, ctx)
+        if (result === undefined) {
+            return undefined
+        }
 
-        // Try to find definitions in the same dump.
-        const definitions = (
-            await database.definitions(this.pathToDatabase(dump.root, path), position, newCtx)
-        ).map(loc => this.locationFromDatabase(dump.root, loc))
+        return result.locations.map(loc => internalLocationToLocation(repository, loc))
+    }
+
+    private async internalDefinitions(
+        repository: string,
+        commit: string,
+        path: string,
+        position: lsp.Position,
+        ctx: TracingContext = {}
+    ): Promise<{ dump: xrepoModels.LsifDump; locations: InternalLocation[] } | undefined> {
+        const closestDatabaseAndDump = await this.loadClosestDatabase(repository, commit, path, ctx)
+        if (!closestDatabaseAndDump) {
+            if (ctx.logger) {
+                ctx.logger.warn('No database could be loaded', { repository, commit, path })
+            }
+
+            return undefined
+        }
+        const { database, dump, ctx: newCtx } = closestDatabaseAndDump
+
+        // Construct path within dump
+        const pathInDb = pathToDatabase(dump.root, path)
+
+        // Try to find definitions in the same dump
+        const dbDefinitions = await database.definitions(pathInDb, position, newCtx)
+        const definitions = dbDefinitions.map(loc => locationFromDatabase(dump.root, loc))
         if (definitions.length > 0) {
-            return definitions
+            return { dump, locations: definitions }
         }
 
         // Try to find definitions in other dumps
-        const { document, ranges } = await database.getRangeByPosition(
-            this.pathToDatabase(dump.root, path),
-            position,
-            ctx
-        )
+        const { document, ranges } = await database.getRangeByPosition(pathInDb, position, ctx)
         if (!document || ranges.length === 0) {
-            return []
+            return { dump, locations: [] }
         }
 
         // First, we find the monikers for each range, from innermost to
@@ -211,24 +269,23 @@ export class Backend {
                         dumpModels.DefinitionModel,
                         ctx
                     )
-                    if (remoteDefinitions) {
-                        return remoteDefinitions
+                    if (remoteDefinitions.length > 0) {
+                        return { dump, locations: remoteDefinitions }
                     }
                 } else {
                     // This symbol was not imported from another database. We search the definitions
                     // table of our own database in case there was a definition that wasn't properly
                     // attached to a result set but did have the correct monikers attached.
 
-                    const localDefinitions = (
-                        await database.monikerResults(dumpModels.DefinitionModel, moniker, ctx)
-                    ).map(loc => this.locationFromDatabase(dump.root, loc))
-                    if (localDefinitions) {
-                        return localDefinitions
+                    const monikerResults = await database.monikerResults(dumpModels.DefinitionModel, moniker, ctx)
+                    const localDefinitions = monikerResults.map(loc => locationFromDatabase(dump.root, loc))
+                    if (localDefinitions.length > 0) {
+                        return { dump, locations: localDefinitions }
                     }
                 }
             }
         }
-        return []
+        return { dump, locations: [] }
     }
 
     /**
@@ -276,7 +333,7 @@ export class Backend {
         moniker: dumpModels.MonikerData,
         model: typeof dumpModels.DefinitionModel | typeof dumpModels.ReferenceModel,
         ctx: TracingContext = {}
-    ): Promise<lsp.Location[]> {
+    ): Promise<InternalLocation[]> {
         const packageInformation = this.lookupPackageInformation(document, moniker, ctx)
         if (!packageInformation) {
             return []
@@ -298,23 +355,8 @@ export class Backend {
             packageCommit: packageEntity.dump.commit,
         })
 
-        const db = new Database(
-            this.connectionCache,
-            this.documentCache,
-            this.resultChunkCache,
-            packageEntity.dump.id,
-            dbFilename(
-                this.storageRoot,
-                packageEntity.dump.id,
-                packageEntity.dump.repository,
-                packageEntity.dump.commit
-            )
-        )
-        return (await db.monikerResults(model, moniker, ctx)).map(loc =>
-            mapLocation(
-                uri => createRemoteUri(packageEntity.dump, uri),
-                this.locationFromDatabase(packageEntity.dump.root, loc)
-            )
+        return (await this.createDatabase(packageEntity.dump).monikerResults(model, moniker, ctx)).map(loc =>
+            locationFromDatabase(packageEntity.dump.root, loc)
         )
     }
 
@@ -340,7 +382,7 @@ export class Backend {
         limit: number,
         offset: number,
         ctx: TracingContext = {}
-    ): Promise<{ locations: lsp.Location[]; totalCount: number; newOffset: number }> {
+    ): Promise<{ locations: InternalLocation[]; totalCount: number; newOffset: number }> {
         const { references, totalCount, newOffset } = await this.xrepoDatabase.getReferences({
             repository,
             scheme: moniker.scheme,
@@ -380,7 +422,7 @@ export class Backend {
         limit: number,
         offset: number,
         ctx: TracingContext = {}
-    ): Promise<{ locations: lsp.Location[]; totalCount: number; newOffset: number }> {
+    ): Promise<{ locations: InternalLocation[]; totalCount: number; newOffset: number }> {
         const { references, totalCount, newOffset } = await this.xrepoDatabase.getSameRepoRemoteReferences({
             repository,
             commit,
@@ -412,12 +454,12 @@ export class Backend {
         dumps: xrepoModels.LsifDump[],
         remote: boolean,
         ctx: TracingContext = {}
-    ): Promise<lsp.Location[]> {
+    ): Promise<InternalLocation[]> {
         logSpan(ctx, 'package_references', {
             references: dumps.map(d => ({ repository: d.repository, commit: d.commit })),
         })
 
-        let locations: lsp.Location[] = []
+        let locations: InternalLocation[] = []
         for (const dump of dumps) {
             // Skip the remote reference that show up for ourselves - we've already gathered
             // these in the previous step of the references query.
@@ -425,20 +467,9 @@ export class Backend {
                 continue
             }
 
-            const db = new Database(
-                this.connectionCache,
-                this.documentCache,
-                this.resultChunkCache,
-                dump.id,
-                dbFilename(this.storageRoot, dump.id, dump.repository, dump.commit)
-            )
-
-            const references = (await db.monikerResults(dumpModels.ReferenceModel, moniker, ctx)).map(loc =>
-                mapLocation(
-                    uri => (remote ? createRemoteUri(dump, uri) : uri),
-                    this.locationFromDatabase(dump.root, loc)
-                )
-            )
+            const references = (
+                await this.createDatabase(dump).monikerResults(dumpModels.ReferenceModel, moniker, ctx)
+            ).map(loc => locationFromDatabase(dump.root, loc))
             locations = locations.concat(references)
         }
 
@@ -446,7 +477,23 @@ export class Backend {
     }
 
     /**
-     * Return a list of locations which reference the definition at the given position.
+     * Create a database instance backed by the given dump.
+     *
+     * @param dump The dump.
+     */
+    private createDatabase(dump: xrepoModels.LsifDump): Database {
+        return new Database(
+            this.connectionCache,
+            this.documentCache,
+            this.resultChunkCache,
+            dump,
+            dbFilename(this.storageRoot, dump.id, dump.repository, dump.commit)
+        )
+    }
+
+    /**
+     * Return a list of locations which reference the definition at the given position. Returns
+     * undefined if no dump can be loaded to answer this query.
      *
      * @param repository The repository name.
      * @param commit The commit.
@@ -462,8 +509,34 @@ export class Backend {
         position: lsp.Position,
         paginationContext: ReferencePaginationContext = { limit: 10 },
         ctx: TracingContext = {}
-    ): Promise<{ locations: lsp.Location[]; cursor?: ReferencePaginationCursor }> {
+    ): Promise<{ locations: lsp.Location[]; cursor?: ReferencePaginationCursor } | undefined> {
+        const result = await this.internalReferences(repository, commit, path, position, paginationContext, ctx)
+        if (result === undefined) {
+            return undefined
+        }
+
+        return {
+            ...result,
+            locations: result.locations.map(loc => internalLocationToLocation(repository, loc)),
+        }
+    }
+
+    private async internalReferences(
+        repository: string,
+        commit: string,
+        path: string,
+        position: lsp.Position,
+        paginationContext: ReferencePaginationContext = { limit: 10 },
+        ctx: TracingContext = {}
+    ): Promise<
+        { dump: xrepoModels.LsifDump; locations: InternalLocation[]; cursor?: ReferencePaginationCursor } | undefined
+    > {
         if (paginationContext.cursor) {
+            const dump = await this.xrepoDatabase.getDumpById(paginationContext.cursor.dumpId)
+            if (dump === undefined) {
+                return undefined
+            }
+
             // Continue from previous page
             const results = await this.performRemoteReferences(
                 repository,
@@ -472,30 +545,38 @@ export class Backend {
                 paginationContext.cursor,
                 ctx
             )
-            if (results) {
-                return results
+            if (results !== undefined) {
+                return { dump, ...results }
             }
 
             // Do not fall through
-            return { locations: [] }
+            return { dump, locations: [] }
         }
 
-        const { database, dump, ctx: newCtx } = await this.loadClosestDatabase(repository, commit, path, ctx)
-        let locations = (await database.references(this.pathToDatabase(dump.root, path), position, newCtx)).map(loc =>
-            this.locationFromDatabase(dump.root, loc)
-        )
+        const closestDatabaseAndDump = await this.loadClosestDatabase(repository, commit, path, ctx)
+        if (!closestDatabaseAndDump) {
+            if (ctx.logger) {
+                ctx.logger.warn('No database could be loaded', { repository, commit, path })
+            }
+
+            return undefined
+        }
+        const { database, dump, ctx: newCtx } = closestDatabaseAndDump
+
+        // Construct path within dump
+        const pathInDb = pathToDatabase(dump.root, path)
+
+        // Try to find references in the same dump
+        const dbReferences = await database.references(pathInDb, position, newCtx)
+        let locations = dbReferences.map(loc => locationFromDatabase(dump.root, loc))
 
         // Next, we do a moniker search in two stages, described below. We process the
         // monikers for each range sequentially in order of priority for each stage, such
         // that import monikers, if any exist, will be processed first.
 
-        const { document, ranges } = await database.getRangeByPosition(
-            this.pathToDatabase(dump.root, path),
-            position,
-            ctx
-        )
+        const { document, ranges } = await database.getRangeByPosition(pathInDb, position, ctx)
         if (!document || ranges.length === 0) {
-            return { locations: [] }
+            return { dump, locations: [] }
         }
 
         for (const range of ranges) {
@@ -509,11 +590,8 @@ export class Backend {
             // in the LSIF data.
 
             for (const moniker of monikers) {
-                locations = locations.concat(
-                    (await database.monikerResults(dumpModels.ReferenceModel, moniker, ctx)).map(loc =>
-                        this.locationFromDatabase(dump.root, loc)
-                    )
-                )
+                const monikerResults = await database.monikerResults(dumpModels.ReferenceModel, moniker, ctx)
+                locations = locations.concat(monikerResults.map(loc => locationFromDatabase(dump.root, loc)))
             }
 
             // Next, we perform an xrepo search for uses of each nonlocal moniker. We stop processing after
@@ -523,9 +601,8 @@ export class Backend {
             for (const moniker of monikers) {
                 if (moniker.kind === 'import') {
                     // Get locations in the defining package
-                    locations = locations.concat(
-                        await this.lookupMoniker(document, moniker, dumpModels.ReferenceModel, ctx)
-                    )
+                    const monikerLocations = await this.lookupMoniker(document, moniker, dumpModels.ReferenceModel, ctx)
+                    locations = locations.concat(monikerLocations)
                 }
 
                 const packageInformation = this.lookupPackageInformation(document, moniker, ctx)
@@ -555,8 +632,9 @@ export class Backend {
                     ctx
                 )
 
-                if (results) {
+                if (results !== undefined) {
                     return {
+                        dump,
                         ...results,
                         // TODO - determine source of duplication
                         locations: uniqWith(locations.concat(results.locations), isEqual),
@@ -566,7 +644,7 @@ export class Backend {
         }
 
         // TODO - determine source of duplication
-        return { locations: uniqWith(locations, isEqual) }
+        return { dump, locations: uniqWith(locations, isEqual) }
     }
 
     /**
@@ -586,7 +664,7 @@ export class Backend {
         limit: number,
         cursor: ReferencePaginationCursor,
         ctx: TracingContext = {}
-    ): Promise<{ locations: lsp.Location[]; cursor?: ReferencePaginationCursor } | undefined> {
+    ): Promise<{ locations: InternalLocation[]; cursor?: ReferencePaginationCursor } | undefined> {
         const moniker = { scheme: cursor.scheme, identifier: cursor.identifier }
         const packageInformation = { name: cursor.name, version: cursor.version }
 
@@ -667,7 +745,8 @@ export class Backend {
     }
 
     /**
-     * Return the hover content for the definition or reference at the given position.
+     * Return the hover content for the definition or reference at the given position. Returns
+     * undefined if no dump can be loaded to answer this query.
      *
      * @param repository The repository name.
      * @param commit The commit.
@@ -681,86 +760,73 @@ export class Backend {
         path: string,
         position: lsp.Position,
         ctx: TracingContext = {}
-    ): Promise<lsp.Hover | null> {
-        const { database, dump, ctx: newCtx } = await this.loadClosestDatabase(repository, commit, path, ctx)
-        return database.hover(this.pathToDatabase(dump.root, path), position, newCtx)
+    ): Promise<lsp.Hover | null | undefined> {
+        const closestDatabaseAndDump = await this.loadClosestDatabase(repository, commit, path, ctx)
+        if (!closestDatabaseAndDump) {
+            if (ctx.logger) {
+                ctx.logger.warn('No database could be loaded', { repository, commit, path })
+            }
+
+            return undefined
+        }
+        const { database, dump, ctx: newCtx } = closestDatabaseAndDump
+
+        // Try to find hover in the same dump
+        const hover = await database.hover(pathToDatabase(dump.root, path), position, newCtx)
+        if (hover !== null) {
+            return hover
+        }
+
+        // If we don't have a local hover, lookup the definitions of the
+        // range and read the hover data from the remote database. This
+        // can happen when the indexer only gives a moniker but does not
+        // give hover data for externally defined symbols.
+
+        const result = await this.internalDefinitions(repository, commit, path, position, ctx)
+        if (result === undefined || result.locations.length === 0) {
+            return null
+        }
+
+        return this.createDatabase(result.locations[0].dump).hover(
+            pathToDatabase(result.locations[0].dump.root, result.locations[0].path),
+            result.locations[0].range.start,
+            newCtx
+        )
     }
 
     /**
-     * Create a database instance for the given repository at the commit
-     * closest to the target commit for which we have LSIF data. Returns
-     * undefined if no such database can be created. Will also return a
-     * tracing context tagged with the closest commit found. This new
-     * tracing context should be used in all downstream requests so that
-     * the original commit and the effective commit are both known.
+     * Create a database instance for the given repository at the commit closest to the target
+     * commit for which we have LSIF data. Also returns the dump instance backing the database.
+     * Returns an undefined database and dump if no such dump can be found. Will also return a
+     * tracing context tagged with the closest commit found. This new tracing context should
+     * be used in all downstream requests so that the original commit and the effective commit
+     * are both known.
      *
      * @param repository The repository name.
      * @param commit The target commit.
      * @param file One of the files in the dump.
      * @param ctx The tracing context.
      */
-    private loadClosestDatabase(
+    private async loadClosestDatabase(
         repository: string,
         commit: string,
         file: string,
         ctx: TracingContext = {}
-    ): Promise<{ database: Database; dump: xrepoModels.LsifDump; ctx: TracingContext }> {
-        return logAndTraceCall(ctx, 'loading closest database', async ctx => {
-            // Determine the closest commit that we actually have LSIF data for. If the commit is
-            // not tracked, then commit data is requested from gitserver and insert the ancestors
-            // data for this commit.
-            const dump = await logAndTraceCall(ctx, 'determining closest commit', (ctx: TracingContext) =>
-                this.xrepoDatabase.findClosestDump(repository, commit, file, ctx, this.fetchConfiguration().gitServers)
-            )
-            if (!dump) {
-                throw new NoLSIFDumpError()
-            }
+    ): Promise<{ database: Database; dump: xrepoModels.LsifDump; ctx: TracingContext } | undefined> {
+        // Determine the closest commit that we actually have LSIF data for. If the commit is
+        // not tracked, then commit data is requested from gitserver and insert the ancestors
+        // data for this commit.
+        const dump = await this.xrepoDatabase.findClosestDump(
+            repository,
+            commit,
+            file,
+            ctx,
+            this.fetchConfiguration().gitServers
+        )
+        if (dump) {
+            return { database: this.createDatabase(dump), dump, ctx: addTags(ctx, { closestCommit: dump.commit }) }
+        }
 
-            return {
-                database: new Database(
-                    this.connectionCache,
-                    this.documentCache,
-                    this.resultChunkCache,
-                    dump.id,
-                    dbFilename(this.storageRoot, dump.id, dump.repository, dump.commit)
-                ),
-                dump,
-                ctx: addTags(ctx, { closestCommit: dump.commit }),
-            }
-        })
+        return undefined
     }
-
-    /**
-     * Converts a file in the repository to the corresponding file in the
-     * database.
-     *
-     * @param root The root of the dump.
-     * @param path The path within the dump.
-     */
-    private pathToDatabase(root: string, path: string): string {
-        return path.startsWith(root) ? path.slice(root.length) : path
-    }
-
-    /**
-     * Converts a file in the database to the corresponding file in the
-     * repository.
-     *
-     * @param root The root of the dump.
-     * @param path The path within the dump.
-     */
-    private pathFromDatabase(root: string, path: string): string {
-        return `${root}${path}`
-    }
-
-    /**
-     * Converts a location in the database to the corresponding location in the
-     * repository.
-     */
-    private locationFromDatabase(root: string, { uri, range }: lsp.Location): lsp.Location {
-        return lsp.Location.create(this.pathFromDatabase(root, uri), range)
-    }
-}
-
-function mapLocation(map: (uri: string) => string, { uri, range }: lsp.Location): lsp.Location {
-    return lsp.Location.create(map(uri), range)
 }

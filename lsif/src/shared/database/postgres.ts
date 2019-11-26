@@ -1,7 +1,9 @@
+import * as metrics from './metrics'
 import * as xrepoModels from '../models/xrepo'
 import pRetry from 'p-retry'
 import { Configuration } from '../config/config'
-import { Connection, createConnection as _createConnection } from 'typeorm'
+import { Connection, createConnection as _createConnection, EntityManager } from 'typeorm'
+import { instrument } from '../metrics'
 import { Logger } from 'winston'
 import { PostgresConnectionCredentialsOptions } from 'typeorm/driver/postgres/PostgresConnectionCredentialsOptions'
 import { readEnvInt } from '../settings'
@@ -86,7 +88,7 @@ export async function createPostgresConnection(configuration: Configuration, log
 function connect(connectionOptions: PostgresConnectionCredentialsOptions, logger: Logger): Promise<Connection> {
     return pRetry(
         () => {
-            logger.debug('connecting to cross-repository database')
+            logger.debug('Connecting to cross-repository database')
             return connectPostgres(connectionOptions, '')
         },
         {
@@ -127,11 +129,11 @@ export function connectPostgres(
  */
 function waitForMigrations(connection: Connection, logger: Logger): Promise<void> {
     const check = async (): Promise<void> => {
-        logger.debug('checking database version', { requiredVersion: MINIMUM_MIGRATION_VERSION })
+        logger.debug('Checking database version', { requiredVersion: MINIMUM_MIGRATION_VERSION })
 
         const version = parseInt(await getMigrationVersion(connection), 10)
         if (isNaN(version) || version < MINIMUM_MIGRATION_VERSION) {
-            throw new Error('cross-repository database not up to date')
+            throw new Error('Cross-repository database not up to date')
         }
     }
 
@@ -161,4 +163,27 @@ async function getMigrationVersion(connection: Connection): Promise<string> {
     }
 
     throw new Error('Unusable migration state.')
+}
+
+/**
+ * Instrument `callback` with Postgres query histogram and error counter.
+ *
+ * @param callback The function invoke with the connection.
+ */
+export function instrumentQuery<T>(callback: () => Promise<T>): Promise<T> {
+    return instrument(metrics.xrepoQueryDurationHistogram, metrics.xrepoQueryErrorsCounter, callback)
+}
+
+/**
+ * Invoke `callback` with a transactional Postgres entity manager created
+ * from the wrapped connection.
+ *
+ * @param connection The Postgres connection.
+ * @param callback The function invoke with the entity manager.
+ */
+export function withInstrumentedTransaction<T>(
+    connection: Connection,
+    callback: (connection: EntityManager) => Promise<T>
+): Promise<T> {
+    return instrumentQuery(() => connection.transaction(callback))
 }

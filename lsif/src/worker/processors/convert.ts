@@ -2,22 +2,26 @@ import * as constants from '../../shared/constants'
 import * as fs from 'mz/fs'
 import * as path from 'path'
 import * as settings from '../settings'
+import { addTags, TracingContext } from '../../shared/tracing'
+import { Connection } from 'typeorm'
 import { convertLsif } from '../importer/importer'
 import { createSilentLogger } from '../../shared/logging'
 import { dbFilename } from '../../shared/paths'
-import { logAndTraceCall, TracingContext } from '../../shared/tracing'
-import { XrepoDatabase } from '../../shared/xrepo/xrepo'
 import { Job } from 'bull'
+import { withLock } from '../../shared/locker/locker'
+import { XrepoDatabase } from '../../shared/xrepo/xrepo'
 
 /**
  * Create a job that takes a repository, commit, and filename containing the gzipped
  * input of an LSIF dump and converts it to a SQLite database. This will also populate
  * the cross-repo database for this dump.
  *
+ * @param connection The Postgres connection.
  * @param xrepoDatabase The cross-repo database.
  * @param fetchConfiguration A function that returns the current configuration.
  */
 export const createConvertJobProcessor = (
+    connection: Connection,
     xrepoDatabase: XrepoDatabase,
     fetchConfiguration: () => { gitServers: string[] }
 ) => async (
@@ -25,61 +29,140 @@ export const createConvertJobProcessor = (
     { repository, commit, root, filename }: { repository: string; commit: string; root: string; filename: string },
     ctx: TracingContext
 ): Promise<void> => {
-    await logAndTraceCall(ctx, 'converting LSIF data', async (ctx: TracingContext) => {
-        const tempFile = path.join(settings.STORAGE_ROOT, constants.TEMP_DIR, path.basename(filename))
+    const { logger = createSilentLogger(), span } = addTags(ctx, { repository, commit, root })
+    await convertDatabase(xrepoDatabase, repository, commit, root, filename, job.timestamp, ctx)
+    await updateCommitsAndDumpsVisibleFromTip(xrepoDatabase, fetchConfiguration, repository, commit, { logger, span })
+    await purgeOldDumps(connection, xrepoDatabase, settings.STORAGE_ROOT, settings.DBS_DIR_MAXIMUM_SIZE_BYTES, ctx)
+}
 
-        try {
-            // Create database in a temp path
-            const { packages, references } = await convertLsif(filename, tempFile, ctx)
+/**
+ * Convert the LSIF dump input into a SQLite database, create an LSIF dump record in the
+ * cross-repo database, and populate the cross-repo database with packages and reference
+ * data.
+ *
+ * @param xrepoDatabase The cross-repo database.
+ * @param repository The repository.
+ * @param commit The commit.
+ * @param root The root of the dump.
+ * @param filename The path to gzipped LSIF dump.
+ * @param timestamp The time the job was enqueued.
+ * @param ctx The tracing context.
+ */
+async function convertDatabase(
+    xrepoDatabase: XrepoDatabase,
+    repository: string,
+    commit: string,
+    root: string,
+    filename: string,
+    timestamp: number,
+    { logger = createSilentLogger(), span }: TracingContext
+): Promise<void> {
+    const tempFile = path.join(settings.STORAGE_ROOT, constants.TEMP_DIR, path.basename(filename))
 
-            // Add packages and references to the xrepo db
-            const dump = await logAndTraceCall(ctx, 'populating cross-repo database', () =>
-                xrepoDatabase.addPackagesAndReferences(
-                    repository,
-                    commit,
-                    root,
-                    new Date(job.timestamp),
-                    packages,
-                    references
-                )
-            )
+    try {
+        // Create database in a temp path
+        const { packages, references } = await convertLsif(filename, tempFile, { logger, span })
 
-            // Move the temp file where it can be found by the server
-            await fs.rename(tempFile, dbFilename(settings.STORAGE_ROOT, dump.id, repository, commit))
-        } catch (error) {
-            // Don't leave busted artifacts
-            await fs.unlink(tempFile)
-            throw error
-        }
-    })
+        // Insert dump and add packages and references to the xrepo db
+        const dump = await xrepoDatabase.addPackagesAndReferences(
+            repository,
+            commit,
+            root,
+            new Date(timestamp),
+            packages,
+            references,
+            { logger, span }
+        )
 
-    // Update commit parentage information for this commit
-    await xrepoDatabase.discoverAndUpdateCommit({
+        // Move the temp file where it can be found by the server
+        await fs.rename(tempFile, dbFilename(settings.STORAGE_ROOT, dump.id, repository, commit))
+
+        logger.info('Created dump', {
+            repository: dump.repository,
+            commit: dump.commit,
+            root: dump.root,
+        })
+    } catch (error) {
+        // Don't leave busted artifacts
+        await fs.unlink(tempFile)
+        throw error
+    }
+
+    await fs.unlink(filename)
+}
+
+/**
+ * Update the commits for this repo, and update the visible_at_tip flag on the dumps
+ * of this repository. This will query for commits starting from both the current tip
+ * of the repo and from the commit that was just processed.
+ *
+ * @param xrepoDatabase The cross-repo database.
+ * @param fetchConfiguration A function that returns the current configuration.
+ * @param repository The repository.
+ * @param commit The commit.
+ * @param ctx The tracing context.
+ */
+async function updateCommitsAndDumpsVisibleFromTip(
+    xrepoDatabase: XrepoDatabase,
+    fetchConfiguration: () => { gitServers: string[] },
+    repository: string,
+    commit: string,
+    ctx: TracingContext
+): Promise<void> {
+    const gitserverUrls = fetchConfiguration().gitServers
+
+    const tipCommit = await xrepoDatabase.discoverTip({ repository, gitserverUrls, ctx })
+    if (tipCommit === undefined) {
+        throw new Error('No tip commit available for repository')
+    }
+
+    const commits = await xrepoDatabase.discoverCommits({
         repository,
         commit,
-        gitserverUrls: fetchConfiguration().gitServers,
+        gitserverUrls,
         ctx,
     })
 
-    // Remove input
-    await fs.unlink(filename)
+    if (tipCommit !== commit) {
+        // If the tip is ahead of this commit, we also want to discover all of
+        // the commits between this commit and the tip so that we can accurately
+        // determine what is visible from the tip. If we do not do this before the
+        // updateDumpsVisibleFromTip call below, no dumps will be reachable from
+        // the tip and all dumps will be invisible.
 
-    // Clean up disk space if necessary
-    await purgeOldDumps(settings.STORAGE_ROOT, xrepoDatabase, settings.DBS_DIR_MAXIMUM_SIZE_BYTES, ctx)
+        const tipCommits = await xrepoDatabase.discoverCommits({
+            repository,
+            commit: tipCommit,
+            gitserverUrls,
+            ctx,
+        })
+
+        for (const [k, v] of tipCommits.entries()) {
+            commits.set(
+                k,
+                new Set<string>([...(commits.get(k) || []), ...v])
+            )
+        }
+    }
+
+    await xrepoDatabase.updateCommits(repository, commits, ctx)
+    await xrepoDatabase.updateDumpsVisibleFromTip(repository, tipCommit, ctx)
 }
 
 /**
  * Remove dumps until the space occupied by the dbs directory is below
  * the given limit.
  *
- * @param storageRoot The path where SQLite databases are stored.
+ * @param connection The Postgres connection.
  * @param xrepoDatabase The cross-repo database.
+ * @param storageRoot The path where SQLite databases are stored.
  * @param maximumSizeBytes The maximum number of bytes.
  * @param ctx The tracing context.
  */
 function purgeOldDumps(
-    storageRoot: string,
+    connection: Connection,
     xrepoDatabase: XrepoDatabase,
+    storageRoot: string,
     maximumSizeBytes: number,
     { logger = createSilentLogger() }: TracingContext = {}
 ): Promise<void> {
@@ -94,7 +177,7 @@ function purgeOldDumps(
             // While our current data usage is too big, find candidate dumps to delete
             const dump = await xrepoDatabase.getOldestPrunableDump()
             if (!dump) {
-                logger.warning(
+                logger.warn(
                     'Unable to reduce disk usage of the DB directory because deleting any single dump would drop in-use code intel for a repository.',
                     { currentSizeBytes, softMaximumSizeBytes: maximumSizeBytes }
                 )
@@ -102,9 +185,10 @@ function purgeOldDumps(
                 break
             }
 
-            logger.debug('pruning dump', {
+            logger.info('Pruning dump', {
                 repository: dump.repository,
                 commit: dump.commit,
+                root: dump.root,
             })
 
             // Delete this dump and subtract its size from the current dir size
@@ -120,23 +204,7 @@ function purgeOldDumps(
     // choose more dumps than necessary to purge. This can happen if the directory
     // size check and the selection of a purgeable dump are interleaved between
     // multiple workers.
-    return withLock(xrepoDatabase, 'retention', purge)
-}
-
-/**
- * Hold a Postgres advisory lock while executing the given function.
- *
- * @param xrepoDatabase The cross-repo database.
- * @param name The name of the lock.
- * @param f The function to execute while holding the lock.
- */
-async function withLock<T>(xrepoDatabase: XrepoDatabase, name: string, f: () => Promise<T>): Promise<T> {
-    await xrepoDatabase.lock(name)
-    try {
-        return await f()
-    } finally {
-        await xrepoDatabase.unlock(name)
-    }
+    return withLock(connection, 'retention', purge)
 }
 
 /**

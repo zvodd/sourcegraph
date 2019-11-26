@@ -9,8 +9,17 @@ import { gunzipJSON } from '../../shared/encoding/json'
 import { hashKey } from '../../shared/models/hash'
 import { instrument } from '../../shared/metrics'
 import { isEqual, uniqWith } from 'lodash'
-import { logSpan, TracingContext } from '../../shared/tracing'
+import { logSpan, TracingContext, logAndTraceCall, addTags } from '../../shared/tracing'
 import { mustGet } from '../../shared/maps'
+
+/**
+ * A location with the dump that contains it.
+ */
+export interface InternalLocation {
+    dump: xrepoModels.LsifDump
+    path: string
+    range: lsp.Range
+}
 
 /**
  * A wrapper around operations for single repository/commit pair.
@@ -29,14 +38,14 @@ export class Database {
      * @param connectionCache The cache of SQLite connections.
      * @param documentCache The cache of loaded documents.
      * @param resultChunkCache The cache of loaded result chunks.
-     * @param dumpId The ID of the dump for which this database answers queries.
+     * @param dump The dump for which this database answers queries.
      * @param databasePath The path to the database file.
      */
     constructor(
         private connectionCache: cache.ConnectionCache,
         private documentCache: cache.DocumentCache,
         private resultChunkCache: cache.ResultChunkCache,
-        private dumpId: xrepoModels.DumpId,
+        private dump: xrepoModels.LsifDump,
         private databasePath: string
     ) {}
 
@@ -44,43 +53,56 @@ export class Database {
      * Determine if data exists for a particular document in this database.
      *
      * @param path The path of the document.
+     * @param ctx The tracing context.
      */
-    public async exists(path: string): Promise<boolean> {
-        return (await this.getDocumentByPath(path)) !== undefined
+    public exists(path: string, ctx: TracingContext = {}): Promise<boolean> {
+        return this.logAndTraceCall(
+            ctx,
+            'Checking if path exists',
+            async () => (await this.getDocumentByPath(path)) !== undefined
+        )
     }
 
     /**
-     * Return the location for the definition of the reference at the given position.
+     * Return the locations for the definitions of the reference at the given position.
      *
      * @param path The path of the document to which the position belongs.
      * @param position The current hover position.
      * @param ctx The tracing context.
      */
-    public async definitions(path: string, position: lsp.Position, ctx: TracingContext = {}): Promise<lsp.Location[]> {
-        const { document, ranges } = await this.getRangeByPosition(path, position, ctx)
-        if (!document || ranges.length === 0) {
+    public async definitions(
+        path: string,
+        position: lsp.Position,
+        ctx: TracingContext = {}
+    ): Promise<InternalLocation[]> {
+        return this.logAndTraceCall(ctx, 'Fetching definitions', async ctx => {
+            const { document, ranges } = await this.getRangeByPosition(path, position, ctx)
+            if (!document || ranges.length === 0) {
+                return []
+            }
+
+            for (const range of ranges) {
+                if (!range.definitionResultId) {
+                    continue
+                }
+
+                const definitionResults = await this.getResultById(range.definitionResultId)
+                this.logSpan(ctx, 'definition_results', {
+                    definitionResultId: range.definitionResultId,
+                    definitionResults,
+                })
+
+                // TODO - due to some bugs in tsc... this fixes the tests and some typescript examples
+                // Not sure of a better way to do this right now until we work through how to patch
+                // lsif-tsc to handle node_modules inclusion (or somehow blacklist it on import).
+
+                if (!definitionResults.some(v => v.documentPath.includes('node_modules'))) {
+                    return this.convertRangesToInternalLocations(path, document, definitionResults)
+                }
+            }
+
             return []
-        }
-
-        for (const range of ranges) {
-            if (!range.definitionResultId) {
-                continue
-            }
-
-            // We have a definition result in this database, return this first.
-            const definitionResults = await this.getResultById(range.definitionResultId)
-            this.logSpan(ctx, 'definition_results', { definitionResultId: range.definitionResultId, definitionResults })
-
-            // TODO - due to some bugs in tsc... this fixes the tests and some typescript examples
-            // Not sure of a better way to do this right now until we work through how to patch
-            // lsif-tsc to handle node_modules inclusion (or somehow blacklist it on import).
-
-            if (!definitionResults.some(v => v.documentPath.includes('node_modules'))) {
-                return this.convertRangesToLspLocations(path, document, definitionResults)
-            }
-        }
-
-        return []
+        })
     }
 
     /**
@@ -90,27 +112,33 @@ export class Database {
      * @param position The current hover position.
      * @param ctx The tracing context.
      */
-    public async references(path: string, position: lsp.Position, ctx: TracingContext = {}): Promise<lsp.Location[]> {
-        const { document, ranges } = await this.getRangeByPosition(path, position, ctx)
-        if (!document || ranges.length === 0) {
-            return []
-        }
-
-        let locations: lsp.Location[] = []
-
-        // First, we try to find the reference result attached to the range or one
-        // of the result sets to which the range is attached.
-
-        for (const range of ranges) {
-            if (range.referenceResultId) {
-                // We have references in this database.
-                const referenceResults = await this.getResultById(range.referenceResultId)
-                this.logSpan(ctx, 'reference_results', { referenceResultId: range.referenceResultId, referenceResults })
-                locations = locations.concat(await this.convertRangesToLspLocations(path, document, referenceResults))
+    public async references(
+        path: string,
+        position: lsp.Position,
+        ctx: TracingContext = {}
+    ): Promise<InternalLocation[]> {
+        return this.logAndTraceCall(ctx, 'Fetching references', async ctx => {
+            const { document, ranges } = await this.getRangeByPosition(path, position, ctx)
+            if (!document || ranges.length === 0) {
+                return []
             }
-        }
 
-        return uniqWith(locations, isEqual)
+            let locations: InternalLocation[] = []
+            for (const range of ranges) {
+                if (range.referenceResultId) {
+                    const referenceResults = await this.getResultById(range.referenceResultId)
+                    this.logSpan(ctx, 'reference_results', {
+                        referenceResultId: range.referenceResultId,
+                        referenceResults,
+                    })
+                    locations = locations.concat(
+                        await this.convertRangesToInternalLocations(path, document, referenceResults)
+                    )
+                }
+            }
+
+            return uniqWith(locations, isEqual)
+        })
     }
 
     /**
@@ -121,13 +149,19 @@ export class Database {
      * @param ctx The tracing context.
      */
     public async hover(path: string, position: lsp.Position, ctx: TracingContext = {}): Promise<lsp.Hover | null> {
-        const { document, ranges } = await this.getRangeByPosition(path, position, ctx)
-        if (!document || ranges.length === 0) {
-            return null
-        }
+        return this.logAndTraceCall(ctx, 'Fetching hover', async ctx => {
+            const { document, ranges } = await this.getRangeByPosition(path, position, ctx)
+            if (!document || ranges.length === 0) {
+                return null
+            }
 
-        for (const range of ranges) {
-            if (range.hoverResultId) {
+            for (const range of ranges) {
+                if (!range.hoverResultId) {
+                    continue
+                }
+
+                this.logSpan(ctx, 'hover_result', { hoverResultId: range.hoverResultId })
+
                 const contents = {
                     kind: lsp.MarkupKind.Markdown,
                     value: mustGet(document.hoverResults, range.hoverResultId, 'hoverResult'),
@@ -136,9 +170,9 @@ export class Database {
                 // Return first defined hover result for the inner-most range
                 return { contents, range: createRange(range) }
             }
-        }
 
-        return null
+            return null
+        })
     }
 
     //
@@ -146,20 +180,20 @@ export class Database {
 
     /**
      * Convert a set of range-document pairs (from a definition or reference query) into
-     * a set of LSP ranges. Each pair holds the range identifier as well as the document
-     * path. For document paths matching the loaded document, find the range data locally.
-     * For all other paths, find the document in this database and find the range in that
-     * document.
+     * a set of `InternalLocation` object. Each pair holds the range identifier as well as
+     * the document path. For document paths matching the loaded document, find the range
+     * data locally. For all other paths, find the document in this database and find the
+     * range in that document.
      *
      * @param path The path of the document for this query.
      * @param document The document object for this query.
      * @param resultData A list of range ids and the document they belong to.
      */
-    private async convertRangesToLspLocations(
+    private async convertRangesToInternalLocations(
         path: string,
         document: dumpModels.DocumentData,
         resultData: dumpModels.DocumentPathRangeId[]
-    ): Promise<lsp.Location[]> {
+    ): Promise<InternalLocation[]> {
         // Group by document path so we only have to load each document once
         const groupedResults = new DefaultMap<string, Set<dumpModels.RangeId>>(() => new Set())
 
@@ -167,11 +201,11 @@ export class Database {
             groupedResults.getOrDefault(documentPath).add(rangeId)
         }
 
-        let results: lsp.Location[] = []
+        let results: InternalLocation[] = []
         for (const [documentPath, rangeIds] of groupedResults) {
             if (documentPath === path) {
                 // If the document path is this document, convert the locations directly
-                results = results.concat(mapRangesToLocations(document.ranges, path, rangeIds))
+                results = results.concat(mapRangesToInternalLocations(this.dump, document.ranges, path, rangeIds))
                 continue
             }
 
@@ -182,7 +216,7 @@ export class Database {
             }
 
             // Then finally convert the locations in the sibling document
-            results = results.concat(mapRangesToLocations(sibling.ranges, documentPath, rangeIds))
+            results = results.concat(mapRangesToInternalLocations(this.dump, sibling.ranges, documentPath, rangeIds))
         }
 
         return results
@@ -190,29 +224,35 @@ export class Database {
 
     /**
      * Query the definitions or references table of `db` for items that match the given moniker.
-     * Convert each result into an LSP location. The `pathTransformer` function is invoked on each
-     * result item to modify the resulting locations.
+     * Convert each result into an `InternalLocation`. The `pathTransformer` function is invoked
+     * on each result item to modify the resulting locations.
      *
      * @param model The constructor for the model type.
      * @param moniker The target moniker.
      * @param ctx The tracing context.
      */
-    public async monikerResults(
+    public monikerResults(
         model: typeof dumpModels.DefinitionModel | typeof dumpModels.ReferenceModel,
         moniker: Pick<dumpModels.MonikerData, 'scheme' | 'identifier'>,
         ctx: TracingContext
-    ): Promise<lsp.Location[]> {
-        const results = await this.withConnection(connection =>
-            connection.getRepository<dumpModels.DefinitionModel | dumpModels.ReferenceModel>(model).find({
-                where: {
-                    scheme: moniker.scheme,
-                    identifier: moniker.identifier,
-                },
-            })
-        )
+    ): Promise<InternalLocation[]> {
+        return this.logAndTraceCall(ctx, 'Fetching moniker results', async ctx => {
+            const results = await this.withConnection(connection =>
+                connection.getRepository<dumpModels.DefinitionModel | dumpModels.ReferenceModel>(model).find({
+                    where: {
+                        scheme: moniker.scheme,
+                        identifier: moniker.identifier,
+                    },
+                })
+            )
 
-        this.logSpan(ctx, 'symbol_results', { moniker, symbol: results })
-        return results.map(result => lsp.Location.create(result.documentPath, createRange(result)))
+            this.logSpan(ctx, 'symbol_results', { moniker, symbol: results })
+            return results.map(result => ({
+                dump: this.dump,
+                path: result.documentPath,
+                range: createRange(result),
+            }))
+        })
     }
 
     /**
@@ -255,19 +295,21 @@ export class Database {
      * @param position The user's hover position.
      * @param ctx The tracing context.
      */
-    public async getRangeByPosition(
+    public getRangeByPosition(
         path: string,
         position: lsp.Position,
         ctx: TracingContext
     ): Promise<{ document: dumpModels.DocumentData | undefined; ranges: dumpModels.RangeData[] }> {
-        const document = await this.getDocumentByPath(path)
-        if (!document) {
-            return { document: undefined, ranges: [] }
-        }
+        return this.logAndTraceCall(ctx, 'Fetching range by position', async ctx => {
+            const document = await this.getDocumentByPath(path)
+            if (!document) {
+                return { document: undefined, ranges: [] }
+            }
 
-        const ranges = findRanges(document.ranges.values(), position)
-        this.logSpan(ctx, 'matching_ranges', { ranges: cleanRanges(ranges) })
-        return { document, ranges }
+            const ranges = findRanges(document.ranges.values(), position)
+            this.logSpan(ctx, 'matching_ranges', { ranges: cleanRanges(ranges) })
+            return { document, ranges }
+        })
     }
 
     /**
@@ -346,14 +388,25 @@ export class Database {
     }
 
     /**
-     * Logs an event to the span of The tracing context, if its defined.
+     * Log and trace the execution of a function.
+     *
+     * @param ctx The tracing context.
+     * @param name The name of the span and text of the log message.
+     * @param f  The function to invoke.
+     */
+    private logAndTraceCall<T>(ctx: TracingContext, name: string, f: (ctx: TracingContext) => Promise<T>): Promise<T> {
+        return logAndTraceCall(addTags(ctx, { dbID: this.dump.id }), name, f)
+    }
+
+    /**
+     * Logs an event to the span of the tracing context, if its defined.
      *
      * @param ctx The tracing context.
      * @param event The name of the event.
      * @param pairs The values to log.
      */
     private logSpan(ctx: TracingContext, event: string, pairs: { [name: string]: unknown }): void {
-        logSpan(ctx, event, { ...pairs, dbID: this.dumpId })
+        logSpan(ctx, event, { ...pairs, dbID: this.dump.id })
     }
 }
 
@@ -436,20 +489,6 @@ export function sortMonikers(monikers: dumpModels.MonikerData[]): dumpModels.Mon
 }
 
 /**
- * Construct a URI that can be used by the frontend to switch to another
- * directory.
- *
- * @param dump The target dump.
- * @param path The path relative to the project root.
- */
-export function createRemoteUri(dump: xrepoModels.LsifDump, path: string): string {
-    const url = new URL(`git://${dump.repository}`)
-    url.search = dump.commit
-    url.hash = path
-    return url.href
-}
-
-/**
  * Construct an LSP range from a flat range.
  *
  * @param result The start/end line/character of the range.
@@ -464,20 +503,26 @@ function createRange(result: {
 }
 
 /**
- * Convert the given range identifiers into LSP location objects.
+ * Convert the given range identifiers into an `InternalLocation` objects.
  *
+ * @param dump The dump to which the ranges belong.
  * @param ranges The map of ranges of the document.
  * @param uri The location URI.
  * @param ids The set of range identifiers for each resulting location.
  */
-export function mapRangesToLocations(
+export function mapRangesToInternalLocations(
+    dump: xrepoModels.LsifDump,
     ranges: Map<dumpModels.RangeId, dumpModels.RangeData>,
     uri: string,
     ids: Set<dumpModels.RangeId>
-): lsp.Location[] {
+): InternalLocation[] {
     const locations = []
     for (const id of ids) {
-        locations.push(lsp.Location.create(uri, createRange(mustGet(ranges, id, 'range'))))
+        locations.push({
+            dump,
+            path: uri,
+            range: createRange(mustGet(ranges, id, 'range')),
+        })
     }
 
     return locations

@@ -69,10 +69,12 @@ describe('Backend', () => {
 
         await ctx.xrepoDatabase.updateCommits(
             repository,
-            Array.from({ length: MAX_TRAVERSAL_LIMIT * 2 + 1 }, (_, i) => [
-                util.createCommit(i),
-                util.createCommit(i + 1),
-            ])
+            new Map<string, Set<string>>(
+                Array.from({ length: MAX_TRAVERSAL_LIMIT * 2 + 1 }, (_, i) => [
+                    util.createCommit(i),
+                    new Set<string>([util.createCommit(i + 1)]),
+                ])
+            )
         )
     })
 
@@ -104,7 +106,7 @@ describe('Backend', () => {
         for (const { commit, refs } of testCases) {
             const fetch = async (paginationContext?: ReferencePaginationContext) =>
                 util.filterNodeModules(
-                    await backend.references(
+                    (await backend.references(
                         repository,
                         commit,
                         'a/src/index.ts',
@@ -113,7 +115,7 @@ describe('Backend', () => {
                             character: 17,
                         },
                         paginationContext
-                    )
+                    )) || { locations: [] }
                 )
 
             const { locations, cursor } = await fetch()
@@ -140,7 +142,7 @@ describe('Backend', () => {
 
         const fetch = async (paginationContext?: ReferencePaginationContext) =>
             util.filterNodeModules(
-                await backend.references(
+                (await backend.references(
                     repository,
                     c3,
                     'a/src/index.ts',
@@ -149,7 +151,7 @@ describe('Backend', () => {
                         character: 17,
                     },
                     paginationContext
-                )
+                )) || { locations: [] }
             )
 
         const { locations: locations0, cursor: cursor0 } = await fetch({ limit: 50 }) // all local

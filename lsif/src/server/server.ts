@@ -4,7 +4,6 @@ import * as metrics from './metrics'
 import * as path from 'path'
 import * as settings from './settings'
 import * as xrepoModels from '../shared/models/xrepo'
-import cors from 'cors'
 import express from 'express'
 import promClient from 'prom-client'
 import { Backend } from './backend/backend'
@@ -55,7 +54,7 @@ async function main(logger: Logger): Promise<void> {
 
     // Create cross-repo database
     const connection = await createPostgresConnection(fetchConfiguration(), logger)
-    const xrepoDatabase = new XrepoDatabase(settings.STORAGE_ROOT, connection)
+    const xrepoDatabase = new XrepoDatabase(connection, settings.STORAGE_ROOT)
     const backend = new Backend(settings.STORAGE_ROOT, xrepoDatabase, fetchConfiguration)
 
     // Temporary migrations
@@ -66,7 +65,6 @@ async function main(logger: Logger): Promise<void> {
     const queue = createQueue(settings.REDIS_ENDPOINT, logger)
 
     // Schedule jobs on timers
-    await ensureOnlyRepeatableJob(queue, 'update-tips', {}, settings.UPDATE_TIPS_JOB_SCHEDULE_INTERVAL * 1000)
     await ensureOnlyRepeatableJob(queue, 'clean-old-jobs', {}, settings.CLEAN_OLD_JOBS_INTERVAL * 1000)
     await ensureOnlyRepeatableJob(queue, 'clean-failed-jobs', {}, settings.CLEAN_FAILED_JOBS_INTERVAL * 1000)
 
@@ -84,7 +82,6 @@ async function main(logger: Logger): Promise<void> {
     const scriptedClient = await defineRedisCommands(queue.client)
 
     const app = express()
-    app.use(cors())
 
     if (tracer !== undefined) {
         app.use(tracingMiddleware({ tracer }))
@@ -96,7 +93,7 @@ async function main(logger: Logger): Promise<void> {
             level: 'debug',
             ignoredRoutes: ['/ping', '/healthz', '/metrics'],
             requestWhitelist: ['method', 'url', 'query'],
-            msg: 'request',
+            msg: 'Handled request',
         })
     )
     app.use(metricsMiddleware)
@@ -110,7 +107,7 @@ async function main(logger: Logger): Promise<void> {
     // Error handler must be registered last
     app.use(errorHandler(logger))
 
-    app.listen(settings.HTTP_PORT, () => logger.debug('listening', { port: settings.HTTP_PORT }))
+    app.listen(settings.HTTP_PORT, () => logger.debug('LSIF API server listening on', { port: settings.HTTP_PORT }))
 }
 
 /**

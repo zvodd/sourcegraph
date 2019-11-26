@@ -13,7 +13,7 @@
         </button>
         <details-menu aria-label="Sourcegraph version" class="dropdown-menu m-0 p-0" aria-labelledby="Version Dropdown">
 
-            {{/* Update these after each release. */}} {{$previousReleaseRevspec := "v3.8.2"}} {{$previousReleaseVersion := "3.8"}} {{$currentReleaseRevspec := "v3.9.4"}} {{$currentReleaseVersion := "3.9"}} {{$nextReleaseVersion := "master"}}
+            {{/* Update these after each release. */}} {{$previousReleaseRevspec := "v3.9.4"}} {{$previousReleaseVersion := "3.9"}} {{$currentReleaseRevspec := "v3.10.1"}} {{$currentReleaseVersion := "3.10"}} {{$nextReleaseVersion := "master"}}
             <a rel="nofollow" class="dropdown-item {{if eq .ContentVersion " "}}active{{end}}" href="/{{.ContentPagePath}}">master</a>
             <a rel="nofollow" class=" dropdown-item {{if eq $currentReleaseVersion .ContentVersion " "}}active{{end}}" href="/@{{$currentReleaseVersion}}/{{.ContentPagePath}}">{{$currentReleaseVersion}}<span class="current-branch ml-1">current</span></a>
             <a rel="nofollow" class=" dropdown-item {{if eq $previousReleaseVersion .ContentVersion " "}}active{{end}}" href="/@{{$previousReleaseVersion}}/{{.ContentPagePath}}">{{$previousReleaseVersion}}</a>
@@ -68,6 +68,7 @@
                             <li class="content-nav-no-hover">
                                 <ul class="content-nav-section-subsection">
                                     <li><a href="/user/code_intelligence/lsif">LSIF</a></li>
+                                    <li><a href="/user/code_intelligence/lsif_quickstart">LSIF quickstart</a></li>
                                     <li><a href="/user/code_intelligence/lsif_in_ci">LSIF in CI</a></li>
                                     <li><a href="/user/code_intelligence/lsif_on_github">LSIF on GitHub</a></li>
                                     <li><a href="/user/code_intelligence/language_servers">Language servers</a></li>
@@ -86,6 +87,7 @@
                             <li><a href="/user/repository">Repositories</a></li>
                             <li><a href="/user/tour">Sourcegraph tour</a></li>
                             <li><a href="/user/markdown">Sourcegraph-flavored Markdown</a></li>
+                            <li><a href="/user/automation">Automation <span class="badge badge-primary">preview</span></a></li>
                             <li><a href="/user/usage_statistics">Usage statistics</a></li>
                             <li><a href="/user/user_surveys">User surveys</a></li>
                         </ul>
@@ -177,8 +179,9 @@
                             </li>
                             <li><a href="/admin/user_data_deletion">User data deletion</a></li>
                             <li><a href="/admin/external_database">Using external databases with Sourcegraph</a></li>
-                            <li><a href="/admin/faq">Adminstration FAQ</a></li>
-                            <li><a href="/admin/troubleshooting">Adminstration troubleshooting</a></li>
+                            <li><a href="/admin/faq">Administration FAQ</a></li>
+                            <li><a href="/admin/lfaq">Administration LFAQ</a></li>
+                            <li><a href="/admin/troubleshooting">Administration troubleshooting</a></li>
                         </ul>
                     </li>
                 </ul>
@@ -278,7 +281,6 @@
                     <li class="content-nav-no-hover">
                         <a class="content-nav-section-header" href="/adopt">Adopting Sourcegraph</a>
                         <ul class="content-nav-section-group">
-                            <li><a href="/adopt/comp">Code search product comparisons</a></li>
                             <li><a href="/adopt/trial">How to run a Sourcegraph trial</a></li>
                         </ul>
                     </li>
@@ -293,6 +295,7 @@
                     <li class="content-nav-no-hover">
                         <a class="content-nav-section-header" href="/dev">Open source development documentation</a>
                         <ul class="content-nav-section-group">
+                            <li><a href="/dev/automation_development">Developing automation</a></li>
                             <li><a href="/dev/graphql_api">Developing the Sourcegraph GraphQL API</a></li>
                             <li><a href="/dev/web_app">Developing the Sourcegraph web app</a></li>
                             <li><a href="/dev/local_development">Getting started with developing Sourcegraph</a></li>
@@ -382,7 +385,7 @@
 {{end}}
 
 {{define "afterBody"}}
-    <script src="{{asset "docs.js"}}?12"></script>
+    <script src="{{asset "docs.js"}}?13"></script>
     {{with .Content}}
         <script>sgdocs.init(breadcrumbs = {{ .Breadcrumbs }});</script>
     {{else}}

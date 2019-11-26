@@ -10,7 +10,6 @@ import { createConvertJobProcessor } from './processors/convert'
 import { createLogger } from '../shared/logging'
 import { createPostgresConnection } from '../shared/database/postgres'
 import { createQueue } from '../shared/queue/queue'
-import { createUpdateTipsJobProcessor } from './processors/update-tips'
 import { ensureDirectory } from '../shared/paths'
 import { followsFrom, FORMAT_TEXT_MAP, Span, Tracer } from 'opentracing'
 import { instrumentWithLabels } from '../shared/metrics'
@@ -34,7 +33,7 @@ const wrapJobProcessor = <T>(
     logger: Logger,
     tracer: Tracer | undefined
 ): ((job: Job) => Promise<void>) => async (job: Job) => {
-    logger.debug(`${type} job accepted`, { jobId: job.id })
+    logger.debug(`Accepted ${type} job`, { jobId: job.id })
 
     // Destructure arguments and injected tracing context
     const { args, tracing }: { args: T; tracing: object } = job.data
@@ -53,7 +52,8 @@ const wrapJobProcessor = <T>(
         metrics.jobDurationHistogram,
         metrics.jobDurationErrorsCounter,
         { class: type },
-        (): Promise<void> => logAndTraceCall(ctx, `${type} job`, (ctx: TracingContext) => jobProcessor(job, args, ctx))
+        (): Promise<void> =>
+            logAndTraceCall(ctx, `Running ${type} job`, (ctx: TracingContext) => jobProcessor(job, args, ctx))
     )
 }
 
@@ -80,7 +80,7 @@ async function main(logger: Logger): Promise<void> {
 
     // Create cross-repo database
     const connection = await createPostgresConnection(fetchConfiguration(), logger)
-    const xrepoDatabase = new XrepoDatabase(settings.STORAGE_ROOT, connection)
+    const xrepoDatabase = new XrepoDatabase(connection, settings.STORAGE_ROOT)
 
     // Start metrics server
     startMetricsServer(logger)
@@ -90,14 +90,7 @@ async function main(logger: Logger): Promise<void> {
 
     const convertJobProcessor = wrapJobProcessor(
         'convert',
-        createConvertJobProcessor(xrepoDatabase, fetchConfiguration),
-        logger,
-        tracer
-    )
-
-    const updateTipsJobProcessor = wrapJobProcessor(
-        'update-tips',
-        createUpdateTipsJobProcessor(xrepoDatabase, fetchConfiguration),
+        createConvertJobProcessor(connection, xrepoDatabase, fetchConfiguration),
         logger,
         tracer
     )
@@ -118,7 +111,6 @@ async function main(logger: Logger): Promise<void> {
 
     // Start processing work
     queue.process('convert', convertJobProcessor).catch(() => {})
-    queue.process('update-tips', updateTipsJobProcessor).catch(() => {})
     queue.process('clean-old-jobs', cleanOldJobsProcessor).catch(() => {})
     queue.process('clean-failed-jobs', cleanFailedJobsProcessor).catch(() => {})
 }
@@ -128,7 +120,7 @@ const appLogger = createLogger('lsif-worker')
 
 // Launch!
 main(appLogger).catch(error => {
-    appLogger.error('failed to start process', { error })
+    appLogger.error('Failed to start process', { error })
     appLogger.on('finish', () => process.exit(1))
     appLogger.end()
 })

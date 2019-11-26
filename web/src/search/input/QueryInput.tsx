@@ -97,7 +97,7 @@ interface State {
 export const noSuggestions: State['suggestions'] = { values: [], cursorPosition: 0 }
 
 // Used for fetching suggestions and updating query history (undo/redo)
-const typingDebounceTime = 300
+export const typingDebounceTime = 300
 
 export class QueryInput extends React.Component<Props, State> {
     private componentUpdates = new Subject<Props>()

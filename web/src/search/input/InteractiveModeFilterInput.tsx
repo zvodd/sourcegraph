@@ -2,15 +2,16 @@ import * as React from 'react'
 import { Form } from '../../components/Form'
 import CloseIcon from 'mdi-react/CloseIcon'
 import { Subscription, Subject } from 'rxjs'
-import { distinctUntilChanged, switchMap, map, filter, toArray, catchError, tap, repeat } from 'rxjs/operators'
+import { distinctUntilChanged, switchMap, map, filter, toArray, catchError, repeat, debounceTime } from 'rxjs/operators'
 import { createSuggestion, Suggestion, SuggestionItem } from './Suggestion'
 import { fetchSuggestions } from '../backend'
-import { ComponentSuggestions, noSuggestions } from './QueryInput'
+import { ComponentSuggestions, noSuggestions, typingDebounceTime } from './QueryInput'
 import { isDefined } from '../../../../shared/src/util/types'
 import Downshift from 'downshift'
 import { FiltersToTypeAndValue } from './InteractiveModeInput'
 import { generateFieldsQuery } from './helpers'
 import { formatQueryForFuzzySearch, QueryState } from '../helpers'
+import { dedupeWhitespace } from '../../../../shared/src/util/strings'
 
 interface Props {
     fieldValues: FiltersToTypeAndValue
@@ -32,6 +33,7 @@ interface State {
 export default class InteractiveModeFilterInput extends React.Component<Props, State> {
     private subscriptions = new Subscription()
     private inputValues = new Subject<string>()
+    private componentUpdates = new Subject<Props>()
 
     constructor(props: Props) {
         super(props)
@@ -40,19 +42,22 @@ export default class InteractiveModeFilterInput extends React.Component<Props, S
             suggestions: noSuggestions,
         }
 
+        this.subscriptions.add(this.inputValues.subscribe(query => this.props.onFilterEdited(this.props.mapKey, query)))
+
         this.subscriptions.add(
-            this.inputValues
+            this.componentUpdates
                 .pipe(
-                    tap(query => this.props.onFilterEdited(this.props.mapKey, query)),
-                    distinctUntilChanged(),
-                    switchMap(query => {
-                        if (query.length === 0) {
+                    debounceTime(typingDebounceTime),
+                    distinctUntilChanged(
+                        (previous, current) => dedupeWhitespace(previous.value) === dedupeWhitespace(current.value)
+                    ),
+                    switchMap(props => {
+                        if (props.value.length === 0) {
                             return [{ suggestions: noSuggestions }]
                         }
-                        const filterType = this.props.filterType
-                        let fullQuery = `${this.props.navbarQuery.query} ${generateFieldsQuery({
-                            ...this.props.fieldValues,
-                            [this.props.mapKey]: { type: filterType, value: query, editable: true },
+                        const filterType = props.filterType
+                        let fullQuery = `${props.navbarQuery.query} ${generateFieldsQuery({
+                            ...props.fieldValues,
                         })}`
                         // TODO: This doesn't work when editing suggestions because cursor position is alwasy the length.
                         // We need to find a way to identify the correct cursor position
@@ -62,7 +67,6 @@ export default class InteractiveModeFilterInput extends React.Component<Props, S
                             filter(isDefined),
                             map((suggestion): Suggestion => ({ ...suggestion, fromFuzzySearch: true })),
                             filter(suggestion => {
-                                console.log('SUGGESTION TYPE', suggestion.type, 'FILTER TYPE', filterType)
                                 return suggestion.type === filterType
                             }),
                             toArray(),
@@ -83,6 +87,9 @@ export default class InteractiveModeFilterInput extends React.Component<Props, S
         )
     }
 
+    public componentDidUpdate(): void {
+        this.componentUpdates.next(this.props)
+    }
     public componentWillUnmount(): void {
         this.subscriptions.unsubscribe()
     }

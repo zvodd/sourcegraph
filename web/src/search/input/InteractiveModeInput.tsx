@@ -20,6 +20,7 @@ import { PlatformContextProps } from '../../../../shared/src/platform/context'
 import { ThemePreferenceProps } from '../theme'
 import { EventLoggerProps } from '../../tracking/eventLogger'
 import { ActivationProps } from '../../../../shared/src/components/activation/Activation'
+import { generateFieldsQuery } from './helpers'
 
 interface InteractiveModeProps
     extends SettingsCascadeProps,
@@ -136,21 +137,9 @@ export default class InteractiveModeInput extends React.Component<InteractiveMod
     private onSubmit = (e: React.FormEvent<HTMLFormElement>): void => {
         e.preventDefault()
         const navbarQuery = this.props.navbarSearchState.query
-        const fieldsQuery = this.generateFieldsQuery()
+        const fieldsQuery = generateFieldsQuery(this.state.fieldValues)
         const queries = [navbarQuery, fieldsQuery].filter(query => query.length > 0)
         submitSearch(this.props.history, queries.join(' '), 'nav', this.props.patternType, undefined, true)
-    }
-
-    private generateFieldsQuery = (): string => {
-        const fieldKeys = Object.keys(this.state.fieldValues)
-        const individualTokens: string[] = []
-        fieldKeys
-            .filter(key => this.state.fieldValues[key].value.trim().length > 0)
-            .map(key =>
-                individualTokens.push(`${this.state.fieldValues[key].type}:${this.state.fieldValues[key].value}`)
-            )
-
-        return individualTokens.join(' ')
     }
 
     public render(): JSX.Element | null {
@@ -204,6 +193,7 @@ export default class InteractiveModeInput extends React.Component<InteractiveMod
                 <div>
                     <InteractiveModeSelectedFiltersRow
                         fieldValues={this.state.fieldValues}
+                        navbarQuery={this.props.navbarSearchState}
                         onFilterEdited={this.onFilterEdited}
                         onFilterDeleted={this.onFilterDeleted}
                         toggleFilterEditable={this.toggleFilterEditable}

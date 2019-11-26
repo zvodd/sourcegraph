@@ -76,7 +76,7 @@ interface Props extends PatternTypeProps {
  * The search suggestions and cursor position of where the last character was inserted.
  * Cursor position is used to correctly insert the suggestion when it's selected.
  */
-interface ComponentSuggestions {
+export interface ComponentSuggestions {
     values: Suggestion[]
     cursorPosition: number
 }
@@ -86,7 +86,7 @@ interface State {
     suggestions: ComponentSuggestions
 }
 
-const noSuggestions: State['suggestions'] = { values: [], cursorPosition: 0 }
+export const noSuggestions: State['suggestions'] = { values: [], cursorPosition: 0 }
 
 export class QueryInput extends React.Component<Props, State> {
     private componentUpdates = new Subject<Props>()

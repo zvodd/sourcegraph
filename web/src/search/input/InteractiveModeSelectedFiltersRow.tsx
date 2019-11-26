@@ -1,9 +1,11 @@
 import * as React from 'react'
 import InteractiveModeFilterInput from './InteractiveModeFilterInput'
 import { FiltersToTypeAndValue } from './InteractiveModeInput'
+import { QueryState } from '../helpers'
 
 interface Props {
     fieldValues: FiltersToTypeAndValue
+    navbarQuery: QueryState
     /**  A callback to handle a filter's value being edited. */
     onFilterEdited: (filterKey: string, value: string) => void
     /** A callback to handle a filter being deleted from the selected filter row */
@@ -13,6 +15,7 @@ interface Props {
 
 export const InteractiveModeSelectedFiltersRow: React.FunctionComponent<Props> = ({
     fieldValues,
+    navbarQuery,
     onFilterEdited,
     onFilterDeleted,
     toggleFilterEditable,
@@ -31,6 +34,8 @@ export const InteractiveModeSelectedFiltersRow: React.FunctionComponent<Props> =
                                 filterType={fieldValues[field].type}
                                 value={fieldValues[field].value}
                                 editable={fieldValues[field].editable}
+                                fieldValues={fieldValues}
+                                navbarQuery={navbarQuery}
                                 onFilterDeleted={onFilterDeleted}
                                 onFilterEdited={onFilterEdited}
                                 toggleFilterEditable={toggleFilterEditable}

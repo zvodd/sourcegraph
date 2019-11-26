@@ -14,6 +14,25 @@
     &__input-field {
         margin: 0 0.25rem;
     }
+    &__chip {
+        display: inline-flex;
+    }
+
+    &__suggestions {
+        position: absolute;
+        width: inherit;
+        max-width: 100%;
+        z-index: 1;
+        max-height: 25rem;
+        margin: 0;
+        overflow-x: hidden;
+        overflow-y: auto;
+        overflow-y: overlay;
+        background-color: #1c2736;
+        border: solid 1px #1b548a;
+        border-top: none;
+        padding: 0;
+    }
 }
 
 .theme-light {

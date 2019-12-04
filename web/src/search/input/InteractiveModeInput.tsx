@@ -47,7 +47,7 @@ interface InteractiveModeProps
 }
 
 export interface FiltersToTypeAndValue {
-    [key: string]: { type: string; value: string; editable: boolean }
+    [key: string]: { type: SuggestionTypes; value: string; editable: boolean }
 }
 
 interface InteractiveInputState {
@@ -58,7 +58,7 @@ interface InteractiveInputState {
     fieldValues: FiltersToTypeAndValue
 }
 
-const ALL_SUGGESTION_TYPES = Object.keys(SuggestionTypes)
+const ALL_SUGGESTION_TYPES: SuggestionTypes[] = Object.keys(SuggestionTypes) as SuggestionTypes[]
 // INTERACTIVE_SEARCH_TODO: This component is being built for the navbar use case.
 // Need to add a mode for search page.
 export default class InteractiveModeInput extends React.Component<InteractiveModeProps, InteractiveInputState> {
@@ -96,7 +96,7 @@ export default class InteractiveModeInput extends React.Component<InteractiveMod
         this.subscriptions.unsubscribe()
     }
 
-    private addNewFilter = (filterType: DefaultFilterTypes): void => {
+    private addNewFilter = (filterType: SuggestionTypes): void => {
         const filterKey = `${filterType} ${this.numFieldValuesAdded}`
         this.numFieldValuesAdded++
         this.setState(state => ({

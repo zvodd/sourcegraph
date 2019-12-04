@@ -1,9 +1,10 @@
 import * as React from 'react'
 import { startCase } from 'lodash'
+import { SuggestionTypes } from './Suggestion'
 
 interface RowProps {
     // A callback that adds a new filter to the SelectedFilterRow when one of the buttons are clicked.
-    onAddNewFilter: (filter: DefaultFilterTypes) => void
+    onAddNewFilter: (filter: SuggestionTypes) => void
 }
 
 export enum DefaultFilterTypes {
@@ -14,14 +15,14 @@ export enum DefaultFilterTypes {
 export const InteractiveModeAddFilterRow: React.FunctionComponent<RowProps> = ({ onAddNewFilter }) => (
     <div className="interactive-mode-add-filter-row">
         {Object.keys(DefaultFilterTypes).map(filterType => (
-            <AddFilterButton key={filterType} onAddNewFilter={onAddNewFilter} type={filterType as DefaultFilterTypes} />
+            <AddFilterButton key={filterType} onAddNewFilter={onAddNewFilter} type={filterType as SuggestionTypes} />
         ))}
     </div>
 )
 
 interface ButtonProps {
-    type: DefaultFilterTypes
-    onAddNewFilter: (filter: DefaultFilterTypes) => void
+    type: SuggestionTypes
+    onAddNewFilter: (filter: SuggestionTypes) => void
 }
 
 class AddFilterButton extends React.Component<ButtonProps> {

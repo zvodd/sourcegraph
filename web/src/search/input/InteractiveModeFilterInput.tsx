@@ -10,7 +10,7 @@ import { isDefined } from '../../../../shared/src/util/types'
 import Downshift from 'downshift'
 import { FiltersToTypeAndValue } from './InteractiveModeInput'
 import { generateFieldsQuery } from './helpers'
-import { formatQueryForFuzzySearch, QueryState, interactiveFormatQueryForFuzzySearch } from '../helpers'
+import { QueryState, interactiveFormatQueryForFuzzySearch } from '../helpers'
 import { dedupeWhitespace } from '../../../../shared/src/util/strings'
 
 interface Props {
@@ -20,7 +20,7 @@ interface Props {
     mapKey: string
     value: string
     // INTERACTIVE TODO: this should be SuggestionTypes enum
-    filterType: string
+    filterType: SuggestionTypes
     editable: boolean
     onFilterEdited: (filterKey: string, value: string) => void
     onFilterDeleted: (filterKey: string) => void
@@ -60,13 +60,8 @@ export default class InteractiveModeFilterInput extends React.Component<Props, S
                         let fullQuery = `${props.navbarQuery.query} ${generateFieldsQuery({
                             ...props.fieldValues,
                         })}`
-                        // TODO: This doesn't work when editing suggestions because cursor position is alwasy the length.
-                        // We need to find a way to identify the correct cursor position
-                        fullQuery = interactiveFormatQueryForFuzzySearch(
-                            fullQuery,
-                            filterType as SuggestionTypes,
-                            props.value
-                        )
+
+                        fullQuery = interactiveFormatQueryForFuzzySearch(fullQuery, filterType, props.value)
                         return fetchSuggestions(fullQuery).pipe(
                             map(createSuggestion),
                             filter(isDefined),

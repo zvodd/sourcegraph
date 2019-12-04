@@ -3,14 +3,14 @@ import { Form } from '../../components/Form'
 import CloseIcon from 'mdi-react/CloseIcon'
 import { Subscription, Subject } from 'rxjs'
 import { distinctUntilChanged, switchMap, map, filter, toArray, catchError, repeat, debounceTime } from 'rxjs/operators'
-import { createSuggestion, Suggestion, SuggestionItem } from './Suggestion'
+import { createSuggestion, Suggestion, SuggestionItem, SuggestionTypes } from './Suggestion'
 import { fetchSuggestions } from '../backend'
 import { ComponentSuggestions, noSuggestions, typingDebounceTime } from './QueryInput'
 import { isDefined } from '../../../../shared/src/util/types'
 import Downshift from 'downshift'
 import { FiltersToTypeAndValue } from './InteractiveModeInput'
 import { generateFieldsQuery } from './helpers'
-import { formatQueryForFuzzySearch, QueryState } from '../helpers'
+import { formatQueryForFuzzySearch, QueryState, interactiveFormatQueryForFuzzySearch } from '../helpers'
 import { dedupeWhitespace } from '../../../../shared/src/util/strings'
 
 interface Props {
@@ -19,6 +19,7 @@ interface Props {
     /** The key of this filter in the top-level fieldValues map. */
     mapKey: string
     value: string
+    // INTERACTIVE TODO: this should be SuggestionTypes enum
     filterType: string
     editable: boolean
     onFilterEdited: (filterKey: string, value: string) => void
@@ -61,14 +62,16 @@ export default class InteractiveModeFilterInput extends React.Component<Props, S
                         })}`
                         // TODO: This doesn't work when editing suggestions because cursor position is alwasy the length.
                         // We need to find a way to identify the correct cursor position
-                        fullQuery = formatQueryForFuzzySearch({ query: fullQuery, cursorPosition: fullQuery.length })
+                        fullQuery = interactiveFormatQueryForFuzzySearch(
+                            fullQuery,
+                            filterType as SuggestionTypes,
+                            props.value
+                        )
                         return fetchSuggestions(fullQuery).pipe(
                             map(createSuggestion),
                             filter(isDefined),
                             map((suggestion): Suggestion => ({ ...suggestion, fromFuzzySearch: true })),
-                            filter(suggestion => {
-                                return suggestion.type === filterType
-                            }),
+                            filter(suggestion => suggestion.type === filterType),
                             toArray(),
                             map(suggestions => ({
                                 suggestions: { values: suggestions, cursorPosition: this.props.value.length },

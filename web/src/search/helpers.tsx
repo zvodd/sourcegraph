@@ -371,3 +371,24 @@ export const formatQueryForFuzzySearch = (queryState: QueryState): string => {
 
     return firstPart.substring(0, filterIndex) + formattedFilterAndValue + lastPart
 }
+
+// This is a modified version of formatQueryForFuzzySearch, which accounts for interactive search
+// mode, where we may not have a cursor position. Instead, we'd rely on the interactive mode data strcture to
+// tell us what the resolved filter and value is.
+//
+// If the resolved filter is an isolated one, we will ignore the rest of the query.
+export const interactiveFormatQueryForFuzzySearch = (
+    fullQuery: string,
+    filterType?: SuggestionTypes,
+    value?: string
+): string => {
+    if (filterType) {
+        const formattedFilterAndValue = filterType + ':' + value
+
+        if (isolatedFuzzySearchFilters.includes(filterType)) {
+            return formattedFilterAndValue
+        }
+    }
+
+    return fullQuery
+}

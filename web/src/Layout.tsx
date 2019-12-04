@@ -103,6 +103,7 @@ export interface LayoutProps
     isSourcegraphDotCom: boolean
     showCampaigns: boolean
     interactiveSearchMode: boolean
+    toggleSearchMode: () => void
     children?: never
 }
 

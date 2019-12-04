@@ -18,6 +18,7 @@ import { ThemePreferenceProps } from '../search/theme'
 import { KeyboardShortcutsProps } from '../keyboardShortcuts/keyboardShortcuts'
 import { QueryState } from '../search/helpers'
 import InteractiveModeInput from '../search/input/InteractiveModeInput'
+import { INTERACTIVE_MODE_FEATURE_FLAG_KEY } from '../SourcegraphWebApp'
 
 interface Props
     extends SettingsCascadeProps,
@@ -44,6 +45,7 @@ interface Props
     lowProfile: boolean
 
     interactiveSearchMode: boolean
+    toggleSearchMode: () => void
 }
 
 interface State {
@@ -54,6 +56,8 @@ export class GlobalNavbar extends React.PureComponent<Props, State> {
     public state: State = {}
 
     private subscriptions = new Subscription()
+
+    private showInteractiveModeOption = localStorage.getItem(INTERACTIVE_MODE_FEATURE_FLAG_KEY)
 
     constructor(props: Props) {
         super(props)
@@ -119,13 +123,22 @@ export class GlobalNavbar extends React.PureComponent<Props, State> {
                     <>
                         {this.props.interactiveSearchMode ? (
                             !this.state.authRequired && (
-                                <InteractiveModeInput
-                                    {...this.props}
-                                    authRequired={this.state.authRequired}
-                                    navbarSearchState={this.props.navbarSearchQueryState}
-                                    onNavbarQueryChange={this.props.onNavbarQueryChange}
-                                    showDotComMarketing={showDotComMarketing}
-                                />
+                                <>
+                                    <InteractiveModeInput
+                                        {...this.props}
+                                        authRequired={this.state.authRequired}
+                                        navbarSearchState={this.props.navbarSearchQueryState}
+                                        onNavbarQueryChange={this.props.onNavbarQueryChange}
+                                        showDotComMarketing={showDotComMarketing}
+                                    />
+                                    <button
+                                        className="btn btn-link"
+                                        type="button"
+                                        onClick={this.props.toggleSearchMode}
+                                    >
+                                        Omni mode
+                                    </button>
+                                </>
                             )
                         ) : (
                             <>
@@ -147,6 +160,15 @@ export class GlobalNavbar extends React.PureComponent<Props, State> {
                                 )}
                                 {!this.state.authRequired && (
                                     <NavLinks {...this.props} showDotComMarketing={showDotComMarketing} />
+                                )}
+                                {this.showInteractiveModeOption && !this.state.authRequired && (
+                                    <button
+                                        className="btn btn-link"
+                                        type="button"
+                                        onClick={this.props.toggleSearchMode}
+                                    >
+                                        Interactive mode
+                                    </button>
                                 )}
                             </>
                         )}

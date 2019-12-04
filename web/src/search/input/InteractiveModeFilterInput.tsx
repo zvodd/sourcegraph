@@ -136,7 +136,6 @@ export default class InteractiveModeFilterInput extends React.Component<Props, S
                                 return (
                                     <div>
                                         <div className="interactive-mode-filter-input__form">
-                                            {/* <span>{this.props.filterType}:</span> */}
                                             <input
                                                 onChange={this.onInputUpdate}
                                                 value={this.props.value}

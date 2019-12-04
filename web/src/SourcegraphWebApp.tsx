@@ -111,6 +111,8 @@ interface SourcegraphWebAppState extends SettingsCascadeProps {
 }
 
 const LIGHT_THEME_LOCAL_STORAGE_KEY = 'light-theme'
+export const INTERACTIVE_MODE_FEATURE_FLAG_KEY = 'interactive-search-mode-feature-flag'
+
 /** Reads the stored theme preference from localStorage */
 const readStoredThemePreference = (): ThemePreference => {
     const value = localStorage.getItem(LIGHT_THEME_LOCAL_STORAGE_KEY)
@@ -157,6 +159,9 @@ class ColdSourcegraphWebApp extends React.Component<SourcegraphWebAppProps, Sour
         // This will be updated with the default in settings when the web app mounts.
         const urlPatternType = parseSearchURLPatternType(window.location.search) || GQL.SearchPatternType.literal
 
+        const interactiveModeFeatureFlag = localStorage.getItem(INTERACTIVE_MODE_FEATURE_FLAG_KEY)
+        const interactiveModeFeatureFlagActive = !!interactiveModeFeatureFlag && interactiveModeFeatureFlag === 'true'
+
         this.state = {
             themePreference: readStoredThemePreference(),
             systemIsLightTheme: !this.darkThemeMediaList.matches,
@@ -164,8 +169,9 @@ class ColdSourcegraphWebApp extends React.Component<SourcegraphWebAppProps, Sour
             settingsCascade: EMPTY_SETTINGS_CASCADE,
             viewerSubject: SITE_SUBJECT_NO_ADMIN,
             searchPatternType: urlPatternType,
-            // INTERACTIVE_SEARCH_TODO: set to true for building, will need to default to false and toggle later.
-            interactiveSearchMode: true,
+            // Default to interactive mode if the feature flag is set.
+            // INTERACTIVE_SEARCH_TODO: store last preferred search mode.
+            interactiveSearchMode: interactiveModeFeatureFlagActive,
         }
     }
 
@@ -249,6 +255,10 @@ class ColdSourcegraphWebApp extends React.Component<SourcegraphWebAppProps, Sour
         document.body.classList.toggle('theme-dark', !this.isLightTheme())
     }
 
+    private toggleSearchMode = (): void => {
+        this.setState(state => ({ interactiveSearchMode: !state.interactiveSearchMode }))
+    }
+
     public render(): React.ReactFragment | null {
         if (window.pageError && window.pageError.statusCode !== 404) {
             const statusCode = window.pageError.statusCode
@@ -319,6 +329,7 @@ class ColdSourcegraphWebApp extends React.Component<SourcegraphWebAppProps, Sour
                                     patternType={this.state.searchPatternType}
                                     togglePatternType={this.togglePatternType}
                                     interactiveSearchMode={this.state.interactiveSearchMode}
+                                    toggleSearchMode={this.toggleSearchMode}
                                 />
                             )}
                         />

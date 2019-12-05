@@ -7,7 +7,6 @@ import { QueryInput } from './QueryInput'
 import { InteractiveModeAddFilterRow, DefaultFilterTypes } from './InteractiveModeAddFilterRow'
 import { InteractiveModeSelectedFiltersRow } from './InteractiveModeSelectedFiltersRow'
 import { SearchButton } from './SearchButton'
-import { SuggestionTypes } from './Suggestion'
 import { Subscription, Subject } from 'rxjs'
 import { ThemeProps } from '../../../../shared/src/theme'
 import { Link } from '../../../../shared/src/components/Link'
@@ -21,6 +20,8 @@ import { ThemePreferenceProps } from '../theme'
 import { EventLoggerProps } from '../../tracking/eventLogger'
 import { ActivationProps } from '../../../../shared/src/components/activation/Activation'
 import { generateFieldsQuery } from './helpers'
+import { FiltersToTypeAndValue } from '../../../../shared/src/search/interactive/util'
+import { SuggestionTypes, SuggestionTypeKeys } from '../../../../shared/src/search/suggestions/util'
 
 interface InteractiveModeProps
     extends SettingsCascadeProps,
@@ -46,10 +47,6 @@ interface InteractiveModeProps
     isSourcegraphDotCom: boolean
 }
 
-export interface FiltersToTypeAndValue {
-    [key: string]: { type: SuggestionTypes; value: string; editable: boolean }
-}
-
 interface InteractiveInputState {
     // This is the source of truth for the selected filters. The key is a unique key to match
     // the particular selected filter with its value. This is important to be unique because we
@@ -58,7 +55,6 @@ interface InteractiveInputState {
     fieldValues: FiltersToTypeAndValue
 }
 
-const ALL_SUGGESTION_TYPES: SuggestionTypes[] = Object.keys(SuggestionTypes) as SuggestionTypes[]
 // INTERACTIVE_SEARCH_TODO: This component is being built for the navbar use case.
 // Need to add a mode for search page.
 export default class InteractiveModeInput extends React.Component<InteractiveModeProps, InteractiveInputState> {
@@ -76,7 +72,7 @@ export default class InteractiveModeInput extends React.Component<InteractiveMod
             this.componentUpdates.subscribe(props => {
                 const searchParams = new URLSearchParams(props.location.search)
                 const fieldValues: FiltersToTypeAndValue = {}
-                for (const t of ALL_SUGGESTION_TYPES) {
+                for (const t of SuggestionTypeKeys) {
                     const itemsOfType = searchParams.getAll(t)
                     itemsOfType.map((item, i) => {
                         fieldValues[`${t} ${i}`] = { type: t, value: item, editable: false }
@@ -96,6 +92,13 @@ export default class InteractiveModeInput extends React.Component<InteractiveMod
         this.subscriptions.unsubscribe()
     }
 
+    /**
+     * Adds a new filter to the fieldValues state field.
+     * We use the filter name and the number of values added as the key.
+     * Keys must begin with the filter name, as defined in `SuggestionTypes`.
+     * We use this to identify filter values when building
+     * the search URL in {@link interactiveBuildSearchURLQuery}.
+     */
     private addNewFilter = (filterType: SuggestionTypes): void => {
         const filterKey = `${filterType} ${this.numFieldValuesAdded}`
         this.numFieldValuesAdded++
@@ -136,10 +139,16 @@ export default class InteractiveModeInput extends React.Component<InteractiveMod
 
     private onSubmit = (e: React.FormEvent<HTMLFormElement>): void => {
         e.preventDefault()
-        const navbarQuery = this.props.navbarSearchState.query
-        const fieldsQuery = generateFieldsQuery(this.state.fieldValues)
-        const queries = [navbarQuery, fieldsQuery].filter(query => query.length > 0)
-        submitSearch(this.props.history, queries.join(' '), 'nav', this.props.patternType, undefined, true)
+
+        submitSearch(
+            this.props.history,
+            this.props.navbarSearchState.query,
+            'nav',
+            this.props.patternType,
+            undefined,
+            true,
+            this.state.fieldValues
+        )
     }
 
     public render(): JSX.Element | null {

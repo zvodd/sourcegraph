@@ -5,13 +5,9 @@ import { buildSearchURLQuery, interactiveBuildSearchURLQuery } from '../../../sh
 import { eventLogger } from '../tracking/eventLogger'
 import { SearchType } from './results/SearchResults'
 import { SearchFilterSuggestions } from './searchFilterSuggestions'
-import {
-    Suggestion,
-    SuggestionTypes,
-    FiltersSuggestionTypes,
-    isolatedFuzzySearchFilters,
-    filterAliases,
-} from './input/Suggestion'
+import { Suggestion, FiltersSuggestionTypes, isolatedFuzzySearchFilters, filterAliases } from './input/Suggestion'
+import { FiltersToTypeAndValue } from '../../../shared/src/search/interactive/util'
+import { SuggestionTypes } from '../../../shared/src/search/suggestions/util'
 
 /**
  * @param activation If set, records the DidSearch activation event for the new user activation
@@ -19,26 +15,28 @@ import {
  */
 export function submitSearch(
     history: H.History,
-    query: string,
+    navbarQuery: string,
     source: 'home' | 'nav' | 'repo' | 'tree' | 'filter' | 'type',
     patternType: GQL.SearchPatternType,
     activation?: ActivationProps['activation'],
-    interactiveMode?: boolean
+    interactiveMode?: boolean,
+    filtersQuery?: FiltersToTypeAndValue
 ): void {
-    const searchQueryParam = interactiveMode
-        ? interactiveBuildSearchURLQuery(query, patternType)
-        : buildSearchURLQuery(query, patternType)
+    const searchQueryParam =
+        interactiveMode && filtersQuery
+            ? interactiveBuildSearchURLQuery(navbarQuery, filtersQuery, patternType)
+            : buildSearchURLQuery(navbarQuery, patternType)
 
     // Go to search results page
     const path = '/search?' + searchQueryParam
     eventLogger.log('SearchSubmitted', {
         code_search: {
-            pattern: query,
-            query,
+            pattern: navbarQuery,
+            query: navbarQuery,
             source,
         },
     })
-    history.push(path, { ...history.location.state, query })
+    history.push(path, { ...history.location.state, query: navbarQuery })
     if (activation) {
         activation.update({ DidSearch: true })
     }

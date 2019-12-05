@@ -1,4 +1,4 @@
-import { FiltersToTypeAndValue } from './InteractiveModeInput'
+import { FiltersToTypeAndValue } from '../../../../shared/src/search/interactive/util'
 
 export function generateFieldsQuery(fieldValues: FiltersToTypeAndValue): string {
     const fieldKeys = Object.keys(fieldValues)

@@ -1,6 +1,6 @@
 import * as React from 'react'
 import { startCase } from 'lodash'
-import { SuggestionTypes } from './Suggestion'
+import { SuggestionTypes } from '../../../../shared/src/search/suggestions/util'
 
 interface RowProps {
     // A callback that adds a new filter to the SelectedFilterRow when one of the buttons are clicked.

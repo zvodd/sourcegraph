@@ -17,7 +17,7 @@ import {
 } from 'rxjs/operators'
 import { eventLogger } from '../../tracking/eventLogger'
 import { scrollIntoView } from '../../util'
-import { Suggestion, SuggestionItem, SuggestionTypes, createSuggestion, fuzzySearchFilters } from './Suggestion'
+import { Suggestion, SuggestionItem, createSuggestion, fuzzySearchFilters } from './Suggestion'
 import RegexpToggle from './RegexpToggle'
 import { SearchPatternType } from '../../../../shared/src/graphql/schema'
 import { PatternTypeProps } from '..'
@@ -36,6 +36,7 @@ import { isDefined } from '../../../../shared/src/util/types'
 import { LoadingSpinner } from '@sourcegraph/react-loading-spinner'
 import { once } from 'lodash'
 import { dedupeWhitespace } from '../../../../shared/src/util/strings'
+import { SuggestionTypes } from '../../../../shared/src/search/suggestions/util'
 
 /**
  * The query input field is clobbered and updated to contain this subject's values, as

@@ -3,15 +3,16 @@ import { Form } from '../../components/Form'
 import CloseIcon from 'mdi-react/CloseIcon'
 import { Subscription, Subject } from 'rxjs'
 import { distinctUntilChanged, switchMap, map, filter, toArray, catchError, repeat, debounceTime } from 'rxjs/operators'
-import { createSuggestion, Suggestion, SuggestionItem, SuggestionTypes } from './Suggestion'
+import { createSuggestion, Suggestion, SuggestionItem } from './Suggestion'
 import { fetchSuggestions } from '../backend'
 import { ComponentSuggestions, noSuggestions, typingDebounceTime } from './QueryInput'
 import { isDefined } from '../../../../shared/src/util/types'
 import Downshift from 'downshift'
-import { FiltersToTypeAndValue } from './InteractiveModeInput'
 import { generateFieldsQuery } from './helpers'
 import { QueryState, interactiveFormatQueryForFuzzySearch } from '../helpers'
 import { dedupeWhitespace } from '../../../../shared/src/util/strings'
+import { FiltersToTypeAndValue } from '../../../../shared/src/search/interactive/util'
+import { SuggestionTypes } from '../../../../shared/src/search/suggestions/util'
 
 interface Props {
     fieldValues: FiltersToTypeAndValue

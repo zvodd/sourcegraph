@@ -1,7 +1,7 @@
 import * as React from 'react'
 import InteractiveModeFilterInput from './InteractiveModeFilterInput'
-import { FiltersToTypeAndValue } from './InteractiveModeInput'
 import { QueryState } from '../helpers'
+import { FiltersToTypeAndValue } from '../../../../shared/src/search/interactive/util'
 
 interface Props {
     fieldValues: FiltersToTypeAndValue

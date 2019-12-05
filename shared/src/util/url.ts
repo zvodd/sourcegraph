@@ -1,6 +1,8 @@
 import { Position, Range, Selection } from '@sourcegraph/extension-api-types'
 import { WorkspaceRootWithMetadata } from '../api/client/services/workspaceService'
 import { SearchPatternType } from '../graphql/schema'
+import { FiltersToTypeAndValue } from '../search/interactive/util'
+import { SuggestionTypes, SuggestionTypeKeys } from '../search/suggestions/util'
 
 export interface RepoSpec {
     /**
@@ -561,32 +563,29 @@ export function buildSearchURLQuery(query: string, patternType: SearchPatternTyp
         .replace(/%3A/g, ':')
 }
 
-export function interactiveBuildSearchURLQuery(query: string, patternType: SearchPatternType): string {
+export function interactiveBuildSearchURLQuery(
+    navbarQuery: string,
+    fieldsQuery: FiltersToTypeAndValue,
+    patternType: SearchPatternType
+): string {
     const searchParams = new URLSearchParams()
-    const repoFiltersInQuery = parseRepoFiltersFromQuery(query)
-    if (repoFiltersInQuery) {
-        for (const repoFilter of repoFiltersInQuery) {
-            searchParams.append('repo', repoFilter)
+
+    for (const searchType of SuggestionTypeKeys) {
+        for (const objectKey of Object.keys(fieldsQuery)) {
+            if (objectKey.startsWith(searchType) && fieldsQuery[objectKey] !== null) {
+                searchParams.append(searchType, fieldsQuery[objectKey].value)
+            }
         }
-        query = query.replace(/\b(repo|r):(\S+)/gi, '').trim()
     }
 
-    const fileFiltersInQuery = parseFileFiltersFromQuery(query)
-    if (fileFiltersInQuery) {
-        for (const fileFilter of fileFiltersInQuery) {
-            searchParams.append('file', fileFilter)
-        }
-        query = query.replace(/\b(file|f):(\S+)/gi, '').trim()
-    }
-
-    const patternTypeInQuery = parsePatternTypeFromQuery(query)
+    const patternTypeInQuery = parsePatternTypeFromQuery(navbarQuery)
     if (patternTypeInQuery) {
         const patternTypeRegexp = /\bpatterntype:(?<type>regexp|literal)\b/i
-        const newQuery = query.replace(patternTypeRegexp, '')
+        const newQuery = navbarQuery.replace(patternTypeRegexp, '')
         searchParams.set('q', newQuery)
         searchParams.set('patternType', patternTypeInQuery.toLowerCase())
     } else {
-        searchParams.set('q', query)
+        searchParams.set('q', navbarQuery)
         searchParams.set('patternType', patternType)
     }
 
@@ -594,34 +593,6 @@ export function interactiveBuildSearchURLQuery(query: string, patternType: Searc
         .toString()
         .replace(/%2F/g, '/')
         .replace(/%3A/g, ':')
-}
-
-function parseRepoFiltersFromQuery(query: string): string[] | undefined {
-    const repoFilterRegexp = /\b(repo:|r:)(\S+)\b/gi
-    const matches = repoFilterRegexp.exec(query)
-    const results = []
-    if (matches) {
-        // First two items will match the entire regex and the first capture group of the regex.
-        for (const match of matches.slice(2, matches.length)) {
-            results.push(match)
-        }
-    }
-
-    return results
-}
-
-function parseFileFiltersFromQuery(query: string): string[] | undefined {
-    const fileFilterRegexp = /\b(file:|f:)(\S+)\b/gi
-    const matches = fileFilterRegexp.exec(query)
-    const results = []
-    if (matches) {
-        // First two items will match the entire regex and the first capture group of the regex.
-        for (const match of matches.slice(2, matches.length)) {
-            results.push(match)
-        }
-    }
-
-    return results
 }
 
 function parsePatternTypeFromQuery(query: string): SearchPatternType | undefined {

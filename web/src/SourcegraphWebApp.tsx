@@ -159,8 +159,8 @@ class ColdSourcegraphWebApp extends React.Component<SourcegraphWebAppProps, Sour
         // This will be updated with the default in settings when the web app mounts.
         const urlPatternType = parseSearchURLPatternType(window.location.search) || GQL.SearchPatternType.literal
 
-        const interactiveModeFeatureFlag = localStorage.getItem(INTERACTIVE_MODE_FEATURE_FLAG_KEY)
-        const interactiveModeFeatureFlagActive = !!interactiveModeFeatureFlag && interactiveModeFeatureFlag === 'true'
+        const interactiveModeFeatureFlag = window.context.experimentalFeatures.interactiveSearchMode === 'enabled'
+        const interactiveModeFeatureFlagActive = interactiveModeFeatureFlag
 
         this.state = {
             themePreference: readStoredThemePreference(),

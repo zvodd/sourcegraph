@@ -4,7 +4,7 @@ import { QueryState, submitSearch } from '../helpers'
 import * as GQL from '../../../../shared/src/graphql/schema'
 import { Form } from '../../components/Form'
 import { QueryInput } from './QueryInput'
-import { InteractiveModeAddFilterRow, DefaultFilterTypes } from './InteractiveModeAddFilterRow'
+import { InteractiveModeAddFilterRow } from './InteractiveModeAddFilterRow'
 import { InteractiveModeSelectedFiltersRow } from './InteractiveModeSelectedFiltersRow'
 import { SearchButton } from './SearchButton'
 import { Subscription, Subject } from 'rxjs'
@@ -19,7 +19,6 @@ import { PlatformContextProps } from '../../../../shared/src/platform/context'
 import { ThemePreferenceProps } from '../theme'
 import { EventLoggerProps } from '../../tracking/eventLogger'
 import { ActivationProps } from '../../../../shared/src/components/activation/Activation'
-import { generateFieldsQuery } from './helpers'
 import { FiltersToTypeAndValue } from '../../../../shared/src/search/interactive/util'
 import { SuggestionTypes, SuggestionTypeKeys } from '../../../../shared/src/search/suggestions/util'
 
@@ -45,6 +44,7 @@ interface InteractiveModeProps
     showDotComMarketing: boolean
     showCampaigns: boolean
     isSourcegraphDotCom: boolean
+    toggleSearchMode: () => void
 }
 
 interface InteractiveInputState {
@@ -197,7 +197,14 @@ export default class InteractiveModeInput extends React.Component<InteractiveMod
                             </div>
                         </Form>
                     </div>
-                    {!this.props.authRequired && <NavLinks {...this.props} showDotComMarketing={showDotComMarketing} />}
+                    {!this.props.authRequired && (
+                        <NavLinks
+                            {...this.props}
+                            interactiveSearchMode={true}
+                            showInteractiveMode={true}
+                            showDotComMarketing={showDotComMarketing}
+                        />
+                    )}
                 </div>
                 <div>
                     <InteractiveModeSelectedFiltersRow

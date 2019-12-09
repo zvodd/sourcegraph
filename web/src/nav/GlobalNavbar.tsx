@@ -18,7 +18,6 @@ import { ThemePreferenceProps } from '../search/theme'
 import { KeyboardShortcutsProps } from '../keyboardShortcuts/keyboardShortcuts'
 import { QueryState } from '../search/helpers'
 import InteractiveModeInput from '../search/input/InteractiveModeInput'
-import { INTERACTIVE_MODE_FEATURE_FLAG_KEY } from '../SourcegraphWebApp'
 
 interface Props
     extends SettingsCascadeProps,
@@ -57,7 +56,7 @@ export class GlobalNavbar extends React.PureComponent<Props, State> {
 
     private subscriptions = new Subscription()
 
-    private showInteractiveModeOption = localStorage.getItem(INTERACTIVE_MODE_FEATURE_FLAG_KEY)
+    private showInteractiveModeOption = window.context.experimentalFeatures.interactiveSearchMode === 'enabled'
 
     constructor(props: Props) {
         super(props)
@@ -131,13 +130,6 @@ export class GlobalNavbar extends React.PureComponent<Props, State> {
                                         onNavbarQueryChange={this.props.onNavbarQueryChange}
                                         showDotComMarketing={showDotComMarketing}
                                     />
-                                    <button
-                                        className="btn btn-link"
-                                        type="button"
-                                        onClick={this.props.toggleSearchMode}
-                                    >
-                                        Omni mode
-                                    </button>
                                 </>
                             )
                         ) : (
@@ -159,16 +151,11 @@ export class GlobalNavbar extends React.PureComponent<Props, State> {
                                     </div>
                                 )}
                                 {!this.state.authRequired && (
-                                    <NavLinks {...this.props} showDotComMarketing={showDotComMarketing} />
-                                )}
-                                {this.showInteractiveModeOption && !this.state.authRequired && (
-                                    <button
-                                        className="btn btn-link"
-                                        type="button"
-                                        onClick={this.props.toggleSearchMode}
-                                    >
-                                        Interactive mode
-                                    </button>
+                                    <NavLinks
+                                        {...this.props}
+                                        showInteractiveMode={this.showInteractiveModeOption}
+                                        showDotComMarketing={showDotComMarketing}
+                                    />
                                 )}
                             </>
                         )}

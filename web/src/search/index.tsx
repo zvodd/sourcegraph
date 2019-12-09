@@ -1,5 +1,6 @@
 import { escapeRegExp } from 'lodash'
 import { SearchPatternType } from '../../../shared/src/graphql/schema'
+import { SuggestionTypes } from '../../../shared/src/search/suggestions/util'
 
 /**
  * Parses the query out of the URL search params (the 'q' parameter). If the 'q' parameter is not present, it
@@ -12,22 +13,16 @@ export function parseSearchURLQuery(query: string): string | undefined {
 
 export function interactiveParseSearchURLQuery(query: string): string | undefined {
     const searchParams = new URLSearchParams(query)
-    const repoSearchParams = searchParams.getAll('repo')
-    const fileSearchParams = searchParams.getAll('file')
-    const querySearchParams = searchParams.get('q')
-
     const finalQueryParts = []
-    if (repoSearchParams) {
-        for (const repoFilter of repoSearchParams) {
-            finalQueryParts.push(`repo:${repoFilter}`)
+    for (const suggestionType of Object.keys(SuggestionTypes)) {
+        const filterParams = searchParams.getAll(suggestionType)
+        if (filterParams) {
+            for (const filterValue of filterParams) {
+                finalQueryParts.push(`${suggestionType}:${filterValue}`)
+            }
         }
     }
-
-    if (fileSearchParams) {
-        for (const fileFilter of fileSearchParams) {
-            finalQueryParts.push(`file:${fileFilter}`)
-        }
-    }
+    const querySearchParams = searchParams.get('q')
 
     if (querySearchParams) {
         finalQueryParts.push(querySearchParams)

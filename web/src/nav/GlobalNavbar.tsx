@@ -44,7 +44,7 @@ interface Props
     lowProfile: boolean
 
     interactiveSearchMode: boolean
-    toggleSearchMode: () => void
+    toggleSearchMode: (e: React.MouseEvent<HTMLAnchorElement>) => void
 }
 
 interface State {

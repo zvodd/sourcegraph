@@ -103,7 +103,7 @@ export interface LayoutProps
     isSourcegraphDotCom: boolean
     showCampaigns: boolean
     interactiveSearchMode: boolean
-    toggleSearchMode: () => void
+    toggleSearchMode: (e: React.MouseEvent<HTMLAnchorElement>) => void
     children?: never
 }
 

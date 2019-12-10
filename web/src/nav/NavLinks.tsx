@@ -41,7 +41,7 @@ interface Props
     // Interactive search mode
     showInteractiveMode: boolean
     interactiveSearchMode: boolean
-    toggleSearchMode: () => void
+    toggleSearchMode: (e: React.MouseEvent<HTMLAnchorElement>) => void
 }
 
 export class NavLinks extends React.PureComponent<Props> {
@@ -55,9 +55,9 @@ export class NavLinks extends React.PureComponent<Props> {
         return (
             <ul className="nav-links nav align-items-center pl-2 pr-1">
                 {this.props.showInteractiveMode && (
-                    <button className="btn btn-link" type="button" onClick={this.props.toggleSearchMode}>
+                    <a href="" onClick={this.props.toggleSearchMode}>
                         {this.props.interactiveSearchMode ? 'Omni' : 'Interactive'} mode
-                    </button>
+                    </a>
                 )}
                 {/* Show "Search" link on small screens when GlobalNavbar hides the SearchNavbarItem. */}
                 {this.props.location.pathname !== '/search' && (

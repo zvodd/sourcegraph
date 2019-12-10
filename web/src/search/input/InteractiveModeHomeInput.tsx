@@ -26,7 +26,7 @@ interface InteractiveModeProps extends SettingsCascadeProps, ThemeProps, ThemePr
     togglePatternType: () => void
 
     // For NavLinks
-    toggleSearchMode: () => void
+    toggleSearchMode: (e: React.MouseEvent<HTMLAnchorElement>) => void
 }
 
 interface InteractiveInputState {

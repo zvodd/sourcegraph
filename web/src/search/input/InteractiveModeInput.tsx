@@ -44,7 +44,7 @@ interface InteractiveModeProps
     showDotComMarketing: boolean
     showCampaigns: boolean
     isSourcegraphDotCom: boolean
-    toggleSearchMode: () => void
+    toggleSearchMode: (e: React.MouseEvent<HTMLAnchorElement>) => void
 }
 
 interface InteractiveInputState {

@@ -102,6 +102,7 @@ export interface LayoutProps
     ) => Observable<GQL.ISearchResults | ErrorLike>
     isSourcegraphDotCom: boolean
     showCampaigns: boolean
+    showInteractiveSearchMode: boolean
     interactiveSearchMode: boolean
     toggleSearchMode: (e: React.MouseEvent<HTMLAnchorElement>) => void
     children?: never

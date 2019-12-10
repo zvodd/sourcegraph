@@ -38,8 +38,9 @@ interface Props
     showDotComMarketing: boolean
     showCampaigns: boolean
     isSourcegraphDotCom: boolean
+
     // Interactive search mode
-    showInteractiveMode: boolean
+    showInteractiveSearchMode: boolean
     interactiveSearchMode: boolean
     toggleSearchMode: (e: React.MouseEvent<HTMLAnchorElement>) => void
 }
@@ -54,7 +55,7 @@ export class NavLinks extends React.PureComponent<Props> {
     public render(): JSX.Element | null {
         return (
             <ul className="nav-links nav align-items-center pl-2 pr-1">
-                {this.props.showInteractiveMode && (
+                {this.props.showInteractiveSearchMode && (
                     <a href="" onClick={this.props.toggleSearchMode}>
                         {this.props.interactiveSearchMode ? 'Omni' : 'Interactive'} mode
                     </a>

@@ -24,8 +24,6 @@ interface InteractiveModeProps extends SettingsCascadeProps, ThemeProps, ThemePr
     onNavbarQueryChange: (userQuery: QueryState) => void
     patternType: GQL.SearchPatternType
     togglePatternType: () => void
-
-    // For NavLinks
     toggleSearchMode: (e: React.MouseEvent<HTMLAnchorElement>) => void
 }
 
@@ -70,7 +68,7 @@ export default class InteractiveModeHomeInput extends React.Component<Interactiv
         this.componentUpdates.next(this.props)
     }
 
-    public componentDidUnmount(): void {
+    public componentWillUnmount(): void {
         this.subscriptions.unsubscribe()
     }
 

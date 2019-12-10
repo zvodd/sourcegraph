@@ -43,6 +43,7 @@ interface Props
      */
     lowProfile: boolean
 
+    showInteractiveSearchMode: boolean
     interactiveSearchMode: boolean
     toggleSearchMode: (e: React.MouseEvent<HTMLAnchorElement>) => void
 }
@@ -55,8 +56,6 @@ export class GlobalNavbar extends React.PureComponent<Props, State> {
     public state: State = {}
 
     private subscriptions = new Subscription()
-
-    private showInteractiveModeOption = window.context.experimentalFeatures.interactiveSearchMode === 'enabled'
 
     constructor(props: Props) {
         super(props)
@@ -121,7 +120,12 @@ export class GlobalNavbar extends React.PureComponent<Props, State> {
         return (
             <div className={`global-navbar ${this.props.lowProfile ? '' : 'global-navbar--bg border-bottom'} py-1`}>
                 {this.props.lowProfile ? (
-                    <div className="flex-1" />
+                    <>
+                        <div className="flex-1" />
+                        {!this.state.authRequired && (
+                            <NavLinks {...this.props} showDotComMarketing={showDotComMarketing} />
+                        )}
+                    </>
                 ) : (
                     <>
                         {this.props.interactiveSearchMode ? (
@@ -155,11 +159,7 @@ export class GlobalNavbar extends React.PureComponent<Props, State> {
                                     </div>
                                 )}
                                 {!this.state.authRequired && (
-                                    <NavLinks
-                                        {...this.props}
-                                        showInteractiveMode={this.showInteractiveModeOption}
-                                        showDotComMarketing={showDotComMarketing}
-                                    />
+                                    <NavLinks {...this.props} showDotComMarketing={showDotComMarketing} />
                                 )}
                             </>
                         )}

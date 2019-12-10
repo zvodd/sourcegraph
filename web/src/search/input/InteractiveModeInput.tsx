@@ -201,7 +201,7 @@ export default class InteractiveModeInput extends React.Component<InteractiveMod
                         <NavLinks
                             {...this.props}
                             interactiveSearchMode={true}
-                            showInteractiveMode={true}
+                            showInteractiveSearchMode={true}
                             showDotComMarketing={showDotComMarketing}
                         />
                     )}

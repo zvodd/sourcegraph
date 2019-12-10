@@ -25,6 +25,7 @@ interface Props extends SettingsCascadeProps, ThemeProps, ThemePreferenceProps, 
     location: H.Location
     history: H.History
     isSourcegraphDotCom: boolean
+    showInteractiveSearchMode: boolean
     interactiveSearchMode: boolean
     toggleSearchMode: (e: React.MouseEvent<HTMLAnchorElement>) => void
 }
@@ -85,9 +86,11 @@ export class SearchPage extends React.Component<Props, State> {
                             onNavbarQueryChange={this.onUserQueryChange}
                             toggleSearchMode={this.props.toggleSearchMode}
                         />
-                        <a href="" onClick={this.props.toggleSearchMode}>
-                            Omni mode
-                        </a>
+                        {this.props.showInteractiveSearchMode && (
+                            <a href="" onClick={this.props.toggleSearchMode}>
+                                Omni mode
+                            </a>
+                        )}
                     </div>
                 ) : (
                     <div className="search-page__container">
@@ -147,9 +150,11 @@ export class SearchPage extends React.Component<Props, State> {
                             )}
                             <Notices className="my-3" location="home" settingsCascade={this.props.settingsCascade} />
                         </Form>
-                        <a href="" onClick={this.props.toggleSearchMode}>
-                            Interactive mode
-                        </a>
+                        {this.props.showInteractiveSearchMode && (
+                            <a href="" onClick={this.props.toggleSearchMode}>
+                                Interactive mode
+                            </a>
+                        )}
                     </div>
                 )}
             </div>

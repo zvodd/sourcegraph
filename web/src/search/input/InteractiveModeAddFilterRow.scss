@@ -1,8 +1,13 @@
 .interactive-mode-add-filter-row {
-    padding: 0.5rem 0;
-    padding-left: 1rem;
+    padding: 0.5rem 0 0.5rem 1rem;
+
+    &--homepage {
+        padding-left: 0;
+    }
 
     &__button {
-        margin-left: 0.25rem;
+        &:not(:first-child) {
+            margin-left: 0.25rem;
+        }
     }
 }

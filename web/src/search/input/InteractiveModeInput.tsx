@@ -3,7 +3,6 @@ import * as H from 'history'
 import { QueryState, submitSearch } from '../helpers'
 import * as GQL from '../../../../shared/src/graphql/schema'
 import { Form } from '../../components/Form'
-import { QueryInput } from './QueryInput'
 import { InteractiveModeAddFilterRow } from './InteractiveModeAddFilterRow'
 import { InteractiveModeSelectedFiltersRow } from './InteractiveModeSelectedFiltersRow'
 import { SearchButton } from './SearchButton'
@@ -21,6 +20,8 @@ import { EventLoggerProps } from '../../tracking/eventLogger'
 import { ActivationProps } from '../../../../shared/src/components/activation/Activation'
 import { FiltersToTypeAndValue } from '../../../../shared/src/search/interactive/util'
 import { SuggestionTypes, SuggestionTypeKeys } from '../../../../shared/src/search/suggestions/util'
+import { QueryInput } from './QueryInput'
+import { SimpleQueryInput } from './SimpleQueryInput'
 
 interface InteractiveModeProps
     extends SettingsCascadeProps,
@@ -184,7 +185,7 @@ export default class InteractiveModeInput extends React.Component<InteractiveMod
                     <div className="global-navbar__search-box-container d-none d-sm-flex">
                         <Form onSubmit={this.onSubmit}>
                             <div className="d-flex align-items-start">
-                                <QueryInput
+                                <SimpleQueryInput
                                     location={this.props.location}
                                     history={this.props.history}
                                     value={this.props.navbarSearchState}
@@ -215,7 +216,7 @@ export default class InteractiveModeInput extends React.Component<InteractiveMod
                         toggleFilterEditable={this.toggleFilterEditable}
                         isHomepage={false}
                     />
-                    <InteractiveModeAddFilterRow onAddNewFilter={this.addNewFilter} />
+                    <InteractiveModeAddFilterRow onAddNewFilter={this.addNewFilter} homepage={false} />
                 </div>
             </div>
         )

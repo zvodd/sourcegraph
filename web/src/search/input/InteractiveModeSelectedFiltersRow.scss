@@ -20,5 +20,11 @@
         color: #6d727c;
         background: #ffffff;
         border-bottom: 1px solid #cad2e2;
+
+        &--homepage {
+            padding: 0.5rem 0;
+            background: inherit;
+            border-bottom: none;
+        }
     }
 }

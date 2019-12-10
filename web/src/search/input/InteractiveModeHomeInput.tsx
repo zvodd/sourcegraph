@@ -3,19 +3,18 @@ import * as H from 'history'
 import { QueryState, submitSearch } from '../helpers'
 import * as GQL from '../../../../shared/src/graphql/schema'
 import { Form } from '../../components/Form'
-import { QueryInput } from './QueryInput'
-import { InteractiveModeAddFilterRow } from './InteractiveModeAddFilterRow'
 import { InteractiveModeSelectedFiltersRow } from './InteractiveModeSelectedFiltersRow'
 import { SearchButton } from './SearchButton'
 import { Subscription, Subject } from 'rxjs'
 import { ThemeProps } from '../../../../shared/src/theme'
 import { SettingsCascadeProps } from '../../../../shared/src/settings/settings'
-import { KeyboardShortcutsProps } from '../../keyboardShortcuts/keyboardShortcuts'
 import { ThemePreferenceProps } from '../theme'
 import { ActivationProps } from '../../../../shared/src/components/activation/Activation'
 import { FiltersToTypeAndValue } from '../../../../shared/src/search/interactive/util'
 import { SuggestionTypes, SuggestionTypeKeys } from '../../../../shared/src/search/suggestions/util'
-import { InteractiveModeAddFilterDropdown } from './InteractiveModeAddFilterDropdown'
+import { InteractiveModeAddFilterRow } from './InteractiveModeAddFilterRow'
+import { QueryInput } from './QueryInput'
+import { SimpleQueryInput } from './SimpleQueryInput'
 
 interface InteractiveModeProps extends SettingsCascadeProps, ThemeProps, ThemePreferenceProps, ActivationProps {
     location: H.Location
@@ -138,7 +137,7 @@ export default class InteractiveModeHomeInput extends React.Component<Interactiv
                     <div className="global-navbar__search-box-container d-none d-sm-flex">
                         <Form onSubmit={this.onSubmit}>
                             <div className="d-flex align-items-start">
-                                <QueryInput
+                                <SimpleQueryInput
                                     location={this.props.location}
                                     history={this.props.history}
                                     value={this.props.navbarSearchState}
@@ -161,7 +160,7 @@ export default class InteractiveModeHomeInput extends React.Component<Interactiv
                         toggleFilterEditable={this.toggleFilterEditable}
                         isHomepage={true}
                     />
-                    <InteractiveModeAddFilterDropdown onAddNewFilter={this.addNewFilter} />
+                    <InteractiveModeAddFilterRow onAddNewFilter={this.addNewFilter} homepage={true} />
                 </div>
             </div>
         )

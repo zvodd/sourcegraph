@@ -3,6 +3,7 @@ import { startCase } from 'lodash'
 import { SuggestionTypes } from '../../../../shared/src/search/suggestions/util'
 
 interface RowProps {
+    homepage: boolean
     // A callback that adds a new filter to the SelectedFilterRow when one of the buttons are clicked.
     onAddNewFilter: (filter: SuggestionTypes) => void
 }
@@ -12,8 +13,8 @@ export enum DefaultFilterTypes {
     file = 'file',
 }
 
-export const InteractiveModeAddFilterRow: React.FunctionComponent<RowProps> = ({ onAddNewFilter }) => (
-    <div className="interactive-mode-add-filter-row">
+export const InteractiveModeAddFilterRow: React.FunctionComponent<RowProps> = ({ homepage, onAddNewFilter }) => (
+    <div className={`interactive-mode-add-filter-row ${homepage ? 'interactive-mode-add-filter-row--homepage' : ''}`}>
         {Object.keys(DefaultFilterTypes).map(filterType => (
             <AddFilterButton key={filterType} onAddNewFilter={onAddNewFilter} type={filterType as SuggestionTypes} />
         ))}

@@ -214,16 +214,18 @@ export class SearchResults extends React.Component<SearchResultsProps, SearchRes
         return (
             <div className="e2e-search-results search-results d-flex flex-column w-100">
                 <PageTitle key="page-title" title={query} />
-                <SearchResultsFilterBars
-                    navbarSearchQuery={this.props.navbarSearchQueryState.query}
-                    results={this.state.resultsOrError}
-                    filters={filters}
-                    extensionFilters={extensionFilters}
-                    quickLinks={quickLinks}
-                    onFilterClick={this.onDynamicFilterClicked}
-                    onShowMoreResultsClick={this.showMoreResults}
-                    calculateShowMoreResultsCount={this.calculateCount}
-                />
+                {!this.props.interactiveSearchMode && (
+                    <SearchResultsFilterBars
+                        navbarSearchQuery={this.props.navbarSearchQueryState.query}
+                        results={this.state.resultsOrError}
+                        filters={filters}
+                        extensionFilters={extensionFilters}
+                        quickLinks={quickLinks}
+                        onFilterClick={this.onDynamicFilterClicked}
+                        onShowMoreResultsClick={this.showMoreResults}
+                        calculateShowMoreResultsCount={this.calculateCount}
+                    />
+                )}
                 <SearchResultTypeTabs {...this.props} query={this.props.navbarSearchQueryState.query} />
                 <SearchResultsList
                     {...this.props}

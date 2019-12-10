@@ -7,6 +7,12 @@
     color: #93a9c8;
     background: #151c28;
     border-bottom: 1px solid #2b3750;
+
+    &--homepage {
+        padding: 0.5rem 0;
+        background: inherit;
+        border-bottom: none;
+    }
 }
 
 .theme-light {

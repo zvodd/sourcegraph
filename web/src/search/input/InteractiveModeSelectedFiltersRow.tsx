@@ -11,6 +11,7 @@ interface Props {
     /** A callback to handle a filter being deleted from the selected filter row */
     onFilterDeleted: (filterKey: string) => void
     toggleFilterEditable: (filterKey: string) => void
+    isHomepage: boolean
 }
 
 export const InteractiveModeSelectedFiltersRow: React.FunctionComponent<Props> = ({
@@ -19,12 +20,17 @@ export const InteractiveModeSelectedFiltersRow: React.FunctionComponent<Props> =
     onFilterEdited,
     onFilterDeleted,
     toggleFilterEditable,
+    isHomepage,
 }) => {
     const fieldValueKeys = Array.from(Object.keys(fieldValues))
     return (
         <>
             {fieldValueKeys.length > 0 && (
-                <div className="interactive-mode-selected-filters-row">
+                <div
+                    className={`interactive-mode-selected-filters-row ${
+                        isHomepage ? 'interactive-mode-selected-filters-row--homepage' : ''
+                    }`}
+                >
                     {fieldValues &&
                         fieldValueKeys.map(field => (
                             /** Replace this with new input component, which can be an input when editable, and button when non-editable */

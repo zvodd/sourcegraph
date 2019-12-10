@@ -9,28 +9,15 @@ import { InteractiveModeSelectedFiltersRow } from './InteractiveModeSelectedFilt
 import { SearchButton } from './SearchButton'
 import { Subscription, Subject } from 'rxjs'
 import { ThemeProps } from '../../../../shared/src/theme'
-import { Link } from '../../../../shared/src/components/Link'
-import { NavLinks } from '../../nav/NavLinks'
-import { showDotComMarketing } from '../../util/features'
 import { SettingsCascadeProps } from '../../../../shared/src/settings/settings'
 import { KeyboardShortcutsProps } from '../../keyboardShortcuts/keyboardShortcuts'
-import { ExtensionsControllerProps } from '../../../../shared/src/extensions/controller'
-import { PlatformContextProps } from '../../../../shared/src/platform/context'
 import { ThemePreferenceProps } from '../theme'
-import { EventLoggerProps } from '../../tracking/eventLogger'
 import { ActivationProps } from '../../../../shared/src/components/activation/Activation'
 import { FiltersToTypeAndValue } from '../../../../shared/src/search/interactive/util'
 import { SuggestionTypes, SuggestionTypeKeys } from '../../../../shared/src/search/suggestions/util'
+import { InteractiveModeAddFilterDropdown } from './InteractiveModeAddFilterDropdown'
 
-interface InteractiveModeProps
-    extends SettingsCascadeProps,
-        KeyboardShortcutsProps,
-        ExtensionsControllerProps<'executeCommand' | 'services'>,
-        PlatformContextProps<'forceUpdateTooltip'>,
-        ThemeProps,
-        ThemePreferenceProps,
-        EventLoggerProps,
-        ActivationProps {
+interface InteractiveModeProps extends SettingsCascadeProps, ThemeProps, ThemePreferenceProps, ActivationProps {
     location: H.Location
     history: H.History
     navbarSearchState: QueryState
@@ -39,11 +26,6 @@ interface InteractiveModeProps
     togglePatternType: () => void
 
     // For NavLinks
-    authRequired?: boolean
-    authenticatedUser: GQL.IUser | null
-    showDotComMarketing: boolean
-    showCampaigns: boolean
-    isSourcegraphDotCom: boolean
     toggleSearchMode: () => void
 }
 
@@ -57,7 +39,7 @@ interface InteractiveInputState {
 
 // INTERACTIVE_SEARCH_TODO: This component is being built for the navbar use case.
 // Need to add a mode for search page.
-export default class InteractiveModeInput extends React.Component<InteractiveModeProps, InteractiveInputState> {
+export default class InteractiveModeHomeInput extends React.Component<InteractiveModeProps, InteractiveInputState> {
     private numFieldValuesAdded = 0
     private subscriptions = new Subscription()
     private componentUpdates = new Subject<InteractiveModeProps>()
@@ -88,7 +70,7 @@ export default class InteractiveModeInput extends React.Component<InteractiveMod
         this.componentUpdates.next(this.props)
     }
 
-    public componentWillUnmount(): void {
+    public componentDidUnmount(): void {
         this.subscriptions.unsubscribe()
     }
 
@@ -152,35 +134,9 @@ export default class InteractiveModeInput extends React.Component<InteractiveMod
     }
 
     public render(): JSX.Element | null {
-        let logoSrc = '/.assets/img/sourcegraph-mark.svg'
-        let logoLinkClassName = 'global-navbar__logo-link global-navbar__logo-animated'
-
-        const { branding } = window.context
-        if (branding) {
-            if (this.props.isLightTheme) {
-                if (branding.light && branding.light.symbol) {
-                    logoSrc = branding.light.symbol
-                }
-            } else if (branding.dark && branding.dark.symbol) {
-                logoSrc = branding.dark.symbol
-            }
-            if (branding.disableSymbolSpin) {
-                logoLinkClassName = 'global-navbar__logo-link'
-            }
-        }
-
-        const logo = <img className="global-navbar__logo" src={logoSrc} />
-
         return (
             <div className="interactive-mode-input">
                 <div className="interactive-mode-input__top-nav">
-                    {this.props.authRequired ? (
-                        <div className={logoLinkClassName}>{logo}</div>
-                    ) : (
-                        <Link to="/search" className={logoLinkClassName}>
-                            {logo}
-                        </Link>
-                    )}
                     <div className="global-navbar__search-box-container d-none d-sm-flex">
                         <Form onSubmit={this.onSubmit}>
                             <div className="d-flex align-items-start">
@@ -197,14 +153,6 @@ export default class InteractiveModeInput extends React.Component<InteractiveMod
                             </div>
                         </Form>
                     </div>
-                    {!this.props.authRequired && (
-                        <NavLinks
-                            {...this.props}
-                            interactiveSearchMode={true}
-                            showInteractiveMode={true}
-                            showDotComMarketing={showDotComMarketing}
-                        />
-                    )}
                 </div>
                 <div>
                     <InteractiveModeSelectedFiltersRow
@@ -213,9 +161,9 @@ export default class InteractiveModeInput extends React.Component<InteractiveMod
                         onFilterEdited={this.onFilterEdited}
                         onFilterDeleted={this.onFilterDeleted}
                         toggleFilterEditable={this.toggleFilterEditable}
-                        isHomepage={false}
+                        isHomepage={true}
                     />
-                    <InteractiveModeAddFilterRow onAddNewFilter={this.addNewFilter} />
+                    <InteractiveModeAddFilterDropdown onAddNewFilter={this.addNewFilter} />
                 </div>
             </div>
         )

@@ -42,7 +42,7 @@ interface State {
 export class SearchPage extends React.Component<Props, State> {
     constructor(props: Props) {
         super(props)
-        const queryFromUrl = parseSearchURLQuery(props.location.search) || ''
+        const queryFromUrl = parseSearchURLQuery(props.location.search, props.interactiveSearchMode) || ''
         this.state = {
             userQueryState: {
                 query: queryFromUrl,
@@ -170,7 +170,7 @@ export class SearchPage extends React.Component<Props, State> {
     }
 
     private getPageTitle(): string | undefined {
-        const query = parseSearchURLQuery(this.props.location.search)
+        const query = parseSearchURLQuery(this.props.location.search, this.props.interactiveSearchMode)
         if (query) {
             return `${limitString(this.state.userQueryState.query, 25, true)}`
         }

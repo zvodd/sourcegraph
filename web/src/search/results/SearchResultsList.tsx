@@ -62,6 +62,8 @@ export interface SearchResultsListProps
     onSaveQueryClick: () => void
     didSave: boolean
 
+    interactiveSearchMode: boolean
+
     fetchHighlightedFileLines: (ctx: FetchFileCtx, force?: boolean) => Observable<string[]>
 }
 
@@ -302,7 +304,7 @@ export class SearchResultsList extends React.PureComponent<SearchResultsListProp
     }
 
     public render(): React.ReactNode {
-        const parsedQuery = parseSearchURLQuery(this.props.location.search)
+        const parsedQuery = parseSearchURLQuery(this.props.location.search, this.props.interactiveSearchMode)
 
         return (
             <>

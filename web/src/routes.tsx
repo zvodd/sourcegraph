@@ -1,7 +1,7 @@
 import * as React from 'react'
 import { Redirect, RouteComponentProps } from 'react-router'
 import { LayoutProps } from './Layout'
-import { parseSearchURLQuery, interactiveParseSearchURLQuery } from './search'
+import { parseSearchURLQuery } from './search'
 import { lazyComponent } from './util/lazyComponent'
 import { printSchema } from 'graphql'
 
@@ -58,11 +58,7 @@ export const routes: readonly LayoutRouteProps[] = [
     {
         path: '/search',
         render: (props: any) =>
-            (props.interactiveSearchMode ? (
-                interactiveParseSearchURLQuery(props.location.search)
-            ) : (
-                parseSearchURLQuery(props.location.search)
-            )) ? (
+            parseSearchURLQuery(props.location.search, props.interactiveSearchMode) ? (
                 <SearchResults {...props} deployType={window.context.deployType} />
             ) : (
                 <SearchPage {...props} />

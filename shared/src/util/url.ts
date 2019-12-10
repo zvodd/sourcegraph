@@ -2,7 +2,7 @@ import { Position, Range, Selection } from '@sourcegraph/extension-api-types'
 import { WorkspaceRootWithMetadata } from '../api/client/services/workspaceService'
 import { SearchPatternType } from '../graphql/schema'
 import { FiltersToTypeAndValue } from '../search/interactive/util'
-import { SuggestionTypes, SuggestionTypeKeys } from '../search/suggestions/util'
+import { SuggestionTypeKeys } from '../search/suggestions/util'
 
 export interface RepoSpec {
     /**

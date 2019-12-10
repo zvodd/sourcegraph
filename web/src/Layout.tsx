@@ -31,7 +31,7 @@ import { RepoContainerRoute } from './repo/RepoContainer'
 import { RepoHeaderActionButton } from './repo/RepoHeader'
 import { RepoRevContainerRoute } from './repo/RepoRevContainer'
 import { LayoutRouteProps } from './routes'
-import { parseSearchURLQuery, PatternTypeProps, interactiveParseSearchURLQuery } from './search'
+import { parseSearchURLQuery, PatternTypeProps } from './search'
 import { SiteAdminAreaRoute } from './site-admin/SiteAdminArea'
 import { SiteAdminSideBarGroups } from './site-admin/SiteAdminSidebar'
 import { EventLogger, EventLoggerProps } from './tracking/eventLogger'
@@ -109,9 +109,8 @@ export interface LayoutProps
 
 export const Layout: React.FunctionComponent<LayoutProps> = props => {
     const isSearchHomepage =
-        props.location.pathname === '/search' && props.interactiveSearchMode
-            ? !interactiveParseSearchURLQuery(props.location.search)
-            : !parseSearchURLQuery(props.location.search)
+        props.location.pathname === '/search' &&
+        !parseSearchURLQuery(props.location.search, props.interactiveSearchMode)
 
     const needsSiteInit = window.context.showOnboarding
     const isSiteInit = props.location.pathname === '/site-admin/init'

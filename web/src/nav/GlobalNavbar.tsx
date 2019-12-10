@@ -63,10 +63,14 @@ export class GlobalNavbar extends React.PureComponent<Props, State> {
 
         /**
          * Reads initial state from the props (i.e. URL parameters).
+         *
+         * We pass false to the interactiveMode paramter of parseSearchURLQuery
+         * because we only want to update the navbarQuery with the match query
+         * (i.e. the `q=` paramater) in both omni and interactive modes.
          */
-        const query = parseSearchURLQuery(props.location.search || '')
-        if (query) {
-            props.onNavbarQueryChange({ query, cursorPosition: query.length })
+        const navbarQuery = parseSearchURLQuery(props.location.search || '', false)
+        if (navbarQuery) {
+            props.onNavbarQueryChange({ query: navbarQuery, cursorPosition: navbarQuery.length })
         } else {
             // If we have no component state, then we may have gotten unmounted during a route change.
             const query = props.location.state ? props.location.state.query : ''
@@ -83,9 +87,9 @@ export class GlobalNavbar extends React.PureComponent<Props, State> {
 
     public componentDidUpdate(prevProps: Props): void {
         if (prevProps.location.search !== this.props.location.search) {
-            const query = parseSearchURLQuery(this.props.location.search || '')
-            if (query) {
-                this.props.onNavbarQueryChange({ query, cursorPosition: query.length })
+            const navbarQuery = parseSearchURLQuery(this.props.location.search || '', false)
+            if (navbarQuery) {
+                this.props.onNavbarQueryChange({ query: navbarQuery, cursorPosition: navbarQuery.length })
             }
         }
     }

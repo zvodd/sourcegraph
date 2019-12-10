@@ -3,7 +3,7 @@ import { isEqual } from 'lodash'
 import * as React from 'react'
 import { concat, Observable, Subject, Subscription } from 'rxjs'
 import { catchError, distinctUntilChanged, filter, map, startWith, switchMap, tap } from 'rxjs/operators'
-import { parseSearchURLQuery, parseSearchURLPatternType, PatternTypeProps, interactiveParseSearchURLQuery } from '..'
+import { parseSearchURLQuery, parseSearchURLPatternType, PatternTypeProps } from '..'
 import { Contributions, Evaluated } from '../../../../shared/src/api/protocol'
 import { FetchFileCtx } from '../../../../shared/src/components/CodeExcerpt'
 import { ExtensionsControllerProps } from '../../../../shared/src/extensions/controller'
@@ -104,9 +104,7 @@ export class SearchResults extends React.Component<SearchResultsProps, SearchRes
                 .pipe(
                     startWith(this.props),
                     map(props => [
-                        props.interactiveSearchMode
-                            ? interactiveParseSearchURLQuery(props.location.search)
-                            : parseSearchURLQuery(props.location.search),
+                        parseSearchURLQuery(props.location.search, props.interactiveSearchMode),
                         parseSearchURLPatternType(props.location.search),
                     ]),
                     // Search when a new search query was specified in the URL
@@ -206,7 +204,7 @@ export class SearchResults extends React.Component<SearchResultsProps, SearchRes
     }
 
     public render(): JSX.Element | null {
-        const query = parseSearchURLQuery(this.props.location.search)
+        const query = parseSearchURLQuery(this.props.location.search, this.props.interactiveSearchMode)
         const filters = this.getFilters()
         const extensionFilters = this.state.contributions && this.state.contributions.searchFilters
 

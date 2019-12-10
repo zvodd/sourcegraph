@@ -5,8 +5,17 @@ import { SuggestionTypes } from '../../../shared/src/search/suggestions/util'
 /**
  * Parses the query out of the URL search params (the 'q' parameter). If the 'q' parameter is not present, it
  * returns undefined.
+ *
+ * @param query: the URL query parameters
+ * @param interactiveMode: whether to parse the search URL query in interactive mode, reading query params such as `repo=` and `file=`.
+ * If false, it will read only the match query (the value passed to the `q=` query parameter).
+ *
  */
-export function parseSearchURLQuery(query: string): string | undefined {
+export function parseSearchURLQuery(query: string, interactiveMode: boolean): string | undefined {
+    if (interactiveMode) {
+        return interactiveParseSearchURLQuery(query)
+    }
+
     const searchParams = new URLSearchParams(query)
     return searchParams.get('q') || undefined
 }

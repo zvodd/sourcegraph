@@ -1,7 +1,6 @@
-@import './InteractiveModeFilterInput';
-@import './InteractiveModeSelectedFiltersRow';
-@import './InteractiveModeAddFilterRow';
-@import './InteractiveModeAddFilterDropdown';
+@import './FilterInput';
+@import './SelectedFiltersRow';
+@import './AddFilterRow';
 
 .interactive-mode-input {
     width: 100%;

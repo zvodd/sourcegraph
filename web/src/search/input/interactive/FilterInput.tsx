@@ -33,7 +33,7 @@ interface State {
     suggestions: ComponentSuggestions
 }
 
-export default class InteractiveModeFilterInput extends React.Component<Props, State> {
+export default class FilterInput extends React.Component<Props, State> {
     private subscriptions = new Subscription()
     private inputValues = new Subject<string>()
     private componentUpdates = new Subject<Props>()
@@ -145,11 +145,7 @@ export default class InteractiveModeFilterInput extends React.Component<Props, S
         const showSuggestions = this.state.suggestions.values.length > 0
 
         return (
-            <div
-                className={`interactive-mode-filter-input ${
-                    this.state.active ? 'interactive-mode-filter-input--active' : ''
-                }`}
-            >
+            <div className={`filter-input ${this.state.active ? 'filter-input--active' : ''}`}>
                 {this.props.editable ? (
                     <Form onSubmit={this.onSubmitInput}>
                         <Downshift onSelect={this.onSuggestionSelect} itemToString={this.downshiftItemToString}>
@@ -157,11 +153,11 @@ export default class InteractiveModeFilterInput extends React.Component<Props, S
                                 const { onKeyDown } = getInputProps()
                                 return (
                                     <div>
-                                        <div className="interactive-mode-filter-input__form">
-                                            <div className="interactive-mode-filter-input__input-wrapper">
+                                        <div className="filter-input__form">
+                                            <div className="filter-input__input-wrapper">
                                                 <input
                                                     ref={this.inputEl}
-                                                    className="form-control interactive-mode-filter-input__input-field"
+                                                    className="form-control filter-input__input-field"
                                                     value={this.props.value}
                                                     onChange={this.onInputUpdate}
                                                     placeholder={this.props.filterType}
@@ -173,7 +169,7 @@ export default class InteractiveModeFilterInput extends React.Component<Props, S
                                                 />
                                                 {showSuggestions && (
                                                     <ul
-                                                        className="interactive-mode-filter-input__suggestions e2e-query-suggestions"
+                                                        className="filter-input__suggestions e2e-query-suggestions"
                                                         {...getMenuProps()}
                                                     >
                                                         {this.state.suggestions.values.map((suggestion, index) => {
@@ -206,10 +202,10 @@ export default class InteractiveModeFilterInput extends React.Component<Props, S
                         </Downshift>
                     </Form>
                 ) : (
-                    <div className="interactive-mode-filter-input--uneditable d-flex">
+                    <div className="filter-input--uneditable d-flex">
                         <button
                             type="button"
-                            className="interactive-mode-filter-input__button-text btn text-nowrap"
+                            className="filter-input__button-text btn text-nowrap"
                             onClick={this.onClickSelected}
                             tabIndex={0}
                         >

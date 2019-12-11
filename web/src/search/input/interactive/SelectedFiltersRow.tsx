@@ -1,5 +1,5 @@
 import * as React from 'react'
-import InteractiveModeFilterInput from './InteractiveModeFilterInput'
+import FilterInput from './FilterInput'
 import { QueryState } from '../../helpers'
 import { FiltersToTypeAndValue } from '../../../../../shared/src/search/interactive/util'
 
@@ -14,7 +14,7 @@ interface Props {
     isHomepage: boolean
 }
 
-export const InteractiveModeSelectedFiltersRow: React.FunctionComponent<Props> = ({
+export const SelectedFiltersRow: React.FunctionComponent<Props> = ({
     fieldValues,
     navbarQuery,
     onFilterEdited,
@@ -26,15 +26,11 @@ export const InteractiveModeSelectedFiltersRow: React.FunctionComponent<Props> =
     return (
         <>
             {fieldValueKeys.length > 0 && (
-                <div
-                    className={`interactive-mode-selected-filters-row ${
-                        isHomepage ? 'interactive-mode-selected-filters-row--homepage' : ''
-                    }`}
-                >
+                <div className={`selected-filters-row ${isHomepage ? 'selected-filters-row--homepage' : ''}`}>
                     {fieldValues &&
                         fieldValueKeys.map(field => (
                             /** Replace this with new input component, which can be an input when editable, and button when non-editable */
-                            <InteractiveModeFilterInput
+                            <FilterInput
                                 key={field}
                                 mapKey={field}
                                 filterType={fieldValues[field].type}

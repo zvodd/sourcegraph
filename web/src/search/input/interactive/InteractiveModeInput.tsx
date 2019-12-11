@@ -3,8 +3,8 @@ import * as H from 'history'
 import { QueryState, submitSearch } from '../../helpers'
 import * as GQL from '../../../../../shared/src/graphql/schema'
 import { Form } from '../../../components/Form'
-import { InteractiveModeAddFilterRow } from './InteractiveModeAddFilterRow'
-import { InteractiveModeSelectedFiltersRow } from './InteractiveModeSelectedFiltersRow'
+import { AddFilterRow } from './AddFilterRow'
+import { SelectedFiltersRow } from './SelectedFiltersRow'
 import { SearchButton } from '../SearchButton'
 import { Subscription, Subject } from 'rxjs'
 import { ThemeProps } from '../../../../../shared/src/theme'
@@ -208,7 +208,7 @@ export default class InteractiveModeInput extends React.Component<InteractiveMod
                     )}
                 </div>
                 <div>
-                    <InteractiveModeSelectedFiltersRow
+                    <SelectedFiltersRow
                         fieldValues={this.state.fieldValues}
                         navbarQuery={this.props.navbarSearchState}
                         onFilterEdited={this.onFilterEdited}
@@ -216,7 +216,7 @@ export default class InteractiveModeInput extends React.Component<InteractiveMod
                         toggleFilterEditable={this.toggleFilterEditable}
                         isHomepage={false}
                     />
-                    <InteractiveModeAddFilterRow onAddNewFilter={this.addNewFilter} homepage={false} />
+                    <AddFilterRow onAddNewFilter={this.addNewFilter} homepage={false} />
                 </div>
             </div>
         )

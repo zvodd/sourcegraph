@@ -3,7 +3,7 @@ import * as H from 'history'
 import { QueryState, submitSearch } from '../../helpers'
 import * as GQL from '../../../../../shared/src/graphql/schema'
 import { Form } from '../../../components/Form'
-import { InteractiveModeSelectedFiltersRow } from './InteractiveModeSelectedFiltersRow'
+import { SelectedFiltersRow } from './SelectedFiltersRow'
 import { SearchButton } from '../SearchButton'
 import { Subscription, Subject } from 'rxjs'
 import { ThemeProps } from '../../../../../shared/src/theme'
@@ -12,7 +12,7 @@ import { ThemePreferenceProps } from '../../theme'
 import { ActivationProps } from '../../../../../shared/src/components/activation/Activation'
 import { FiltersToTypeAndValue } from '../../../../../shared/src/search/interactive/util'
 import { SuggestionTypes, SuggestionTypeKeys } from '../../../../../shared/src/search/suggestions/util'
-import { InteractiveModeAddFilterRow } from './InteractiveModeAddFilterRow'
+import { AddFilterRow } from './AddFilterRow'
 import { SimpleQueryInput } from './SimpleQueryInput'
 
 interface InteractiveModeProps extends SettingsCascadeProps, ThemeProps, ThemePreferenceProps, ActivationProps {
@@ -152,7 +152,7 @@ export default class InteractiveModeHomeInput extends React.Component<Interactiv
                     </div>
                 </div>
                 <div>
-                    <InteractiveModeSelectedFiltersRow
+                    <SelectedFiltersRow
                         fieldValues={this.state.fieldValues}
                         navbarQuery={this.props.navbarSearchState}
                         onFilterEdited={this.onFilterEdited}
@@ -160,7 +160,7 @@ export default class InteractiveModeHomeInput extends React.Component<Interactiv
                         toggleFilterEditable={this.toggleFilterEditable}
                         isHomepage={true}
                     />
-                    <InteractiveModeAddFilterRow onAddNewFilter={this.addNewFilter} homepage={true} />
+                    <AddFilterRow onAddNewFilter={this.addNewFilter} homepage={true} />
                 </div>
             </div>
         )

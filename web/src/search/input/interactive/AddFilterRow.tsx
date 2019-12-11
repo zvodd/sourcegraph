@@ -13,8 +13,8 @@ export enum DefaultFilterTypes {
     file = 'file',
 }
 
-export const InteractiveModeAddFilterRow: React.FunctionComponent<RowProps> = ({ homepage, onAddNewFilter }) => (
-    <div className={`interactive-mode-add-filter-row ${homepage ? 'interactive-mode-add-filter-row--homepage' : ''}`}>
+export const AddFilterRow: React.FunctionComponent<RowProps> = ({ homepage, onAddNewFilter }) => (
+    <div className={`add-filter-row ${homepage ? 'add-filter-row--homepage' : ''}`}>
         {Object.keys(DefaultFilterTypes).map(filterType => (
             <AddFilterButton key={filterType} onAddNewFilter={onAddNewFilter} type={filterType as SuggestionTypes} />
         ))}
@@ -35,7 +35,7 @@ class AddFilterButton extends React.Component<ButtonProps> {
         return (
             <button
                 type="button"
-                className="interactive-mode-add-filter-row__button btn btn-outline-primary"
+                className="add-filter-row__button btn btn-outline-primary"
                 onClick={this.onAddNewFilter}
             >
                 + {startCase(this.props.type)} filter

@@ -1,4 +1,4 @@
-.interactive-mode-selected-filters-row {
+.selected-filters-row {
     padding: 0.5rem;
     display: flex;
     flex: 0 0 auto;
@@ -17,7 +17,7 @@
 }
 
 .theme-light {
-    .interactive-mode-selected-filters-row {
+    .selected-filters-row {
         color: #6d727c;
         background: #ffffff;
         border-bottom: 1px solid #cad2e2;

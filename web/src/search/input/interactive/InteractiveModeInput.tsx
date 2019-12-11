@@ -20,7 +20,7 @@ import { EventLoggerProps } from '../../../tracking/eventLogger'
 import { ActivationProps } from '../../../../../shared/src/components/activation/Activation'
 import { FiltersToTypeAndValue } from '../../../../../shared/src/search/interactive/util'
 import { SuggestionTypes, SuggestionTypeKeys } from '../../../../../shared/src/search/suggestions/util'
-import { SimpleQueryInput } from './SimpleQueryInput'
+import { QueryInput } from '../QueryInput'
 
 interface InteractiveModeProps
     extends SettingsCascadeProps,
@@ -186,7 +186,7 @@ export default class InteractiveModeInput extends React.Component<InteractiveMod
                     <div className="global-navbar__search-box-container d-none d-sm-flex">
                         <Form onSubmit={this.onSubmit}>
                             <div className="d-flex align-items-start">
-                                <SimpleQueryInput
+                                <QueryInput
                                     location={this.props.location}
                                     history={this.props.history}
                                     value={this.props.navbarSearchState}
@@ -196,6 +196,7 @@ export default class InteractiveModeInput extends React.Component<InteractiveMod
                                     togglePatternType={this.props.togglePatternType}
                                     autoFocus={true}
                                     filterQuery={this.state.filtersInQuery}
+                                    withoutSuggestions={true}
                                 />
                                 <SearchButton />
                             </div>

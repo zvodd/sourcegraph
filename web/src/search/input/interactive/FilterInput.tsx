@@ -5,7 +5,7 @@ import { Subscription, Subject } from 'rxjs'
 import { distinctUntilChanged, switchMap, map, filter, toArray, catchError, repeat, debounceTime } from 'rxjs/operators'
 import { createSuggestion, Suggestion, SuggestionItem } from '../Suggestion'
 import { fetchSuggestions } from '../../backend'
-import { ComponentSuggestions, noSuggestions, typingDebounceTime } from '../QueryInput'
+import { ComponentSuggestions, noSuggestions, typingDebounceTime, focusQueryInput } from '../QueryInput'
 import { isDefined } from '../../../../../shared/src/util/types'
 import Downshift from 'downshift'
 import { generateFiltersQuery } from '../helpers'
@@ -111,6 +111,7 @@ export default class FilterInput extends React.Component<Props, State> {
         e.stopPropagation()
 
         this.props.toggleFilterEditable(this.props.mapKey)
+        focusQueryInput.next()
         this.setState({ active: false })
     }
 

@@ -3,8 +3,13 @@ import { startCase } from 'lodash'
 import { SuggestionTypes } from '../../../../../shared/src/search/suggestions/util'
 
 interface RowProps {
+    /**
+     * Whether we're currently on the search homepage.
+     */
     isHomepage: boolean
-    // A callback that adds a new filter to the SelectedFilterRow when one of the buttons are clicked.
+    /**
+     * Callback that adds a new filter to the SelectedFilterRow when one of the buttons are clicked.
+     * */
     onAddNewFilter: (filter: SuggestionTypes) => void
 }
 
@@ -13,6 +18,9 @@ export enum DefaultFilterTypes {
     file = 'file',
 }
 
+/**
+ * The row containing the buttons to add new filters in interactive mode.
+ * */
 export const AddFilterRow: React.FunctionComponent<RowProps> = ({ isHomepage, onAddNewFilter }) => (
     <div className={`add-filter-row ${isHomepage ? 'add-filter-row--homepage' : ''} e2e-add-filter-row`}>
         {Object.keys(DefaultFilterTypes).map(filterType => (

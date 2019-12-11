@@ -51,9 +51,12 @@ interface InteractiveModeProps
 
 interface InteractiveInputState {
     /**
-     * This is the source of truth for the selected filters. The key is a unique key to match
-     * the particular selected filter with its value. The type is the raw type of filter, as listed
-     * in SuggestionTypes. The value is the current value of that particular filter.
+     * filtersInQuery is the source of truth for the filter values currently in the query.
+     *
+     * The data structure is a map, where the key is a uniquely assigned string in the form `repoType-numberOfFilterAdded`.
+     * The value is a data structure containing the fields {`type`, `value`, `editable`}.
+     * `type` is the field type of the filter (repo, file, etc.) `value` is the current value for that particular filter,
+     * and `editable` is whether the corresponding filter input is currently editable in the UI.
      * */
     filtersInQuery: FiltersToTypeAndValue
 }

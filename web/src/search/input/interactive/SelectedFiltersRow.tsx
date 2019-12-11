@@ -4,16 +4,40 @@ import { QueryState } from '../../helpers'
 import { FiltersToTypeAndValue } from '../../../../../shared/src/search/interactive/util'
 
 interface Props {
+    /**
+     * The filters currently added to the query.
+     */
     filtersInQuery: FiltersToTypeAndValue
+
+    /**
+     * The query in the main query input.
+     */
     navbarQuery: QueryState
-    /**  A callback to handle a filter's value being edited. */
+
+    /**
+     * Callback to handle the filter's value being updated.
+     */
     onFilterEdited: (filterKey: string, value: string) => void
-    /** A callback to handle a filter being deleted from the selected filter row */
+
+    /**
+     * Callback to handle a filter being deleted from the selected filter row.
+     */
     onFilterDeleted: (filterKey: string) => void
+
+    /**
+     * Callback to handle the editable state of a filter.
+     */
     toggleFilterEditable: (filterKey: string) => void
+
+    /**
+     * Whether we're on the search homepage.
+     */
     isHomepage: boolean
 }
 
+/**
+ * The row displaying the filters that have been added to the query in interactive mode.
+ */
 export const SelectedFiltersRow: React.FunctionComponent<Props> = ({
     filtersInQuery,
     navbarQuery,

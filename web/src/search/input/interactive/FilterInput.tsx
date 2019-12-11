@@ -16,15 +16,49 @@ import { SuggestionTypes } from '../../../../../shared/src/search/suggestions/ut
 import { startCase } from 'lodash'
 
 interface Props {
+    /**
+     * The filters currently added to the query.
+     */
     filtersInQuery: FiltersToTypeAndValue
+
+    /**
+     * The query in the main query input.
+     */
     navbarQuery: QueryState
-    /** The key of this filter in the top-level filtersInQuery map. */
+
+    /**
+     * The key representing this filter in the top-level filtersInQuery map.
+     */
     mapKey: string
+
+    /**
+     * The value for this filter.
+     */
     value: string
+
+    /**
+     * The search filter type, as available in {@link SuggstionTypes}
+     */
     filterType: SuggestionTypes
+
+    /**
+     * Whether or not this FilterInput is currently editable.
+     */
     editable: boolean
+
+    /**
+     * Callback to handle the filter's value being updated.
+     */
     onFilterEdited: (filterKey: string, value: string) => void
+
+    /**
+     * Callback to handle the filter chip being deleted.
+     */
     onFilterDeleted: (filterKey: string) => void
+
+    /**
+     * Callback to handle the editable state of this filter.
+     */
     toggleFilterEditable: (filterKey: string) => void
 }
 
@@ -36,6 +70,11 @@ interface State {
     suggestions: ComponentSuggestions
 }
 
+/**
+ * The filter chips for each filter added to the query in interactive mode. The filter input can be either editable or non-editable.
+ * If it's in an editable state, it consists of a text input field, with suggestions, and a close button. Otherwise, it's a simple
+ * button with a close button.
+ */
 export default class FilterInput extends React.Component<Props, State> {
     private subscriptions = new Subscription()
     private inputValues = new Subject<string>()

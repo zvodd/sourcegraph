@@ -1,5 +1,5 @@
 import * as React from 'react'
-import { SuggestionTypes } from '../../../../shared/src/search/suggestions/util'
+import { SuggestionTypes } from '../../../../../shared/src/search/suggestions/util'
 import { startCase } from 'lodash'
 
 interface RowProps {

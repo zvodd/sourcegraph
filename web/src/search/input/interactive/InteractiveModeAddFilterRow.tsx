@@ -1,6 +1,6 @@
 import * as React from 'react'
 import { startCase } from 'lodash'
-import { SuggestionTypes } from '../../../../shared/src/search/suggestions/util'
+import { SuggestionTypes } from '../../../../../shared/src/search/suggestions/util'
 
 interface RowProps {
     homepage: boolean

@@ -17,7 +17,7 @@ import { ThemeProps } from '../../../shared/src/theme'
 import { ThemePreferenceProps } from '../search/theme'
 import { KeyboardShortcutsProps } from '../keyboardShortcuts/keyboardShortcuts'
 import { QueryState } from '../search/helpers'
-import InteractiveModeInput from '../search/input/InteractiveModeInput'
+import InteractiveModeInput from '../search/input/interactive/InteractiveModeInput'
 
 interface Props
     extends SettingsCascadeProps,

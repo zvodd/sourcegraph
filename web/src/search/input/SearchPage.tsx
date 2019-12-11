@@ -18,7 +18,7 @@ import { QueryInput } from './QueryInput'
 import { SearchButton } from './SearchButton'
 import { ISearchScope, SearchFilterChips } from './SearchFilterChips'
 import { ThemePreferenceProps } from '../theme'
-import InteractiveModeHomeInput from './InteractiveModeHomeInput'
+import InteractiveModeHomeInput from './interactive/InteractiveModeHomeInput'
 
 interface Props extends SettingsCascadeProps, ThemeProps, ThemePreferenceProps, ActivationProps, PatternTypeProps {
     authenticatedUser: GQL.IUser | null

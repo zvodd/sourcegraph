@@ -192,7 +192,7 @@ export default class InteractiveModeInput extends React.Component<InteractiveMod
                                     patternType={this.props.patternType}
                                     togglePatternType={this.props.togglePatternType}
                                     autoFocus={true}
-                                    fieldValues={this.state.fieldValues}
+                                    filterQuery={this.state.fieldValues}
                                 />
                                 <SearchButton />
                             </div>

@@ -169,8 +169,6 @@ class ColdSourcegraphWebApp extends React.Component<SourcegraphWebAppProps, Sour
             settingsCascade: EMPTY_SETTINGS_CASCADE,
             viewerSubject: SITE_SUBJECT_NO_ADMIN,
             searchPatternType: urlPatternType,
-            // Default to interactive mode if the feature flag is set.
-            // INTERACTIVE_SEARCH_TODO: store last preferred search mode.
             interactiveSearchMode:
                 showInteractiveSearchMode && currentSearchMode ? currentSearchMode === 'interactive' : false,
         }

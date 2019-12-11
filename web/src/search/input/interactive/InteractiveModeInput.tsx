@@ -58,8 +58,6 @@ interface InteractiveInputState {
     filtersInQuery: FiltersToTypeAndValue
 }
 
-// INTERACTIVE_SEARCH_TODO: This component is being built for the navbar use case.
-// Need to add a mode for search page.
 export default class InteractiveModeInput extends React.Component<InteractiveModeProps, InteractiveInputState> {
     private numFiltersAddedToQuery = 0
     private subscriptions = new Subscription()

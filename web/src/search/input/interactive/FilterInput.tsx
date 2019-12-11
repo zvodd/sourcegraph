@@ -13,6 +13,7 @@ import { QueryState, interactiveFormatQueryForFuzzySearch } from '../../helpers'
 import { dedupeWhitespace } from '../../../../../shared/src/util/strings'
 import { FiltersToTypeAndValue } from '../../../../../shared/src/search/interactive/util'
 import { SuggestionTypes } from '../../../../../shared/src/search/suggestions/util'
+import { startCase } from 'lodash'
 
 interface Props {
     filtersInQuery: FiltersToTypeAndValue
@@ -20,7 +21,6 @@ interface Props {
     /** The key of this filter in the top-level filtersInQuery map. */
     mapKey: string
     value: string
-    // INTERACTIVE TODO: this should be SuggestionTypes enum
     filterType: SuggestionTypes
     editable: boolean
     onFilterEdited: (filterKey: string, value: string) => void
@@ -29,7 +29,10 @@ interface Props {
 }
 
 interface State {
-    active: boolean
+    /**
+     * Whether the input is currently focused. Used for styling.
+     */
+    inputFocused: boolean
     suggestions: ComponentSuggestions
 }
 
@@ -43,7 +46,7 @@ export default class FilterInput extends React.Component<Props, State> {
         super(props)
 
         this.state = {
-            active: document.activeElement === this.inputEl.current,
+            inputFocused: document.activeElement === this.inputEl.current,
             suggestions: noSuggestions,
         }
 
@@ -80,10 +83,7 @@ export default class FilterInput extends React.Component<Props, State> {
                                 return [{ suggestions: noSuggestions }]
                             })
                         )
-                    }),
-                    // Abort suggestion display on route change or suggestion hiding
-                    // But resubscribe afterwards
-                    repeat()
+                    })
                 )
                 .subscribe(state => this.setState(state))
         )
@@ -110,16 +110,13 @@ export default class FilterInput extends React.Component<Props, State> {
         e.preventDefault()
         e.stopPropagation()
 
-        this.props.toggleFilterEditable(this.props.mapKey)
         focusQueryInput.next()
-        this.setState({ active: false })
     }
 
     private onClickSelected = (): void => {
         if (this.inputEl.current) {
             this.inputEl.current.focus()
         }
-        this.setState({ active: true })
         this.props.toggleFilterEditable(this.props.mapKey)
     }
 
@@ -139,14 +136,23 @@ export default class FilterInput extends React.Component<Props, State> {
 
     private downshiftItemToString = (suggestion?: Suggestion): string => (suggestion ? suggestion.value : '')
 
-    private onInputFocus = (): void => this.setState({ active: true })
-    private onInputBlur = (): void => this.setState({ active: false, suggestions: noSuggestions })
+    private onInputFocus = (): void => this.setState({ inputFocused: true })
+
+    private onInputBlur = (): void => {
+        if (this.props.value === '') {
+            // Don't allow submitting or exiting an empty filter input.
+            this.onClickDelete()
+            return
+        }
+        this.props.toggleFilterEditable(this.props.mapKey)
+        this.setState({ inputFocused: false, suggestions: noSuggestions })
+    }
 
     public render(): JSX.Element | null {
         const showSuggestions = this.state.suggestions.values.length > 0
 
         return (
-            <div className={`filter-input ${this.state.active ? 'filter-input--active' : ''}`}>
+            <div className={`filter-input ${this.state.inputFocused ? 'filter-input--active' : ''}`}>
                 {this.props.editable ? (
                     <Form onSubmit={this.onSubmitInput}>
                         <Downshift onSelect={this.onSuggestionSelect} itemToString={this.downshiftItemToString}>
@@ -161,9 +167,8 @@ export default class FilterInput extends React.Component<Props, State> {
                                                     className="form-control filter-input__input-field"
                                                     value={this.props.value}
                                                     onChange={this.onInputUpdate}
-                                                    placeholder={this.props.filterType}
+                                                    placeholder={`${startCase(this.props.filterType)} filter`}
                                                     onKeyDown={onKeyDown}
-                                                    required={true}
                                                     autoFocus={true}
                                                     onFocus={this.onInputFocus}
                                                     onBlur={this.onInputBlur}

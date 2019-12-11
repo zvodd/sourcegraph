@@ -104,7 +104,7 @@ export class SearchPage extends React.Component<Props, State> {
                             toggleSearchMode={this.props.toggleSearchMode}
                         />
                         {this.props.showInteractiveSearchMode && (
-                            <a href="" onClick={this.props.toggleSearchMode}>
+                            <a href="" onClick={this.props.toggleSearchMode} className="e2e-omni-mode-toggle">
                                 Omni mode
                             </a>
                         )}
@@ -168,7 +168,7 @@ export class SearchPage extends React.Component<Props, State> {
                             <Notices className="my-3" location="home" settingsCascade={this.props.settingsCascade} />
                         </Form>
                         {this.props.showInteractiveSearchMode && (
-                            <a href="" onClick={this.props.toggleSearchMode}>
+                            <a href="" onClick={this.props.toggleSearchMode} className="e2e-interactive-mode-toggle">
                                 Interactive mode
                             </a>
                         )}

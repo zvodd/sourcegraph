@@ -56,7 +56,7 @@ export class NavLinks extends React.PureComponent<Props> {
         return (
             <ul className="nav-links nav align-items-center pl-2 pr-1">
                 {this.props.showInteractiveSearchMode && (
-                    <a href="" onClick={this.props.toggleSearchMode}>
+                    <a href="" onClick={this.props.toggleSearchMode} className="e2e-interactive-mode-toggle">
                         {this.props.interactiveSearchMode ? 'Omni' : 'Interactive'} mode
                     </a>
                 )}

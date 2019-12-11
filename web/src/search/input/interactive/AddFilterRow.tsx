@@ -14,7 +14,7 @@ export enum DefaultFilterTypes {
 }
 
 export const AddFilterRow: React.FunctionComponent<RowProps> = ({ isHomepage, onAddNewFilter }) => (
-    <div className={`add-filter-row ${isHomepage ? 'add-filter-row--homepage' : ''}`}>
+    <div className={`add-filter-row ${isHomepage ? 'add-filter-row--homepage' : ''} e2e-add-filter-row`}>
         {Object.keys(DefaultFilterTypes).map(filterType => (
             <AddFilterButton key={filterType} onAddNewFilter={onAddNewFilter} type={filterType as SuggestionTypes} />
         ))}
@@ -35,7 +35,7 @@ class AddFilterButton extends React.Component<ButtonProps> {
         return (
             <button
                 type="button"
-                className="add-filter-row__button btn btn-outline-primary"
+                className={`add-filter-row__button btn btn-outline-primary e2e-add-filter-button-${this.props.type}`}
                 onClick={this.onAddNewFilter}
             >
                 + {startCase(this.props.type)} filter

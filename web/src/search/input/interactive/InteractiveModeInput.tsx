@@ -76,7 +76,7 @@ export default class InteractiveModeInput extends React.Component<InteractiveMod
                 for (const t of SuggestionTypeKeys) {
                     const itemsOfType = searchParams.getAll(t)
                     itemsOfType.map((item, i) => {
-                        filtersInQuery[`${t} ${i}`] = { type: t, value: item, editable: false }
+                        filtersInQuery[`${t}-${i}`] = { type: t, value: item, editable: false }
                     })
                 }
                 this.numFiltersAddedToQuery = Object.keys(filtersInQuery).length
@@ -101,7 +101,7 @@ export default class InteractiveModeInput extends React.Component<InteractiveMod
      * the search URL in {@link interactiveBuildSearchURLQuery}.
      */
     private addNewFilter = (filterType: SuggestionTypes): void => {
-        const filterKey = `${filterType} ${this.numFiltersAddedToQuery}`
+        const filterKey = `${filterType}-${this.numFiltersAddedToQuery}`
         this.numFiltersAddedToQuery++
         this.setState(state => ({
             filtersInQuery: { ...state.filtersInQuery, [filterKey]: { type: filterType, value: '', editable: true } },
@@ -178,7 +178,7 @@ export default class InteractiveModeInput extends React.Component<InteractiveMod
         const logo = <img className="global-navbar__logo" src={logoSrc} />
 
         return (
-            <div className="interactive-mode-input">
+            <div className="interactive-mode-input e2e-interactive-mode-input">
                 <div className="interactive-mode-input__top-nav">
                     {!isSearchHomepage &&
                         (this.props.authRequired ? (

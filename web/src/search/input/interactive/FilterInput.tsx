@@ -139,11 +139,6 @@ export default class FilterInput extends React.Component<Props, State> {
     private onInputFocus = (): void => this.setState({ inputFocused: true })
 
     private onInputBlur = (): void => {
-        if (this.props.value === '') {
-            // Don't allow submitting or exiting an empty filter input.
-            this.onClickDelete()
-            return
-        }
         this.props.toggleFilterEditable(this.props.mapKey)
         this.setState({ inputFocused: false, suggestions: noSuggestions })
     }
@@ -152,7 +147,11 @@ export default class FilterInput extends React.Component<Props, State> {
         const showSuggestions = this.state.suggestions.values.length > 0
 
         return (
-            <div className={`filter-input ${this.state.inputFocused ? 'filter-input--active' : ''}`}>
+            <div
+                className={`filter-input ${this.state.inputFocused ? 'filter-input--active' : ''} e2e-filter-input-${
+                    this.props.mapKey
+                }`}
+            >
                 {this.props.editable ? (
                     <Form onSubmit={this.onSubmitInput}>
                         <Downshift onSelect={this.onSuggestionSelect} itemToString={this.downshiftItemToString}>
@@ -164,7 +163,7 @@ export default class FilterInput extends React.Component<Props, State> {
                                             <div className="filter-input__input-wrapper">
                                                 <input
                                                     ref={this.inputEl}
-                                                    className="form-control filter-input__input-field"
+                                                    className={`form-control filter-input__input-field e2e-filter-input__input-field-${this.props.mapKey}`}
                                                     value={this.props.value}
                                                     onChange={this.onInputUpdate}
                                                     placeholder={`${startCase(this.props.filterType)} filter`}
@@ -175,7 +174,7 @@ export default class FilterInput extends React.Component<Props, State> {
                                                 />
                                                 {showSuggestions && (
                                                     <ul
-                                                        className="filter-input__suggestions e2e-query-suggestions"
+                                                        className="filter-input__suggestions e2e-filter-input__suggestions"
                                                         {...getMenuProps()}
                                                     >
                                                         {this.state.suggestions.values.map((suggestion, index) => {
@@ -221,7 +220,11 @@ export default class FilterInput extends React.Component<Props, State> {
                         >
                             {this.props.filterType}:{this.props.value}
                         </button>
-                        <button type="button" onClick={this.onClickDelete} className="btn btn-icon icon-inline">
+                        <button
+                            type="button"
+                            onClick={this.onClickDelete}
+                            className={`btn btn-icon icon-inline e2e-filter-input__close-button-${this.props.mapKey}`}
+                        >
                             <CloseIcon />
                         </button>
                     </div>

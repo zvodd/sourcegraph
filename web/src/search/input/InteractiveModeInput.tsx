@@ -147,7 +147,6 @@ export default class InteractiveModeInput extends React.Component<InteractiveMod
             'nav',
             this.props.patternType,
             undefined,
-            true,
             this.state.fieldValues
         )
     }
@@ -193,6 +192,8 @@ export default class InteractiveModeInput extends React.Component<InteractiveMod
                                     onChange={this.props.onNavbarQueryChange}
                                     patternType={this.props.patternType}
                                     togglePatternType={this.props.togglePatternType}
+                                    autoFocus={true}
+                                    fieldValues={this.state.fieldValues}
                                 />
                                 <SearchButton />
                             </div>

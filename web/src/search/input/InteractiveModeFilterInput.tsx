@@ -29,6 +29,7 @@ interface Props {
 }
 
 interface State {
+    active: boolean
     suggestions: ComponentSuggestions
 }
 
@@ -36,11 +37,13 @@ export default class InteractiveModeFilterInput extends React.Component<Props, S
     private subscriptions = new Subscription()
     private inputValues = new Subject<string>()
     private componentUpdates = new Subject<Props>()
+    private inputEl = React.createRef<HTMLInputElement>()
 
     constructor(props: Props) {
         super(props)
 
         this.state = {
+            active: document.activeElement === this.inputEl.current,
             suggestions: noSuggestions,
         }
 
@@ -86,6 +89,12 @@ export default class InteractiveModeFilterInput extends React.Component<Props, S
         )
     }
 
+    public componentDidMount(): void {
+        if (this.inputEl.current) {
+            this.inputEl.current.focus()
+        }
+    }
+
     public componentDidUpdate(): void {
         this.componentUpdates.next(this.props)
     }
@@ -102,9 +111,14 @@ export default class InteractiveModeFilterInput extends React.Component<Props, S
         e.stopPropagation()
 
         this.props.toggleFilterEditable(this.props.mapKey)
+        this.setState({ active: false })
     }
 
     private onClickSelected = (): void => {
+        if (this.inputEl.current) {
+            this.inputEl.current.focus()
+        }
+        this.setState({ active: true })
         this.props.toggleFilterEditable(this.props.mapKey)
     }
 
@@ -124,11 +138,18 @@ export default class InteractiveModeFilterInput extends React.Component<Props, S
 
     private downshiftItemToString = (suggestion?: Suggestion): string => (suggestion ? suggestion.value : '')
 
+    private onInputFocus = (): void => this.setState({ active: true })
+    private onInputBlur = (): void => this.setState({ active: false, suggestions: noSuggestions })
+
     public render(): JSX.Element | null {
         const showSuggestions = this.state.suggestions.values.length > 0
 
         return (
-            <div className="interactive-mode-filter-input">
+            <div
+                className={`interactive-mode-filter-input ${
+                    this.state.active ? 'interactive-mode-filter-input--active' : ''
+                }`}
+            >
                 {this.props.editable ? (
                     <Form onSubmit={this.onSubmitInput}>
                         <Downshift onSelect={this.onSuggestionSelect} itemToString={this.downshiftItemToString}>
@@ -137,55 +158,66 @@ export default class InteractiveModeFilterInput extends React.Component<Props, S
                                 return (
                                     <div>
                                         <div className="interactive-mode-filter-input__form">
-                                            <input
-                                                onChange={this.onInputUpdate}
-                                                value={this.props.value}
-                                                required={true}
-                                                placeholder={this.props.filterType}
-                                                onKeyDown={onKeyDown}
-                                                className="form-control interactive-mode-filter-input__input-field"
-                                            />
-                                            <div onClick={this.onClickDelete} className="icon-inline">
-                                                <CloseIcon />
+                                            <div className="interactive-mode-filter-input__input-wrapper">
+                                                <input
+                                                    ref={this.inputEl}
+                                                    className="form-control interactive-mode-filter-input__input-field"
+                                                    value={this.props.value}
+                                                    onChange={this.onInputUpdate}
+                                                    placeholder={this.props.filterType}
+                                                    onKeyDown={onKeyDown}
+                                                    required={true}
+                                                    autoFocus={true}
+                                                    onFocus={this.onInputFocus}
+                                                    onBlur={this.onInputBlur}
+                                                />
+                                                {showSuggestions && (
+                                                    <ul
+                                                        className="interactive-mode-filter-input__suggestions e2e-query-suggestions"
+                                                        {...getMenuProps()}
+                                                    >
+                                                        {this.state.suggestions.values.map((suggestion, index) => {
+                                                            const isSelected = highlightedIndex === index
+                                                            const key = `${index}-${suggestion}`
+                                                            return (
+                                                                <SuggestionItem
+                                                                    key={key}
+                                                                    {...getItemProps({
+                                                                        key,
+                                                                        index,
+                                                                        item: suggestion,
+                                                                    })}
+                                                                    suggestion={suggestion}
+                                                                    isSelected={isSelected}
+                                                                    showUrlLabel={false}
+                                                                />
+                                                            )
+                                                        })}
+                                                    </ul>
+                                                )}
                                             </div>
+                                            <button type="button" onClick={this.onClickDelete} className="btn btn-icon">
+                                                <CloseIcon />
+                                            </button>
                                         </div>
-                                        {showSuggestions && (
-                                            <ul
-                                                className="interactive-mode-filter-input__suggestions e2e-query-suggestions"
-                                                {...getMenuProps()}
-                                            >
-                                                {this.state.suggestions.values.map((suggestion, index) => {
-                                                    const isSelected = highlightedIndex === index
-                                                    const key = `${index}-${suggestion}`
-                                                    return (
-                                                        <SuggestionItem
-                                                            key={key}
-                                                            {...getItemProps({
-                                                                key,
-                                                                index,
-                                                                item: suggestion,
-                                                            })}
-                                                            suggestion={suggestion}
-                                                            isSelected={isSelected}
-                                                            showUrlLabel={false}
-                                                        />
-                                                    )
-                                                })}
-                                            </ul>
-                                        )}
                                     </div>
                                 )
                             }}
                         </Downshift>
                     </Form>
                 ) : (
-                    <div className="d-flex">
-                        <div onClick={this.onClickSelected}>
+                    <div className="interactive-mode-filter-input--uneditable d-flex">
+                        <button
+                            type="button"
+                            className="interactive-mode-filter-input__button-text btn text-nowrap"
+                            onClick={this.onClickSelected}
+                            tabIndex={0}
+                        >
                             {this.props.filterType}:{this.props.value}
-                        </div>
-                        <div onClick={this.onClickDelete} className="icon-inline">
+                        </button>
+                        <button type="button" onClick={this.onClickDelete} className="btn btn-icon">
                             <CloseIcon />
-                        </div>
+                        </button>
                     </div>
                 )}
             </div>

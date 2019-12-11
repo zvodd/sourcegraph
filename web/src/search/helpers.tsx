@@ -19,13 +19,11 @@ export function submitSearch(
     source: 'home' | 'nav' | 'repo' | 'tree' | 'filter' | 'type',
     patternType: GQL.SearchPatternType,
     activation?: ActivationProps['activation'],
-    interactiveMode?: boolean,
     filtersQuery?: FiltersToTypeAndValue
 ): void {
-    const searchQueryParam =
-        interactiveMode && filtersQuery
-            ? interactiveBuildSearchURLQuery(navbarQuery, filtersQuery, patternType)
-            : buildSearchURLQuery(navbarQuery, patternType)
+    const searchQueryParam = filtersQuery
+        ? interactiveBuildSearchURLQuery(navbarQuery, filtersQuery, patternType)
+        : buildSearchURLQuery(navbarQuery, patternType)
 
     // Go to search results page
     const path = '/search?' + searchQueryParam

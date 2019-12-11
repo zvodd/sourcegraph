@@ -9,6 +9,7 @@ import { SearchPatternType } from '../../../../shared/src/graphql/schema'
 import { PatternTypeProps } from '..'
 import { QueryState } from '../helpers'
 import { once } from 'lodash'
+import { FiltersToTypeAndValue } from '../../../../shared/src/search/interactive/util'
 
 /**
  * The query input field is clobbered and updated to contain this subject's values, as
@@ -47,6 +48,11 @@ interface Props extends PatternTypeProps {
      * At most one query input per page should have this behavior.
      */
     hasGlobalQueryBehavior?: boolean
+
+    /**
+     * The filters in the query when in interactive search mode.
+     */
+    filterQuery?: FiltersToTypeAndValue
 }
 
 /**
@@ -175,6 +181,7 @@ export class SimpleQueryInput extends React.Component<Props> {
                         {...this.props}
                         toggled={this.props.patternType === SearchPatternType.regexp}
                         navbarSearchQuery={this.props.value.query}
+                        fieldValues={this.props.filterQuery}
                     />
                 </div>
             </div>

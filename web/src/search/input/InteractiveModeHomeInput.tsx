@@ -125,7 +125,6 @@ export default class InteractiveModeHomeInput extends React.Component<Interactiv
             'nav',
             this.props.patternType,
             undefined,
-            true,
             this.state.fieldValues
         )
     }
@@ -142,9 +141,11 @@ export default class InteractiveModeHomeInput extends React.Component<Interactiv
                                     history={this.props.history}
                                     value={this.props.navbarSearchState}
                                     hasGlobalQueryBehavior={true}
+                                    autoFocus={true}
                                     onChange={this.props.onNavbarQueryChange}
                                     patternType={this.props.patternType}
                                     togglePatternType={this.props.togglePatternType}
+                                    filterQuery={this.state.fieldValues}
                                 />
                                 <SearchButton />
                             </div>

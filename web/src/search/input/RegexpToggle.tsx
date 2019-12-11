@@ -12,7 +12,7 @@ interface RegexpToggleProps extends PatternTypeProps {
     toggled: boolean
     navbarSearchQuery: string
     history: H.History
-    fieldValues?: FiltersToTypeAndValue
+    filtersInQuery?: FiltersToTypeAndValue
     hasGlobalQueryBehavior?: boolean
 }
 
@@ -74,7 +74,7 @@ export default class RegexpToggle extends React.Component<RegexpToggleProps> {
                 'filter',
                 newPatternType,
                 undefined,
-                this.props.fieldValues
+                this.props.filtersInQuery
             )
         }
     }

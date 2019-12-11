@@ -8,16 +8,16 @@ import { fetchSuggestions } from '../../backend'
 import { ComponentSuggestions, noSuggestions, typingDebounceTime } from '../QueryInput'
 import { isDefined } from '../../../../../shared/src/util/types'
 import Downshift from 'downshift'
-import { generateFieldsQuery } from '../helpers'
+import { generateFiltersQuery } from '../helpers'
 import { QueryState, interactiveFormatQueryForFuzzySearch } from '../../helpers'
 import { dedupeWhitespace } from '../../../../../shared/src/util/strings'
 import { FiltersToTypeAndValue } from '../../../../../shared/src/search/interactive/util'
 import { SuggestionTypes } from '../../../../../shared/src/search/suggestions/util'
 
 interface Props {
-    fieldValues: FiltersToTypeAndValue
+    filtersInQuery: FiltersToTypeAndValue
     navbarQuery: QueryState
-    /** The key of this filter in the top-level fieldValues map. */
+    /** The key of this filter in the top-level filtersInQuery map. */
     mapKey: string
     value: string
     // INTERACTIVE TODO: this should be SuggestionTypes enum
@@ -61,8 +61,8 @@ export default class FilterInput extends React.Component<Props, State> {
                             return [{ suggestions: noSuggestions }]
                         }
                         const filterType = props.filterType
-                        let fullQuery = `${props.navbarQuery.query} ${generateFieldsQuery({
-                            ...props.fieldValues,
+                        let fullQuery = `${props.navbarQuery.query} ${generateFiltersQuery({
+                            ...props.filtersInQuery,
                         })}`
 
                         fullQuery = interactiveFormatQueryForFuzzySearch(fullQuery, filterType, props.value)

@@ -31,13 +31,13 @@ interface InteractiveInputState {
      * the particular selected filter with its value. The type is the raw type of filter, as listed
      * in SuggestionTypes. The value is the current value of that particular filter.
      * */
-    fieldValues: FiltersToTypeAndValue
+    filtersInQuery: FiltersToTypeAndValue
 }
 
 // INTERACTIVE_SEARCH_TODO: This component is being built for the navbar use case.
 // Need to add a mode for search page.
 export default class InteractiveModeHomeInput extends React.Component<InteractiveModeProps, InteractiveInputState> {
-    private numFieldValuesAdded = 0
+    private numFiltersAddedToQuery = 0
     private subscriptions = new Subscription()
     private componentUpdates = new Subject<InteractiveModeProps>()
 
@@ -45,20 +45,20 @@ export default class InteractiveModeHomeInput extends React.Component<Interactiv
         super(props)
 
         this.state = {
-            fieldValues: {},
+            filtersInQuery: {},
         }
         this.subscriptions.add(
             this.componentUpdates.subscribe(props => {
                 const searchParams = new URLSearchParams(props.location.search)
-                const fieldValues: FiltersToTypeAndValue = {}
+                const filtersInQuery: FiltersToTypeAndValue = {}
                 for (const t of SuggestionTypeKeys) {
                     const itemsOfType = searchParams.getAll(t)
                     itemsOfType.map((item, i) => {
-                        fieldValues[`${t} ${i}`] = { type: t, value: item, editable: false }
+                        filtersInQuery[`${t} ${i}`] = { type: t, value: item, editable: false }
                     })
                 }
-                this.numFieldValuesAdded = Object.keys(fieldValues).length
-                this.setState({ fieldValues })
+                this.numFiltersAddedToQuery = Object.keys(filtersInQuery).length
+                this.setState({ filtersInQuery: filtersInQuery })
             })
         )
     }
@@ -72,26 +72,26 @@ export default class InteractiveModeHomeInput extends React.Component<Interactiv
     }
 
     /**
-     * Adds a new filter to the fieldValues state field.
+     * Adds a new filter to the filtersInQuery state field.
      * We use the filter name and the number of values added as the key.
      * Keys must begin with the filter name, as defined in `SuggestionTypes`.
      * We use this to identify filter values when building
      * the search URL in {@link interactiveBuildSearchURLQuery}.
      */
     private addNewFilter = (filterType: SuggestionTypes): void => {
-        const filterKey = `${filterType} ${this.numFieldValuesAdded}`
-        this.numFieldValuesAdded++
+        const filterKey = `${filterType} ${this.numFiltersAddedToQuery}`
+        this.numFiltersAddedToQuery++
         this.setState(state => ({
-            fieldValues: { ...state.fieldValues, [filterKey]: { type: filterType, value: '', editable: true } },
+            filtersInQuery: { ...state.filtersInQuery, [filterKey]: { type: filterType, value: '', editable: true } },
         }))
     }
 
     private onFilterEdited = (filterKey: string, value: string): void => {
         this.setState(state => ({
-            fieldValues: {
-                ...state.fieldValues,
+            filtersInQuery: {
+                ...state.filtersInQuery,
                 [filterKey]: {
-                    ...state.fieldValues[filterKey],
+                    ...state.filtersInQuery[filterKey],
                     value,
                 },
             },
@@ -100,17 +100,20 @@ export default class InteractiveModeHomeInput extends React.Component<Interactiv
 
     private onFilterDeleted = (filterKey: string): void => {
         this.setState(state => {
-            const newState = state.fieldValues
+            const newState = state.filtersInQuery
             delete newState[filterKey]
-            return { fieldValues: newState }
+            return { filtersInQuery: newState }
         })
     }
 
     private toggleFilterEditable = (filterKey: string): void => {
         this.setState(state => ({
-            fieldValues: {
-                ...state.fieldValues,
-                [filterKey]: { ...state.fieldValues[filterKey], editable: !state.fieldValues[filterKey].editable },
+            filtersInQuery: {
+                ...state.filtersInQuery,
+                [filterKey]: {
+                    ...state.filtersInQuery[filterKey],
+                    editable: !state.filtersInQuery[filterKey].editable,
+                },
             },
         }))
     }
@@ -124,7 +127,7 @@ export default class InteractiveModeHomeInput extends React.Component<Interactiv
             'nav',
             this.props.patternType,
             undefined,
-            this.state.fieldValues
+            this.state.filtersInQuery
         )
     }
 
@@ -144,7 +147,7 @@ export default class InteractiveModeHomeInput extends React.Component<Interactiv
                                     onChange={this.props.onNavbarQueryChange}
                                     patternType={this.props.patternType}
                                     togglePatternType={this.props.togglePatternType}
-                                    filterQuery={this.state.fieldValues}
+                                    filterQuery={this.state.filtersInQuery}
                                 />
                                 <SearchButton />
                             </div>
@@ -153,7 +156,7 @@ export default class InteractiveModeHomeInput extends React.Component<Interactiv
                 </div>
                 <div>
                     <SelectedFiltersRow
-                        fieldValues={this.state.fieldValues}
+                        filtersInQuery={this.state.filtersInQuery}
                         navbarQuery={this.props.navbarSearchState}
                         onFilterEdited={this.onFilterEdited}
                         onFilterDeleted={this.onFilterDeleted}

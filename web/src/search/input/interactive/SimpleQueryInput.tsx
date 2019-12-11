@@ -181,7 +181,7 @@ export class SimpleQueryInput extends React.Component<Props> {
                         {...this.props}
                         toggled={this.props.patternType === SearchPatternType.regexp}
                         navbarSearchQuery={this.props.value.query}
-                        fieldValues={this.props.filterQuery}
+                        filtersInQuery={this.props.filterQuery}
                     />
                 </div>
             </div>

@@ -193,7 +193,11 @@ export default class FilterInput extends React.Component<Props, State> {
                                                     </ul>
                                                 )}
                                             </div>
-                                            <button type="button" onClick={this.onClickDelete} className="btn btn-icon">
+                                            <button
+                                                type="button"
+                                                onClick={this.onClickDelete}
+                                                className="btn btn-icon icon-inline"
+                                            >
                                                 <CloseIcon />
                                             </button>
                                         </div>
@@ -212,7 +216,7 @@ export default class FilterInput extends React.Component<Props, State> {
                         >
                             {this.props.filterType}:{this.props.value}
                         </button>
-                        <button type="button" onClick={this.onClickDelete} className="btn btn-icon">
+                        <button type="button" onClick={this.onClickDelete} className="btn btn-icon icon-inline">
                             <CloseIcon />
                         </button>
                     </div>

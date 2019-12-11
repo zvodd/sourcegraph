@@ -21,6 +21,7 @@ import { ActivationProps } from '../../../../../shared/src/components/activation
 import { FiltersToTypeAndValue } from '../../../../../shared/src/search/interactive/util'
 import { SuggestionTypes, SuggestionTypeKeys } from '../../../../../shared/src/search/suggestions/util'
 import { QueryInput } from '../QueryInput'
+import { parseSearchURLQuery } from '../..'
 
 interface InteractiveModeProps
     extends SettingsCascadeProps,
@@ -44,6 +45,7 @@ interface InteractiveModeProps
     showDotComMarketing: boolean
     showCampaigns: boolean
     isSourcegraphDotCom: boolean
+
     toggleSearchMode: (e: React.MouseEvent<HTMLAnchorElement>) => void
 }
 
@@ -154,6 +156,10 @@ export default class InteractiveModeInput extends React.Component<InteractiveMod
     }
 
     public render(): JSX.Element | null {
+        const isSearchHomepage =
+            this.props.location.pathname === '/search' && !parseSearchURLQuery(this.props.location.search, true)
+        console.log('isSearchHomepage', isSearchHomepage)
+
         let logoSrc = '/.assets/img/sourcegraph-mark.svg'
         let logoLinkClassName = 'global-navbar__logo-link global-navbar__logo-animated'
 
@@ -176,13 +182,14 @@ export default class InteractiveModeInput extends React.Component<InteractiveMod
         return (
             <div className="interactive-mode-input">
                 <div className="interactive-mode-input__top-nav">
-                    {this.props.authRequired ? (
-                        <div className={logoLinkClassName}>{logo}</div>
-                    ) : (
-                        <Link to="/search" className={logoLinkClassName}>
-                            {logo}
-                        </Link>
-                    )}
+                    {!isSearchHomepage &&
+                        (this.props.authRequired ? (
+                            <div className={logoLinkClassName}>{logo}</div>
+                        ) : (
+                            <Link to="/search" className={logoLinkClassName}>
+                                {logo}
+                            </Link>
+                        ))}
                     <div className="global-navbar__search-box-container d-none d-sm-flex">
                         <Form onSubmit={this.onSubmit}>
                             <div className="d-flex align-items-start">
@@ -202,7 +209,7 @@ export default class InteractiveModeInput extends React.Component<InteractiveMod
                             </div>
                         </Form>
                     </div>
-                    {!this.props.authRequired && (
+                    {!this.props.authRequired && !isSearchHomepage && (
                         <NavLinks
                             {...this.props}
                             interactiveSearchMode={true}
@@ -218,9 +225,9 @@ export default class InteractiveModeInput extends React.Component<InteractiveMod
                         onFilterEdited={this.onFilterEdited}
                         onFilterDeleted={this.onFilterDeleted}
                         toggleFilterEditable={this.toggleFilterEditable}
-                        isHomepage={false}
+                        isHomepage={isSearchHomepage}
                     />
-                    <AddFilterRow onAddNewFilter={this.addNewFilter} homepage={false} />
+                    <AddFilterRow onAddNewFilter={this.addNewFilter} isHomepage={isSearchHomepage} />
                 </div>
             </div>
         )

@@ -9,7 +9,7 @@ import { PageTitle } from '../../components/PageTitle'
 import { Notices } from '../../global/Notices'
 import { QuickLink, Settings } from '../../schema/settings.schema'
 import { ThemeProps } from '../../../../shared/src/theme'
-import { eventLogger } from '../../tracking/eventLogger'
+import { eventLogger, EventLoggerProps } from '../../tracking/eventLogger'
 import { limitString } from '../../util'
 import { submitSearch, QueryState } from '../helpers'
 import { QuickLinks } from '../QuickLinks'
@@ -18,9 +18,21 @@ import { QueryInput } from './QueryInput'
 import { SearchButton } from './SearchButton'
 import { ISearchScope, SearchFilterChips } from './SearchFilterChips'
 import { ThemePreferenceProps } from '../theme'
-import InteractiveModeHomeInput from './interactive/InteractiveModeHomeInput'
+import InteractiveModeInput from './interactive/InteractiveModeInput'
+import { KeyboardShortcutsProps } from '../../keyboardShortcuts/keyboardShortcuts'
+import { ExtensionsControllerProps } from '../../../../shared/src/extensions/controller'
+import { PlatformContextProps } from '../../../../shared/src/platform/context'
 
-interface Props extends SettingsCascadeProps, ThemeProps, ThemePreferenceProps, ActivationProps, PatternTypeProps {
+interface Props
+    extends SettingsCascadeProps,
+        ThemeProps,
+        ThemePreferenceProps,
+        ActivationProps,
+        PatternTypeProps,
+        KeyboardShortcutsProps,
+        EventLoggerProps,
+        ExtensionsControllerProps<'executeCommand' | 'services'>,
+        PlatformContextProps<'forceUpdateTooltip'> {
     authenticatedUser: GQL.IUser | null
     location: H.Location
     history: H.History
@@ -28,6 +40,11 @@ interface Props extends SettingsCascadeProps, ThemeProps, ThemePreferenceProps, 
     showInteractiveSearchMode: boolean
     interactiveSearchMode: boolean
     toggleSearchMode: (e: React.MouseEvent<HTMLAnchorElement>) => void
+
+    // For NavLinks
+    authRequired?: boolean
+    showDotComMarketing: boolean
+    showCampaigns: boolean
 }
 
 interface State {
@@ -80,7 +97,7 @@ export class SearchPage extends React.Component<Props, State> {
                 <img className="search-page__logo" src={logoUrl} />
                 {this.props.interactiveSearchMode ? (
                     <div className="search search-page__container">
-                        <InteractiveModeHomeInput
+                        <InteractiveModeInput
                             {...this.props}
                             navbarSearchState={this.state.userQueryState}
                             onNavbarQueryChange={this.onUserQueryChange}

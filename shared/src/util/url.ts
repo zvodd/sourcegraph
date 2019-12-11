@@ -563,17 +563,25 @@ export function buildSearchURLQuery(query: string, patternType: SearchPatternTyp
         .replace(/%3A/g, ':')
 }
 
+/**
+ * Builds a URL query for a given interactive mode query (without leading `?`)
+ *
+ * @param navbarQuery the search query in the main search input
+ * @param filtersInQuery the map representing the filters added to the query
+ * @param patternType the pattern type this query should be interpreted in.
+ * Having a `patternType:` filter in the query overrides this argument.
+ */
 export function interactiveBuildSearchURLQuery(
     navbarQuery: string,
-    fieldsQuery: FiltersToTypeAndValue,
+    filtersInQuery: FiltersToTypeAndValue,
     patternType: SearchPatternType
 ): string {
     const searchParams = new URLSearchParams()
 
     for (const searchType of SuggestionTypeKeys) {
-        for (const objectKey of Object.keys(fieldsQuery)) {
-            if (objectKey.startsWith(searchType) && fieldsQuery[objectKey] !== null) {
-                searchParams.append(searchType, fieldsQuery[objectKey].value)
+        for (const objectKey of Object.keys(filtersInQuery)) {
+            if (objectKey.startsWith(searchType) && filtersInQuery[objectKey] !== null) {
+                searchParams.append(searchType, filtersInQuery[objectKey].value)
             }
         }
     }

@@ -3,8 +3,9 @@ import { SearchPatternType } from '../../../shared/src/graphql/schema'
 import { SuggestionTypes } from '../../../shared/src/search/suggestions/util'
 
 /**
- * Parses the query out of the URL search params (the 'q' parameter). If the 'q' parameter is not present, it
- * returns undefined.
+ * Parses the query out of the URL search params (the 'q' parameter). In non-interactive mode, if the 'q' parameter is not present, it
+ * returns undefined. When parsing for interactive mode, each filter's individual query parameter
+ * will be parsed and detected.
  *
  * @param query: the URL query parameters
  * @param interactiveMode: whether to parse the search URL query in interactive mode, reading query params such as `repo=` and `file=`.
@@ -20,6 +21,13 @@ export function parseSearchURLQuery(query: string, interactiveMode: boolean): st
     return searchParams.get('q') || undefined
 }
 
+/**
+ * Parses the query out of the URL search params for interactive mode. This will parse
+ * each individual filter's query parameter (for example, `file=` or `repo=`) in addition
+ * to the raw query parameter (`q=`)
+ *
+ * @param query the URL query parameters
+ */
 export function interactiveParseSearchURLQuery(query: string): string | undefined {
     const searchParams = new URLSearchParams(query)
     const finalQueryParts = []

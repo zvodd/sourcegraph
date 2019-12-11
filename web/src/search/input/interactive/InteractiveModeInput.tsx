@@ -114,7 +114,6 @@ export default class InteractiveModeInput extends React.Component<InteractiveMod
                 [filterKey]: {
                     ...state.fieldValues[filterKey],
                     value,
-                    editable: state.fieldValues[filterKey].editable,
                 },
             },
         }))

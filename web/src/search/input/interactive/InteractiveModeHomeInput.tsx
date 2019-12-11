@@ -26,10 +26,11 @@ interface InteractiveModeProps extends SettingsCascadeProps, ThemeProps, ThemePr
 }
 
 interface InteractiveInputState {
-    // This is the source of truth for the selected filters. The key is a unique key to match
-    // the particular selected filter with its value. This is important to be unique because we
-    // will need to edit and delete selected filters. The type is the raw type of filter, as listed
-    // in SuggestionTypes. The value is the current value of that particular filter.
+    /**
+     * This is the source of truth for the selected filters. The key is a unique key to match
+     * the particular selected filter with its value. The type is the raw type of filter, as listed
+     * in SuggestionTypes. The value is the current value of that particular filter.
+     * */
     fieldValues: FiltersToTypeAndValue
 }
 
@@ -92,7 +93,6 @@ export default class InteractiveModeHomeInput extends React.Component<Interactiv
                 [filterKey]: {
                     ...state.fieldValues[filterKey],
                     value,
-                    editable: state.fieldValues[filterKey].editable,
                 },
             },
         }))

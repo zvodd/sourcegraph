@@ -146,8 +146,8 @@ export const createFileLineContainerToolbarMount: NonNullable<CodeView['getToolb
     mountEl.style.alignItems = 'center'
     mountEl.className = className
     const rawURLLink = codeViewElement.querySelector('#raw-url')
-    const buttonGroup = rawURLLink && rawURLLink.closest('.BtnGroup')
-    if (!buttonGroup || !buttonGroup.parentNode) {
+    const buttonGroup = rawURLLink?.closest('.BtnGroup')
+    if (!buttonGroup?.parentNode) {
         throw new Error('File actions not found')
     }
     buttonGroup.parentNode.insertBefore(mountEl, buttonGroup)
@@ -270,6 +270,8 @@ const nativeTooltipResolver: ViewResolver<NativeTooltip> = {
     resolveView: element => ({ element }),
 }
 
+const iconClassName = 'action-item__icon--github v-align-text-bottom'
+
 export const githubCodeHost: CodeHost = {
     type: 'github',
     name: checkIsGitHubEnterprise() ? 'GitHub Enterprise' : 'GitHub',
@@ -279,7 +281,7 @@ export const githubCodeHost: CodeHost = {
     nativeTooltipResolvers: [nativeTooltipResolver],
     getContext: () => {
         const header = document.querySelector('.repohead-details-container')
-        const repoHeaderHasPrivateMarker = !!(header && header.querySelector('.private'))
+        const repoHeaderHasPrivateMarker = !!header?.querySelector('.private')
         return {
             ...parseURL(),
             privateRepository: window.location.hostname !== 'github.com' || repoHeaderHasPrivateMarker,
@@ -288,7 +290,7 @@ export const githubCodeHost: CodeHost = {
     getViewContextOnSourcegraphMount: createOpenOnSourcegraphIfNotExists,
     viewOnSourcegraphButtonClassProps: {
         className: 'btn btn-sm tooltipped tooltipped-s',
-        iconClassName: 'action-item__icon--github v-align-text-bottom',
+        iconClassName,
     },
     check: checkIsGitHub,
     getCommandPaletteMount,
@@ -326,6 +328,7 @@ export const githubCodeHost: CodeHost = {
         closeButtonClassName: 'btn',
         infoAlertClassName: 'flash flash-full',
         errorAlertClassName: 'flash flash-full flash-error',
+        iconClassName,
     },
     setElementTooltip,
     linkPreviewContentClass: 'text-small text-gray p-1 mx-1 border rounded-1 bg-gray text-gray-dark',

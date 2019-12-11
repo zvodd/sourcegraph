@@ -156,7 +156,7 @@ WITH batch AS (
 `
 
 var createChangesetsQueryFmtstr = changesetBatchQueryPrefix + `,
--- source: pkg/a8n/store.go:CreateChangesets
+-- source: internal/a8n/store.go:CreateChangesets
 changed AS (
   INSERT INTO changesets (
     repo_id,
@@ -276,7 +276,7 @@ func (s *Store) CountChangesets(ctx context.Context, opts CountChangesetsOpts) (
 }
 
 var countChangesetsQueryFmtstr = `
--- source: pkg/a8n/store.go:CountChangesets
+-- source: internal/a8n/store.go:CountChangesets
 SELECT COUNT(id)
 FROM changesets
 WHERE %s
@@ -325,7 +325,7 @@ func (s *Store) GetChangeset(ctx context.Context, opts GetChangesetOpts) (*a8n.C
 }
 
 var getChangesetsQueryFmtstr = `
--- source: pkg/a8n/store.go:GetChangeset
+-- source: internal/a8n/store.go:GetChangeset
 SELECT
   id,
   repo_id,
@@ -392,7 +392,7 @@ func (s *Store) ListChangesets(ctx context.Context, opts ListChangesetsOpts) (cs
 }
 
 var listChangesetsQueryFmtstr = `
--- source: pkg/a8n/store.go:ListChangesets
+-- source: internal/a8n/store.go:ListChangesets
 SELECT
   id,
   repo_id,
@@ -457,7 +457,7 @@ func (s *Store) UpdateChangesets(ctx context.Context, cs ...*a8n.Changeset) erro
 }
 
 const updateChangesetsQueryFmtstr = changesetBatchQueryPrefix + `,
--- source: pkg/a8n/store.go:UpdateChangesets
+-- source: internal/a8n/store.go:UpdateChangesets
 changed AS (
   UPDATE changesets
   SET
@@ -526,7 +526,7 @@ func (s *Store) GetChangesetEvent(ctx context.Context, opts GetChangesetEventOpt
 }
 
 var getChangesetEventsQueryFmtstr = `
--- source: pkg/a8n/store.go:GetChangesetEvent
+-- source: internal/a8n/store.go:GetChangesetEvent
 SELECT
     id,
     changeset_id,
@@ -592,7 +592,7 @@ func (s *Store) ListChangesetEvents(ctx context.Context, opts ListChangesetEvent
 }
 
 var listChangesetEventsQueryFmtstr = `
--- source: pkg/a8n/store.go:ListChangesetEvents
+-- source: internal/a8n/store.go:ListChangesetEvents
 SELECT
     id,
     changeset_id,
@@ -654,7 +654,7 @@ func (s *Store) CountChangesetEvents(ctx context.Context, opts CountChangesetEve
 }
 
 var countChangesetEventsQueryFmtstr = `
--- source: pkg/a8n/store.go:CountChangesetEvents
+-- source: internal/a8n/store.go:CountChangesetEvents
 SELECT COUNT(id)
 FROM changeset_events
 WHERE %s
@@ -724,7 +724,7 @@ ORDER BY batch.ordinality
 `
 
 var upsertChangesetEventsQueryFmtstr = changesetEventsBatchQueryPrefix + `,
--- source: pkg/a8n/store.go:UpsertChangesetEvents
+-- source: internal/a8n/store.go:UpsertChangesetEvents
 changed AS (
   INSERT INTO changeset_events (
     changeset_id,
@@ -818,7 +818,7 @@ func (s *Store) CreateCampaign(ctx context.Context, c *a8n.Campaign) error {
 }
 
 var createCampaignQueryFmtstr = `
--- source: pkg/a8n/store.go:CreateCampaign
+-- source: internal/a8n/store.go:CreateCampaign
 INSERT INTO campaigns (
   name,
   description,
@@ -828,9 +828,10 @@ INSERT INTO campaigns (
   created_at,
   updated_at,
   changeset_ids,
-  campaign_plan_id
+  campaign_plan_id,
+  closed_at
 )
-VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
 RETURNING
   id,
   name,
@@ -841,7 +842,8 @@ RETURNING
   created_at,
   updated_at,
   changeset_ids,
-  campaign_plan_id
+  campaign_plan_id,
+  closed_at
 `
 
 func (s *Store) createCampaignQuery(c *a8n.Campaign) (*sqlf.Query, error) {
@@ -869,6 +871,7 @@ func (s *Store) createCampaignQuery(c *a8n.Campaign) (*sqlf.Query, error) {
 		c.UpdatedAt,
 		changesetIDs,
 		nullInt64Column(c.CampaignPlanID),
+		nullTimeColumn(c.ClosedAt),
 	), nil
 }
 
@@ -914,7 +917,7 @@ func (s *Store) UpdateCampaign(ctx context.Context, c *a8n.Campaign) error {
 }
 
 var updateCampaignQueryFmtstr = `
--- source: pkg/a8n/store.go:UpdateCampaign
+-- source: internal/a8n/store.go:UpdateCampaign
 UPDATE campaigns
 SET (
   name,
@@ -924,8 +927,9 @@ SET (
   namespace_org_id,
   updated_at,
   changeset_ids,
-  campaign_plan_id
-) = (%s, %s, %s, %s, %s, %s, %s, %s)
+  campaign_plan_id,
+  closed_at
+) = (%s, %s, %s, %s, %s, %s, %s, %s, %s)
 WHERE id = %s
 RETURNING
   id,
@@ -937,7 +941,8 @@ RETURNING
   created_at,
   updated_at,
   changeset_ids,
-  campaign_plan_id
+  campaign_plan_id,
+  closed_at
 `
 
 func (s *Store) updateCampaignQuery(c *a8n.Campaign) (*sqlf.Query, error) {
@@ -958,6 +963,7 @@ func (s *Store) updateCampaignQuery(c *a8n.Campaign) (*sqlf.Query, error) {
 		c.UpdatedAt,
 		changesetIDs,
 		nullInt64Column(c.CampaignPlanID),
+		nullTimeColumn(c.ClosedAt),
 		c.ID,
 	), nil
 }
@@ -974,7 +980,7 @@ func (s *Store) DeleteCampaign(ctx context.Context, id int64) error {
 }
 
 var deleteCampaignQueryFmtstr = `
--- source: pkg/a8n/store.go:DeleteCampaign
+-- source: internal/a8n/store.go:DeleteCampaign
 DELETE FROM campaigns WHERE id = %s
 `
 
@@ -994,7 +1000,7 @@ func (s *Store) CountCampaigns(ctx context.Context, opts CountCampaignsOpts) (co
 }
 
 var countCampaignsQueryFmtstr = `
--- source: pkg/a8n/store.go:CountCampaigns
+-- source: internal/a8n/store.go:CountCampaigns
 SELECT COUNT(id)
 FROM campaigns
 WHERE %s
@@ -1038,7 +1044,7 @@ func (s *Store) GetCampaign(ctx context.Context, opts GetCampaignOpts) (*a8n.Cam
 }
 
 var getCampaignsQueryFmtstr = `
--- source: pkg/a8n/store.go:GetCampaign
+-- source: internal/a8n/store.go:GetCampaign
 SELECT
   id,
   name,
@@ -1049,7 +1055,8 @@ SELECT
   created_at,
   updated_at,
   changeset_ids,
-  campaign_plan_id
+  campaign_plan_id,
+  closed_at
 FROM campaigns
 WHERE %s
 LIMIT 1
@@ -1099,7 +1106,7 @@ func (s *Store) ListCampaigns(ctx context.Context, opts ListCampaignsOpts) (cs [
 }
 
 var listCampaignsQueryFmtstr = `
--- source: pkg/a8n/store.go:ListCampaigns
+-- source: internal/a8n/store.go:ListCampaigns
 SELECT
   id,
   name,
@@ -1110,7 +1117,8 @@ SELECT
   created_at,
   updated_at,
   changeset_ids,
-  campaign_plan_id
+  campaign_plan_id,
+  closed_at
 FROM campaigns
 WHERE %s
 ORDER BY id ASC
@@ -1152,18 +1160,20 @@ func (s *Store) CreateCampaignPlan(ctx context.Context, c *a8n.CampaignPlan) err
 }
 
 var createCampaignPlanQueryFmtstr = `
--- source: pkg/a8n/store.go:CreateCampaignPlan
+-- source: internal/a8n/store.go:CreateCampaignPlan
 INSERT INTO campaign_plans (
   campaign_type,
   arguments,
+  canceled_at,
   created_at,
   updated_at
 )
-VALUES (%s, %s, %s, %s)
+VALUES (%s, %s, %s, %s, %s)
 RETURNING
   id,
   campaign_type,
   arguments,
+  canceled_at,
   created_at,
   updated_at
 `
@@ -1186,6 +1196,7 @@ func (s *Store) createCampaignPlanQuery(c *a8n.CampaignPlan) (*sqlf.Query, error
 		createCampaignPlanQueryFmtstr,
 		c.CampaignType,
 		arguments,
+		nullTimeColumn(c.CanceledAt),
 		c.CreatedAt,
 		c.UpdatedAt,
 	), nil
@@ -1205,18 +1216,20 @@ func (s *Store) UpdateCampaignPlan(ctx context.Context, c *a8n.CampaignPlan) err
 }
 
 var updateCampaignPlanQueryFmtstr = `
--- source: pkg/a8n/store.go:UpdateCampaignPlan
+-- source: internal/a8n/store.go:UpdateCampaignPlan
 UPDATE campaign_plans
 SET (
   campaign_type,
   arguments,
+  canceled_at,
   updated_at
-) = (%s, %s, %s)
+) = (%s, %s, %s, %s)
 WHERE id = %s
 RETURNING
   id,
   campaign_type,
   arguments,
+  canceled_at,
   created_at,
   updated_at
 `
@@ -1233,6 +1246,7 @@ func (s *Store) updateCampaignPlanQuery(c *a8n.CampaignPlan) (*sqlf.Query, error
 		updateCampaignPlanQueryFmtstr,
 		c.CampaignType,
 		arguments,
+		nullTimeColumn(c.CanceledAt),
 		c.UpdatedAt,
 		c.ID,
 	), nil
@@ -1250,7 +1264,7 @@ func (s *Store) DeleteCampaignPlan(ctx context.Context, id int64) error {
 }
 
 var deleteCampaignPlanQueryFmtstr = `
--- source: pkg/a8n/store.go:DeleteCampaignPlan
+-- source: internal/a8n/store.go:DeleteCampaignPlan
 DELETE FROM campaign_plans WHERE id = %s
 `
 
@@ -1270,7 +1284,7 @@ func (s *Store) DeleteExpiredCampaignPlans(ctx context.Context) error {
 }
 
 var deleteExpiredCampaignPlansQueryFmtstr = `
--- source: pkg/a8n/store.go:DeleteExpiredCampaignPlans
+-- source: internal/a8n/store.go:DeleteExpiredCampaignPlans
 DELETE FROM
   campaign_plans
 WHERE
@@ -1307,7 +1321,7 @@ func (s *Store) CountCampaignPlans(ctx context.Context) (count int64, _ error) {
 }
 
 var countCampaignPlansQueryFmtstr = `
--- source: pkg/a8n/store.go:CountCampaignPlans
+-- source: internal/a8n/store.go:CountCampaignPlans
 SELECT COUNT(id)
 FROM campaign_plans
 `
@@ -1337,11 +1351,12 @@ func (s *Store) GetCampaignPlan(ctx context.Context, opts GetCampaignPlanOpts) (
 }
 
 var getCampaignPlansQueryFmtstr = `
--- source: pkg/a8n/store.go:GetCampaignPlan
+-- source: internal/a8n/store.go:GetCampaignPlan
 SELECT
   id,
   campaign_type,
   arguments,
+  canceled_at,
   created_at,
   updated_at
 FROM campaign_plans
@@ -1366,20 +1381,22 @@ func getCampaignPlanQuery(opts *GetCampaignPlanOpts) *sqlf.Query {
 func (s *Store) GetCampaignPlanStatus(ctx context.Context, id int64) (*a8n.BackgroundProcessStatus, error) {
 	return s.queryBackgroundProcessStatus(ctx, sqlf.Sprintf(
 		getCampaignPlanStatusQueryFmtstr,
+		id,
 		sqlf.Sprintf("campaign_plan_id = %s", id),
 	))
 }
 
 var getCampaignPlanStatusQueryFmtstr = `
--- source: pkg/a8n/store.go:GetCampaignPlanStatus
+-- source: internal/a8n/store.go:GetCampaignPlanStatus
 SELECT
+  (SELECT canceled_at IS NOT NULL FROM campaign_plans WHERE id = %s) AS canceled,
   COUNT(*) AS total,
   COUNT(*) FILTER (WHERE finished_at IS NULL) AS pending,
   COUNT(*) FILTER (WHERE finished_at IS NOT NULL AND (diff != '' OR error != '')) AS completed,
   array_agg(error) FILTER (WHERE error != '') AS errors
 FROM campaign_jobs
 WHERE %s
-LIMIT 1
+LIMIT 1;
 `
 
 // GetCampaignStatus gets the a8n.BackgroundProcessStatus for a Campaign
@@ -1401,6 +1418,8 @@ func (s *Store) queryBackgroundProcessStatus(ctx context.Context, q *sqlf.Query)
 
 	status.ProcessState = a8n.BackgroundProcessStateCompleted
 	switch {
+	case status.Canceled:
+		status.ProcessState = a8n.BackgroundProcessStateCanceled
 	case status.Pending > 0:
 		status.ProcessState = a8n.BackgroundProcessStateProcessing
 	case status.Completed == status.Total && len(status.ProcessErrors) == 0:
@@ -1412,8 +1431,10 @@ func (s *Store) queryBackgroundProcessStatus(ctx context.Context, q *sqlf.Query)
 }
 
 var getCampaignStatusQueryFmtstr = `
--- source: pkg/a8n/store.go:GetCampaignStatus
+-- source: internal/a8n/store.go:GetCampaignStatus
 SELECT
+  -- canceled is here so that this can be used with scanBackgroundProcessStatus
+  false AS canceled,
   COUNT(*) AS total,
   COUNT(*) FILTER (WHERE finished_at IS NULL) AS pending,
   COUNT(*) FILTER (WHERE finished_at IS NOT NULL) AS completed,
@@ -1453,11 +1474,12 @@ func (s *Store) ListCampaignPlans(ctx context.Context, opts ListCampaignPlansOpt
 }
 
 var listCampaignPlansQueryFmtstr = `
--- source: pkg/a8n/store.go:ListCampaignPlans
+-- source: internal/a8n/store.go:ListCampaignPlans
 SELECT
   id,
   campaign_type,
   arguments,
+  canceled_at,
   created_at,
   updated_at
 FROM campaign_plans
@@ -1497,20 +1519,21 @@ func (s *Store) CreateCampaignJob(ctx context.Context, c *a8n.CampaignJob) error
 }
 
 var createCampaignJobQueryFmtstr = `
--- source: pkg/a8n/store.go:CreateCampaignJob
+-- source: internal/a8n/store.go:CreateCampaignJob
 INSERT INTO campaign_jobs (
   campaign_plan_id,
   repo_id,
   rev,
   base_ref,
   diff,
+  description,
   error,
   started_at,
   finished_at,
   created_at,
   updated_at
 )
-VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
 RETURNING
   id,
   campaign_plan_id,
@@ -1518,6 +1541,7 @@ RETURNING
   rev,
   base_ref,
   diff,
+  description,
   error,
   started_at,
   finished_at,
@@ -1541,6 +1565,7 @@ func (s *Store) createCampaignJobQuery(c *a8n.CampaignJob) (*sqlf.Query, error) 
 		c.Rev,
 		c.BaseRef,
 		c.Diff,
+		c.Description,
 		c.Error,
 		nullTimeColumn(c.StartedAt),
 		nullTimeColumn(c.FinishedAt),
@@ -1563,7 +1588,7 @@ func (s *Store) UpdateCampaignJob(ctx context.Context, c *a8n.CampaignJob) error
 }
 
 var updateCampaignJobQueryFmtstr = `
--- source: pkg/a8n/store.go:UpdateCampaignJob
+-- source: internal/a8n/store.go:UpdateCampaignJob
 UPDATE campaign_jobs
 SET (
   campaign_plan_id,
@@ -1571,11 +1596,12 @@ SET (
   rev,
   base_ref,
   diff,
+  description,
   error,
   started_at,
   finished_at,
   updated_at
-) = (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+) = (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
 WHERE id = %s
 RETURNING
   id,
@@ -1584,6 +1610,7 @@ RETURNING
   rev,
   base_ref,
   diff,
+  description,
   error,
   started_at,
   finished_at,
@@ -1601,6 +1628,7 @@ func (s *Store) updateCampaignJobQuery(c *a8n.CampaignJob) (*sqlf.Query, error) 
 		c.Rev,
 		c.BaseRef,
 		c.Diff,
+		c.Description,
 		c.Error,
 		c.StartedAt,
 		c.FinishedAt,
@@ -1621,7 +1649,7 @@ func (s *Store) DeleteCampaignJob(ctx context.Context, id int64) error {
 }
 
 var deleteCampaignJobQueryFmtstr = `
--- source: pkg/a8n/store.go:DeleteCampaignJob
+-- source: internal/a8n/store.go:DeleteCampaignJob
 DELETE FROM campaign_jobs WHERE id = %s
 `
 
@@ -1643,7 +1671,7 @@ func (s *Store) CountCampaignJobs(ctx context.Context, opts CountCampaignJobsOpt
 }
 
 var countCampaignJobsQueryFmtstr = `
--- source: pkg/a8n/store.go:CountCampaignJobs
+-- source: internal/a8n/store.go:CountCampaignJobs
 SELECT COUNT(id)
 FROM campaign_jobs
 WHERE %s
@@ -1695,7 +1723,7 @@ func (s *Store) GetCampaignJob(ctx context.Context, opts GetCampaignJobOpts) (*a
 }
 
 var getCampaignJobsQueryFmtstr = `
--- source: pkg/a8n/store.go:GetCampaignJob
+-- source: internal/a8n/store.go:GetCampaignJob
 SELECT
   id,
   campaign_plan_id,
@@ -1703,6 +1731,7 @@ SELECT
   rev,
   base_ref,
   diff,
+  description,
   error,
   started_at,
   finished_at,
@@ -1750,7 +1779,7 @@ func (s *Store) ListCampaignJobs(ctx context.Context, opts ListCampaignJobsOpts)
 		return int64(c.ID), 1, err
 	})
 
-	if len(cs) == opts.Limit {
+	if opts.Limit != 0 && len(cs) == opts.Limit {
 		next = cs[len(cs)-1].ID
 		cs = cs[:len(cs)-1]
 	}
@@ -1759,7 +1788,7 @@ func (s *Store) ListCampaignJobs(ctx context.Context, opts ListCampaignJobsOpts)
 }
 
 var listCampaignJobsQueryFmtstr = `
--- source: pkg/a8n/store.go:ListCampaignJobs
+-- source: internal/a8n/store.go:ListCampaignJobs
 SELECT
   id,
   campaign_plan_id,
@@ -1767,6 +1796,7 @@ SELECT
   rev,
   base_ref,
   diff,
+  description,
   error,
   started_at,
   finished_at,
@@ -1775,7 +1805,6 @@ SELECT
 FROM campaign_jobs
 WHERE %s
 ORDER BY id ASC
-LIMIT %s
 `
 
 func listCampaignJobsQuery(opts *ListCampaignJobsOpts) *sqlf.Query {
@@ -1783,6 +1812,11 @@ func listCampaignJobsQuery(opts *ListCampaignJobsOpts) *sqlf.Query {
 		opts.Limit = defaultListLimit
 	}
 	opts.Limit++
+
+	var limitClause string
+	if opts.Limit > 0 {
+		limitClause = fmt.Sprintf("LIMIT %d", opts.Limit)
+	}
 
 	preds := []*sqlf.Query{
 		sqlf.Sprintf("id >= %s", opts.Cursor),
@@ -1801,9 +1835,8 @@ func listCampaignJobsQuery(opts *ListCampaignJobsOpts) *sqlf.Query {
 	}
 
 	return sqlf.Sprintf(
-		listCampaignJobsQueryFmtstr,
+		listCampaignJobsQueryFmtstr+limitClause,
 		sqlf.Join(preds, "\n AND "),
-		opts.Limit,
 	)
 }
 
@@ -1821,7 +1854,7 @@ func (s *Store) CreateChangesetJob(ctx context.Context, c *a8n.ChangesetJob) err
 }
 
 var createChangesetJobQueryFmtstr = `
--- source: pkg/a8n/store.go:CreateChangesetJob
+-- source: internal/a8n/store.go:CreateChangesetJob
 INSERT INTO changeset_jobs (
   campaign_id,
   campaign_job_id,
@@ -1881,7 +1914,7 @@ func (s *Store) UpdateChangesetJob(ctx context.Context, c *a8n.ChangesetJob) err
 }
 
 var updateChangesetJobQueryFmtstr = `
--- source: pkg/a8n/store.go:UpdateChangesetJob
+-- source: internal/a8n/store.go:UpdateChangesetJob
 UPDATE changeset_jobs
 SET (
   campaign_id,
@@ -1933,7 +1966,7 @@ func (s *Store) DeleteChangesetJob(ctx context.Context, id int64) error {
 }
 
 var deleteChangesetJobQueryFmtstr = `
--- source: pkg/a8n/store.go:DeleteChangesetJob
+-- source: internal/a8n/store.go:DeleteChangesetJob
 DELETE FROM changeset_jobs WHERE id = %s
 `
 
@@ -1953,7 +1986,7 @@ func (s *Store) CountChangesetJobs(ctx context.Context, opts CountChangesetJobsO
 }
 
 var countChangesetJobsQueryFmtstr = `
--- source: pkg/a8n/store.go:CountChangesetJobs
+-- source: internal/a8n/store.go:CountChangesetJobs
 SELECT COUNT(id)
 FROM changeset_jobs
 WHERE %s
@@ -1999,7 +2032,7 @@ func (s *Store) GetChangesetJob(ctx context.Context, opts GetChangesetJobOpts) (
 }
 
 var getChangesetJobsQueryFmtstr = `
--- source: pkg/a8n/store.go:GetChangesetJob
+-- source: internal/a8n/store.go:GetChangesetJob
 SELECT
   id,
   campaign_id,
@@ -2058,7 +2091,7 @@ func (s *Store) ListChangesetJobs(ctx context.Context, opts ListChangesetJobsOpt
 		return int64(c.ID), 1, err
 	})
 
-	if len(cs) == opts.Limit {
+	if opts.Limit != 0 && len(cs) == opts.Limit {
 		next = cs[len(cs)-1].ID
 		cs = cs[:len(cs)-1]
 	}
@@ -2067,7 +2100,7 @@ func (s *Store) ListChangesetJobs(ctx context.Context, opts ListChangesetJobsOpt
 }
 
 var listChangesetJobsQueryFmtstr = `
--- source: pkg/a8n/store.go:ListChangesetJobs
+-- source: internal/a8n/store.go:ListChangesetJobs
 SELECT
   id,
   campaign_id,
@@ -2081,7 +2114,6 @@ SELECT
 FROM changeset_jobs
 WHERE %s
 ORDER BY id ASC
-LIMIT %s
 `
 
 func listChangesetJobsQuery(opts *ListChangesetJobsOpts) *sqlf.Query {
@@ -2089,6 +2121,11 @@ func listChangesetJobsQuery(opts *ListChangesetJobsOpts) *sqlf.Query {
 		opts.Limit = defaultListLimit
 	}
 	opts.Limit++
+
+	var limitClause string
+	if opts.Limit > 0 {
+		limitClause = fmt.Sprintf("LIMIT %d", opts.Limit)
+	}
 
 	preds := []*sqlf.Query{
 		sqlf.Sprintf("id >= %s", opts.Cursor),
@@ -2099,11 +2136,30 @@ func listChangesetJobsQuery(opts *ListChangesetJobsOpts) *sqlf.Query {
 	}
 
 	return sqlf.Sprintf(
-		listChangesetJobsQueryFmtstr,
+		listChangesetJobsQueryFmtstr+limitClause,
 		sqlf.Join(preds, "\n AND "),
-		opts.Limit,
 	)
 }
+
+// ResetFailedChangesetJobs resets the Error, StartedAt and FinishedAt fields
+// of the ChangesetJobs belonging to the Campaign with the given ID.
+func (s *Store) ResetFailedChangesetJobs(ctx context.Context, campaignID int64) (err error) {
+	q := sqlf.Sprintf(resetFailedChangesetJobsQueryFmtstr, campaignID)
+
+	return s.exec(ctx, q, func(sc scanner) (last, count int64, err error) {
+		return 0, 1, nil
+	})
+}
+
+var resetFailedChangesetJobsQueryFmtstr = `
+-- source: internal/a8n/store.go:ResetFailedChangesetJobs
+UPDATE changeset_jobs
+SET
+  error = '',
+  started_at = NULL,
+  finished_at = NULL
+WHERE campaign_id = %s
+`
 
 func (s *Store) exec(ctx context.Context, q *sqlf.Query, sc scanFunc) error {
 	_, _, err := s.query(ctx, q, sc)
@@ -2221,6 +2277,7 @@ func scanCampaign(c *a8n.Campaign, s scanner) error {
 		&c.UpdatedAt,
 		&dbutil.JSONInt64Set{Set: &c.ChangesetIDs},
 		&dbutil.NullInt64{N: &c.CampaignPlanID},
+		&dbutil.NullTime{Time: &c.ClosedAt},
 	)
 }
 
@@ -2229,6 +2286,7 @@ func scanCampaignPlan(c *a8n.CampaignPlan, s scanner) error {
 		&c.ID,
 		&c.CampaignType,
 		&c.Arguments,
+		&dbutil.NullTime{Time: &c.CanceledAt},
 		&c.CreatedAt,
 		&c.UpdatedAt,
 	)
@@ -2242,6 +2300,7 @@ func scanCampaignJob(c *a8n.CampaignJob, s scanner) error {
 		&c.Rev,
 		&c.BaseRef,
 		&c.Diff,
+		&c.Description,
 		&c.Error,
 		&dbutil.NullTime{Time: &c.StartedAt},
 		&dbutil.NullTime{Time: &c.FinishedAt},
@@ -2266,6 +2325,7 @@ func scanChangesetJob(c *a8n.ChangesetJob, s scanner) error {
 
 func scanBackgroundProcessStatus(b *a8n.BackgroundProcessStatus, s scanner) error {
 	return s.Scan(
+		&b.Canceled,
 		&b.Total,
 		&b.Pending,
 		&b.Completed,

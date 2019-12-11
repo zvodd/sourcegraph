@@ -64,7 +64,7 @@ func main() {
 			URL:                  "u",
 			Commit:               "deadbeefdeadbeefdeadbeefdeadbeefdeadbeef",
 			RewriteSpecification: test.arg,
-			FetchTimeout:         "500ms",
+			FetchTimeout:         "2000ms",
 		}
 		got, err := doReplace(ts.URL, &req)
 		if err != nil {
@@ -78,7 +78,7 @@ func main() {
 		}
 
 		if got != test.want {
-			d, err := diff(test.want, got)
+			d, err := testutil.Diff(test.want, got)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -123,6 +123,7 @@ func doReplace(u string, p *protocol.Request) (string, error) {
 		"Repo":            []string{string(p.Repo)},
 		"URL":             []string{string(p.URL)},
 		"Commit":          []string{string(p.Commit)},
+		"FetchTimeout":    []string{p.FetchTimeout},
 		"MatchTemplate":   []string{p.RewriteSpecification.MatchTemplate},
 		"RewriteTemplate": []string{p.RewriteSpecification.RewriteTemplate},
 		"FileExtension":   []string{p.RewriteSpecification.FileExtension},
@@ -141,35 +142,4 @@ func doReplace(u string, p *protocol.Request) (string, error) {
 	}
 
 	return string(body), err
-}
-
-func diff(b1, b2 string) (string, error) {
-	f1, err := ioutil.TempFile("", "search_test")
-	if err != nil {
-		return "", err
-	}
-	defer os.Remove(f1.Name())
-	defer f1.Close()
-
-	f2, err := ioutil.TempFile("", "search_test")
-	if err != nil {
-		return "", err
-	}
-	defer os.Remove(f2.Name())
-	defer f2.Close()
-
-	_, err = f1.WriteString(b1)
-	if err != nil {
-		return "", err
-	}
-	_, err = f2.WriteString(b2)
-	if err != nil {
-		return "", err
-	}
-
-	data, err := exec.Command("diff", "-u", "--label=want", f1.Name(), "--label=got", f2.Name()).CombinedOutput()
-	if len(data) > 0 {
-		err = nil
-	}
-	return string(data), err
 }

@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -15,6 +14,7 @@ import (
 	"github.com/sergi/go-diff/diffmatchpatch"
 	"github.com/sourcegraph/sourcegraph/internal/a8n"
 	"github.com/sourcegraph/sourcegraph/internal/extsvc/bitbucketserver"
+	"github.com/sourcegraph/sourcegraph/internal/testutil"
 	"github.com/sourcegraph/sourcegraph/schema"
 	log15 "gopkg.in/inconshreveable/log15.v2"
 )
@@ -84,7 +84,7 @@ func TestBitbucketServerSource_MakeRepo(t *testing.T) {
 				t.Fatal(err)
 			}
 			if !bytes.Equal(actual, expect) {
-				d, err := diff(actual, expect)
+				d, err := testutil.Diff(string(actual), string(expect))
 				if err != nil {
 					t.Fatal(err)
 				}
@@ -190,7 +190,7 @@ func TestBitbucketServerSource_Exclude(t *testing.T) {
 				t.Fatal(err)
 			}
 			if !bytes.Equal(actual, expect) {
-				d, err := diff(actual, expect)
+				d, err := testutil.Diff(string(actual), string(expect))
 				if err != nil {
 					t.Fatal(err)
 				}
@@ -329,27 +329,40 @@ func TestBitbucketServerSource_CreateChangeset(t *testing.T) {
 		err  string
 	}{
 		{
+			name: "abbreviated refs",
+			cs: &Changeset{
+				Title:     "This is a test PR",
+				Body:      "This is the body of a test PR",
+				BaseRef:   "master",
+				HeadRef:   "test-pr-bbs-9",
+				Repo:      repo,
+				Changeset: &a8n.Changeset{},
+			},
+		},
+		{
 			name: "success",
 			cs: &Changeset{
-				Title:       "This is a test PR",
-				Body:        "This is the body of a test PR",
-				BaseRefName: "master",
-				HeadRefName: "test-pr-bbs-6",
-				Repo:        repo,
-				Changeset:   &a8n.Changeset{},
+				Title:     "This is a test PR",
+				Body:      "This is the body of a test PR",
+				BaseRef:   "refs/heads/master",
+				HeadRef:   "refs/heads/test-pr-bbs-10",
+				Repo:      repo,
+				Changeset: &a8n.Changeset{},
 			},
 		},
 		{
 			name: "already exists",
 			cs: &Changeset{
-				Title:       "This is a test PR",
-				Body:        "This is the body of a test PR",
-				BaseRefName: "master",
-				HeadRefName: "always-open-pr-bbs",
-				Repo:        repo,
-				Changeset:   &a8n.Changeset{},
+				Title:     "This is a test PR",
+				Body:      "This is the body of a test PR",
+				BaseRef:   "refs/heads/master",
+				HeadRef:   "refs/heads/always-open-pr-bbs",
+				Repo:      repo,
+				Changeset: &a8n.Changeset{},
 			},
-			err: bitbucketserver.ErrAlreadyExists.Error(),
+			// CreateChangeset is idempotent so if the PR already exists
+			// it is not an error
+			err: "",
 		},
 	}
 
@@ -420,27 +433,92 @@ func TestBitbucketServerSource_CreateChangeset(t *testing.T) {
 	}
 }
 
-func diff(b1, b2 []byte) (string, error) {
-	f1, err := ioutil.TempFile("", "repos_test")
-	if err != nil {
-		return "", err
+func TestBitbucketServerSource_CloseChangeset(t *testing.T) {
+	instanceURL := os.Getenv("BITBUCKET_SERVER_URL")
+	if instanceURL == "" {
+		// The test fixtures and golden files were generated with
+		// this config pointed to bitbucket.sgdev.org
+		instanceURL = "https://bitbucket.sgdev.org"
 	}
-	defer os.Remove(f1.Name())
-	defer f1.Close()
 
-	f2, err := ioutil.TempFile("", "repos_test")
-	if err != nil {
-		return "", err
+	pr := &bitbucketserver.PullRequest{ID: 31, Version: 0}
+	pr.ToRef.Repository.Slug = "automation-testing"
+	pr.ToRef.Repository.Project.Key = "SOUR"
+
+	testCases := []struct {
+		name string
+		cs   *Changeset
+		err  string
+	}{
+		{
+			name: "success",
+			cs:   &Changeset{Changeset: &a8n.Changeset{Metadata: pr}},
+		},
 	}
-	defer os.Remove(f2.Name())
-	defer f2.Close()
 
-	_, _ = f1.Write(b1)
-	_, _ = f2.Write(b2)
+	for _, tc := range testCases {
+		tc := tc
+		tc.name = "BitbucketServerSource_CloseChangeset_" + strings.Replace(tc.name, " ", "_", -1)
 
-	data, err := exec.Command("diff", "-u", f1.Name(), f2.Name()).CombinedOutput()
-	if len(data) > 0 {
-		err = nil
+		t.Run(tc.name, func(t *testing.T) {
+			cf, save := newClientFactory(t, tc.name)
+			defer save(t)
+
+			lg := log15.New()
+			lg.SetHandler(log15.DiscardHandler())
+
+			svc := &ExternalService{
+				Kind: "BITBUCKETSERVER",
+				Config: marshalJSON(t, &schema.BitbucketServerConnection{
+					Url:   instanceURL,
+					Token: os.Getenv("BITBUCKET_SERVER_TOKEN"),
+				}),
+			}
+
+			bbsSrc, err := NewBitbucketServerSource(svc, cf)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			ctx := context.Background()
+			if tc.err == "" {
+				tc.err = "<nil>"
+			}
+
+			tc.err = strings.ReplaceAll(tc.err, "${INSTANCEURL}", instanceURL)
+
+			err = bbsSrc.CloseChangeset(ctx, tc.cs)
+			if have, want := fmt.Sprint(err), tc.err; have != want {
+				t.Errorf("error:\nhave: %q\nwant: %q", have, want)
+			}
+
+			if err != nil {
+				return
+			}
+
+			pr := tc.cs.Changeset.Metadata.(*bitbucketserver.PullRequest)
+			data, err := json.MarshalIndent(pr, " ", " ")
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			path := "testdata/golden/" + tc.name
+			if update(tc.name) {
+				if err = ioutil.WriteFile(path, data, 0640); err != nil {
+					t.Fatalf("failed to update golden file %q: %s", path, err)
+				}
+			}
+
+			golden, err := ioutil.ReadFile(path)
+			if err != nil {
+				t.Fatalf("failed to read golden file %q: %s", path, err)
+			}
+
+			if have, want := string(data), string(golden); have != want {
+				dmp := diffmatchpatch.New()
+				diffs := dmp.DiffMain(have, want, false)
+				t.Error(dmp.DiffPrettyText(diffs))
+			}
+		})
 	}
-	return string(data), err
 }

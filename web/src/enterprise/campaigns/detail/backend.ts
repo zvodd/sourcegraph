@@ -14,6 +14,8 @@ import {
 } from '../../../../../shared/src/graphql/schema'
 import { DiffStatFields, FileDiffHunkRangeFields, PreviewFileDiffFields, FileDiffFields } from '../../../backend/diff'
 
+export type CampaignType = 'comby' | 'credentials'
+
 const campaignFragment = gql`
     fragment CampaignFields on Campaign {
         id
@@ -104,16 +106,18 @@ const campaignPlanFragment = gql`
                     name
                     url
                 }
-                fileDiffs {
-                    nodes {
-                        ...PreviewFileDiffFields
-                    }
-                    totalCount
-                    pageInfo {
-                        hasNextPage
-                    }
-                    diffStat {
-                        ...DiffStatFields
+                diff {
+                    fileDiffs {
+                        nodes {
+                            ...PreviewFileDiffFields
+                        }
+                        totalCount
+                        pageInfo {
+                            hasNextPage
+                        }
+                        diffStat {
+                            ...DiffStatFields
+                        }
                     }
                 }
             }
@@ -185,6 +189,20 @@ export async function cancelCampaignPlan(plan: ID): Promise<void> {
             }
         `,
         { id: plan }
+    ).toPromise()
+    dataOrThrowErrors(result)
+}
+
+export async function retryCampaign(campaignID: ID): Promise<void> {
+    const result = await mutateGraphQL(
+        gql`
+            mutation RetryCampaign($campaign: ID!) {
+                retryCampaign(campaign: $campaign) {
+                    id
+                }
+            }
+        `,
+        { campaign: campaignID }
     ).toPromise()
     dataOrThrowErrors(result)
 }

@@ -4,6 +4,7 @@ import React, { useCallback } from 'react'
 import { Link } from 'react-router-dom'
 import { numberWithCommas, pluralize } from '../../../../../shared/src/util/strings'
 import { buildSearchURLQuery } from '../../../../../shared/src/util/url'
+import { CaseSensitivityProps } from '../../../search'
 
 const OTHER_LANGUAGE = 'Other'
 const UNKNOWN_LANGUAGE = 'Unknown'
@@ -32,7 +33,7 @@ const COLORS = ['#278389', '#f16321', '#753fff', '#0091ea', '#00c853', '#ffab00'
 const OTHER_COLOR = '#999999'
 const UNKNOWN_COLOR = '#777777'
 
-interface Props {
+interface Props extends Omit<CaseSensitivityProps, 'setCaseSensitivity'> {
     query: string
     stats: GQL.ISearchResultsStats
 }
@@ -40,7 +41,7 @@ interface Props {
 /**
  * Shows language statistics about the results for a search query.
  */
-export const SearchStatsLanguages: React.FunctionComponent<Props> = ({ query, stats }) => {
+export const SearchStatsLanguages: React.FunctionComponent<Props> = ({ query, stats, caseSensitive }) => {
     const chartData = summarizeSearchResultsStatsLanguages(stats.languages, 0.02).map((l, i) => ({
         ...l,
         name: l.name || UNKNOWN_LANGUAGE,
@@ -51,8 +52,8 @@ export const SearchStatsLanguages: React.FunctionComponent<Props> = ({ query, st
 
     const urlToSearchWithExtraQuery = useCallback(
         (extraQuery: string) =>
-            `/search?${buildSearchURLQuery(`${query} ${extraQuery}`, GQL.SearchPatternType.literal, false)}`,
-        [query]
+            `/search?${buildSearchURLQuery(`${query} ${extraQuery}`, GQL.SearchPatternType.literal, caseSensitive)}`,
+        [query, caseSensitive]
     )
 
     const percent = useCallback(

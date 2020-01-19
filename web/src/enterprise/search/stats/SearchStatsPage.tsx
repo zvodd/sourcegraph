@@ -9,8 +9,9 @@ import { SearchStatsLanguages } from './SearchStatsLanguages'
 import { catchError } from 'rxjs/operators'
 import { asError, isErrorLike, ErrorLike } from '../../../../../shared/src/util/errors'
 import { of } from 'rxjs'
+import { CaseSensitivityProps } from '../../../search'
 
-interface Props {
+interface Props extends Omit<CaseSensitivityProps, 'setCaseSensitivity'> {
     location: H.Location
     history: H.History
 
@@ -24,6 +25,7 @@ interface Props {
 export const SearchStatsPage: React.FunctionComponent<Props> = ({
     location,
     history,
+    caseSensitive,
     _querySearchResultsStats = querySearchResultsStats,
 }) => {
     const query = new URLSearchParams(location.search).get('q') || ''
@@ -90,7 +92,7 @@ export const SearchStatsPage: React.FunctionComponent<Props> = ({
                     retry with a higher limit.
                 </div>
             ) : (
-                <SearchStatsLanguages query={query} stats={stats} />
+                <SearchStatsLanguages query={query} stats={stats} caseSensitive={caseSensitive} />
             )}
         </div>
     )

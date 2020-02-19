@@ -15,9 +15,9 @@ const defaultFiltersInQuery: FiltersToTypeAndValue = {
 const defaultProps = {
     filtersInQuery: defaultFiltersInQuery,
     navbarQuery: { query: 'test', cursorPosition: 4 },
-    mapKey: 'type',
+    mapKey: 'repo',
     value: '',
-    filterType: FilterTypes.type,
+    filterType: FilterTypes.repo,
     editable: true,
     negated: false,
     isHomepage: false,
@@ -31,36 +31,37 @@ const defaultProps = {
 describe('FilterInput', () => {
     afterAll(cleanup)
     let container: HTMLElement
-    let rerender: (ui: React.ReactElement) => void
     beforeEach(() => {
-        ;({ rerender, container } = render(<FilterInput {...defaultProps} editable={true} />))
+        ;({ container } = render(<FilterInput {...defaultProps} editable={true} />))
     })
+
+    let nextFiltersInQuery = {}
+    let nextValue = ''
+    const filterHandler = (newFiltersInQuery: FiltersToTypeAndValue, value: string) => {
+        nextFiltersInQuery = newFiltersInQuery
+        nextValue = value
+    }
+
+    const onFilterEditedHandler = async (filterKey: string, inputValue: string) => {
+        const newFiltersInQuery = {
+            ...defaultFiltersInQuery,
+            [filterKey]: {
+                ...defaultFiltersInQuery[filterKey],
+                inputValue,
+                editable: false,
+            },
+        }
+        await filterHandler(newFiltersInQuery, `${inputValue}`)
+    }
+
     // test('normal', () => expect(renderer.create(<FilterInput {...defaultProps} />).toJSON()).toMatchSnapshot())
     it('filter input for content filters get auto-quoted', () => {
-        let nextFiltersInQuery = {}
-        let nextValue = ''
-        const filterHandler = (newFiltersInQuery: FiltersToTypeAndValue, value: string) => {
-            nextFiltersInQuery = newFiltersInQuery
-            nextValue = value
-        }
-
-        const onFilterEdited = async (filterKey: string, inputValue: string) => {
-            const newFiltersInQuery = {
-                ...defaultFiltersInQuery,
-                [filterKey]: {
-                    ...defaultFiltersInQuery[filterKey],
-                    inputValue,
-                    editable: false,
-                },
-            }
-            await filterHandler(newFiltersInQuery, `${inputValue}`)
-        }
-        ;({ rerender, container } = render(
+        ;({ container } = render(
             <FilterInput
                 {...defaultProps}
                 mapKey="content"
                 filterType={FilterTypes.content}
-                onFilterEdited={onFilterEdited}
+                onFilterEdited={onFilterEditedHandler}
                 editable={true}
             />
         ))
@@ -79,15 +80,65 @@ describe('FilterInput', () => {
                 filtersInQuery={nextFiltersInQuery}
                 filterType={FilterTypes.content}
                 value={nextValue}
-                onFilterEdited={onFilterEdited}
+                onFilterEdited={onFilterEditedHandler}
                 editable={false}
             />
         ))
         expect(getByText(container, 'content:"test query"')).toBeTruthy()
     })
 
-    // test('filter input for message filters get auto-quoted', () =>
-    //     expect(renderer.create(<FilterInput {...defaultProps} />).toJSON()).toMatchSnapshot())
-    // test('Updating type filter works when inputting an empty value', () =>
-    //     expect(renderer.create(<FilterInput {...defaultProps} />).toJSON()).toMatchSnapshot())
+    test('filter input for message filters get auto-quoted', () => {
+        ;({ container } = render(
+            <FilterInput
+                {...defaultProps}
+                mapKey="message"
+                filterType={FilterTypes.message}
+                onFilterEdited={onFilterEditedHandler}
+                editable={true}
+            />
+        ))
+
+        const inputEl = container.querySelector('.filter-input__input-field')
+        expect(inputEl).toBeTruthy()
+        fireEvent.click(inputEl!)
+        fireEvent.change(inputEl!, { target: { value: 'test query' } })
+        const confirmBtn = container.querySelector('.check-button__btn')
+        expect(confirmBtn).toBeTruthy()
+        fireEvent.click(confirmBtn!)
+        ;({ container } = render(
+            <FilterInput
+                {...defaultProps}
+                mapKey="message"
+                filtersInQuery={nextFiltersInQuery}
+                filterType={FilterTypes.message}
+                value={nextValue}
+                onFilterEdited={onFilterEditedHandler}
+                editable={false}
+            />
+        ))
+        expect(getByText(container, 'message:"test query"')).toBeTruthy()
+    })
+
+    test('Updating filters with an empty value does not work', () => {
+        ;({ container } = render(<FilterInput {...defaultProps} />))
+        const inputEl = container.querySelector('.filter-input__input-field')
+        expect(inputEl).toBeTruthy()
+        const confirmBtn = container.querySelector('.check-button__btn')
+        expect(confirmBtn).toBeTruthy()
+        fireEvent.click(confirmBtn!)
+        expect(defaultProps.onFilterEdited.notCalled).toBe(true)
+    })
+
+    test('Updating type filter with an empty value does work', () => {
+        ;({ container } = render(
+            <FilterInput {...defaultProps} value="diff" filterType={FilterTypes.type} mapKey="type" />
+        ))
+        const codeRadioButton = container.querySelector('.e2e-filter-input-radio-button-')
+        expect(codeRadioButton).toBeTruthy()
+        fireEvent.click(codeRadioButton!)
+        const confirmBtn = container.querySelector('.e2e-confirm-filter-button')
+        expect(confirmBtn).toBeTruthy()
+        fireEvent.click(confirmBtn!)
+        expect(defaultProps.onFilterEdited.calledOnce).toBe(true)
+    })
 })

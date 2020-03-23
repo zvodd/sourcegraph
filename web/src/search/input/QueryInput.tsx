@@ -38,12 +38,6 @@ import { FiltersToTypeAndValue, FilterType } from '../../../../shared/src/search
 import { isSettingsValid, SettingsCascadeProps } from '../../../../shared/src/settings/settings'
 import { Toggles } from './toggles/Toggles'
 
-/**
- * The query input field is clobbered and updated to contain this subject's values, as
- * they are received. This is used to trigger an update; the source of truth is still the URL.
- */
-export const queryUpdates = new Subject<string>()
-
 interface Props extends PatternTypeProps, CaseSensitivityProps, SettingsCascadeProps {
     location: H.Location
     history: H.History
@@ -147,7 +141,12 @@ export class QueryInput extends React.Component<Props, State> {
 
         // Update parent component
         // (will be used in next PR to push to queryHistory (undo/redo))
-        this.subscriptions.add(this.inputValues.subscribe(queryState => this.props.onChange(queryState)))
+        this.subscriptions.add(
+            this.inputValues.subscribe(queryState => {
+                console.log('queryState', queryState)
+                this.props.onChange(queryState)
+            })
+        )
 
         const hideSuggestionsSetting =
             isSettingsValid(props.settingsCascade) &&
@@ -308,17 +307,6 @@ export class QueryInput extends React.Component<Props, State> {
                             this.inputElement.current.setSelectionRange(0, this.inputElement.current.value.length)
                         }
                     })
-            )
-
-            // Allow other components to update the query (e.g., to be relevant to what the user is
-            // currently viewing).
-            this.subscriptions.add(
-                queryUpdates.pipe(distinctUntilChanged()).subscribe(query =>
-                    this.inputValues.next({
-                        query,
-                        cursorPosition: query.length,
-                    })
-                )
             )
 
             /** Whenever the URL query has a "focus" property, remove it and focus the query input. */

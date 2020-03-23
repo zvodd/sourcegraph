@@ -231,6 +231,7 @@ export interface QueryState {
      * Prevents fetching/showing suggestions on every component update.
      */
     fromUserInput?: true
+    parsedFilters?: true
 }
 
 /**

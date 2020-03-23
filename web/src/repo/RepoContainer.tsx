@@ -1,5 +1,6 @@
 import AlertCircleIcon from 'mdi-react/AlertCircleIcon'
 import MapSearchIcon from 'mdi-react/MapSearchIcon'
+import { isEqual, escapeRegExp } from 'lodash'
 import * as React from 'react'
 import { Route, RouteComponentProps, Switch } from 'react-router'
 import { Subject, Subscription, concat } from 'rxjs'
@@ -16,7 +17,6 @@ import { makeRepoURI } from '../../../shared/src/util/url'
 import { ErrorBoundary } from '../components/ErrorBoundary'
 import { HeroPage } from '../components/HeroPage'
 import { searchQueryForRepoRev, PatternTypeProps, CaseSensitivityProps } from '../search'
-import { queryUpdates } from '../search/input/QueryInput'
 import { EventLoggerProps } from '../tracking/eventLogger'
 import { RouteDescriptor } from '../util/contributions'
 import { parseBrowserRepoURL, ParsedRepoRev, parseRepoRev } from '../util/url'
@@ -29,6 +29,7 @@ import { RepositoryNotFoundPage } from './RepositoryNotFoundPage'
 import { ThemeProps } from '../../../shared/src/theme'
 import { RepoSettingsAreaRoute } from './settings/RepoSettingsArea'
 import { RepoSettingsSideBarItem } from './settings/RepoSettingsSidebar'
+import { QueryState } from '../search/helpers'
 
 /**
  * Props passed to sub-routes of {@link RepoContainer}.
@@ -78,6 +79,7 @@ interface RepoContainerProps
     repoSettingsAreaRoutes: readonly RepoSettingsAreaRoute[]
     repoSettingsSidebarItems: readonly RepoSettingsSideBarItem[]
     authenticatedUser: GQL.IUser | null
+    onNavbarQueryChange: (state: QueryState) => void
 }
 
 interface RepoRevContainerState extends ParsedRepoRev {
@@ -120,14 +122,14 @@ export class RepoContainer extends React.Component<RepoContainerProps, RepoRevCo
     }
 
     public componentDidMount(): void {
-        const parsedRouteChanges = this.componentUpdates.pipe(
-            map(props => props.match.params.repoRevAndRest),
-            distinctUntilChanged(),
-            map(parseURLPath)
+        const parsedLocationChanges = this.componentUpdates.pipe(
+            map(props => props.location),
+            map(location => parseBrowserRepoURL(location.pathname + location.search + location.hash)),
+            distinctUntilChanged((a, b) => isEqual(a, b))
         )
 
         // Fetch repository.
-        const repositoryChanges = parsedRouteChanges.pipe(
+        const repositoryChanges = parsedLocationChanges.pipe(
             map(({ repoName }) => repoName),
             distinctUntilChanged()
         )
@@ -159,12 +161,17 @@ export class RepoContainer extends React.Component<RepoContainerProps, RepoRevCo
         // Update resolved revision in state
         this.subscriptions.add(this.revResolves.subscribe(resolvedRevOrError => this.setState({ resolvedRevOrError })))
 
-        // Update header and other global state.
         this.subscriptions.add(
-            parsedRouteChanges.subscribe(({ repoName, rev, rawRev }) => {
-                this.setState({ repoName, rev, rawRev })
-
-                queryUpdates.next(searchQueryForRepoRev(repoName, rev))
+            parsedLocationChanges.subscribe(({ repoName, rev, filePath }) => {
+                this.setState({ repoName, rev /* rawRev */ })
+                let query = searchQueryForRepoRev(repoName, rev)
+                if (filePath) {
+                    query = `${query} file:^${escapeRegExp(filePath)}`
+                }
+                this.props.onNavbarQueryChange({
+                    query,
+                    cursorPosition: query.length,
+                })
             })
         )
 

@@ -1,5 +1,6 @@
 import * as React from 'react'
 import * as H from 'history'
+import { Subscription, Subject } from 'rxjs'
 import { QueryState, submitSearch } from '../../helpers'
 import * as GQL from '../../../../../shared/src/graphql/schema'
 import { Form } from '../../../components/Form'
@@ -24,6 +25,7 @@ import { SearchModeToggle } from './SearchModeToggle'
 import { uniqueId } from 'lodash'
 import { convertPlainTextToInteractiveQuery } from '../helpers'
 import { isSingularFilter } from '../../../../../shared/src/search/parser/filters'
+import { map, filter, tap } from 'rxjs/operators'
 
 interface InteractiveModeProps
     extends SettingsCascadeProps,
@@ -56,7 +58,18 @@ interface InteractiveModeState {
     numFiltersAdded: number
 }
 
+const uniqByType = (oldFilters: FiltersToTypeAndValue, newFilters: FiltersToTypeAndValue): FiltersToTypeAndValue => {
+    const newFiltersTypes = new Set(Object.values(newFilters).map(({ type }) => type))
+    const oldFiltersKeep = Object.keys(oldFilters)
+        .filter(k => !newFiltersTypes.has(oldFilters[k].type))
+        .reduce((k, filters: any): any => ({ ...filters, [k]: oldFilters[k] }), {} as any)
+    return { ...oldFiltersKeep, ...newFilters }
+}
+
 export class InteractiveModeInput extends React.Component<InteractiveModeProps, InteractiveModeState> {
+    private subscriptions = new Subscription()
+    private componentUpdates = new Subject<InteractiveModeProps>()
+
     constructor(props: InteractiveModeProps) {
         super(props)
 
@@ -71,6 +84,36 @@ export class InteractiveModeInput extends React.Component<InteractiveModeProps, 
         }
 
         this.props.onFiltersInQueryChange(filtersInQuery)
+    }
+
+    public componentDidMount(): void {
+        this.subscriptions.add(
+            this.componentUpdates
+                .pipe(
+                    map(({ navbarSearchState }) => navbarSearchState),
+                    tap(state => console.log(state)),
+                    filter(({ parsedFilters }) => !parsedFilters),
+                    filter(({ query }) => !!query),
+                    map(({ query }) => convertPlainTextToInteractiveQuery(query))
+                )
+                .subscribe(({ navbarQuery, filtersInQuery }) => {
+                    this.props.onNavbarQueryChange({
+                        query: navbarQuery,
+                        cursorPosition: navbarQuery.length,
+                        parsedFilters: true,
+                    })
+                    this.props.onFiltersInQueryChange(uniqByType(this.props.filtersInQuery, filtersInQuery))
+                })
+        )
+        this.componentUpdates.next(this.props)
+    }
+
+    public componentDidUpdate(): void {
+        this.componentUpdates.next(this.props)
+    }
+
+    public componentWillUnmount(): void {
+        this.subscriptions.unsubscribe()
     }
 
     /**

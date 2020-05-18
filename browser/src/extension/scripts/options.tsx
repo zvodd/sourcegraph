@@ -3,30 +3,24 @@ import '../polyfills'
 
 import * as React from 'react'
 import { render } from 'react-dom'
-import { from, noop, Observable, Subscription } from 'rxjs'
+import { from, noop, Observable, merge, of } from 'rxjs'
 import { GraphQLResult } from '../../../../shared/src/graphql/graphql'
 import * as GQL from '../../../../shared/src/graphql/schema'
 import { background } from '../../browser/runtime'
 import { observeStorageKey, storage } from '../../browser/storage'
 import { featureFlagDefaults, FeatureFlags } from '../../browser/types'
-import { OptionsContainer, OptionsContainerProps } from '../../libs/options/OptionsContainer'
-import { OptionsMenuProps } from '../../libs/options/OptionsMenu'
+import { OptionsMenuProps, OptionsMenu } from '../../libs/options/OptionsMenu'
 import { initSentry } from '../../libs/sentry'
 import { fetchSite } from '../../shared/backend/server'
 import { featureFlags } from '../../shared/util/featureFlags'
 import { assertEnv } from '../envAssertion'
-import { observeSourcegraphURL } from '../../shared/util/context'
+import { map, startWith, switchMap, filter, mapTo, catchError } from 'rxjs/operators'
+import { isDefined } from '../../../../shared/src/util/types'
+import { asError } from '../../../../shared/src/util/errors'
 
 assertEnv('OPTIONS')
 
 initSentry('options')
-
-const IS_EXTENSION = true
-
-type State = Pick<
-    FeatureFlags,
-    'allowErrorReporting' | 'experimentalLinkPreviews' | 'experimentalTextFieldCompletion'
-> & { sourcegraphURL: string | null; isActivated: boolean }
 
 const keyIsFeatureFlag = (key: string): key is keyof FeatureFlags =>
     !!Object.keys(featureFlagDefaults).find(k => key === k)
@@ -37,7 +31,7 @@ const toggleFeatureFlag = (key: string): void => {
     }
 }
 
-const fetchCurrentTabStatus = async (): Promise<OptionsMenuProps['currentTabStatus']> => {
+const fetchCurrentTabStatus = async () => {
     const tabs = await browser.tabs.query({ active: true, currentWindow: true })
     if (tabs.length > 1) {
         throw new Error('Querying for the currently active tab returned more than one result')
@@ -61,85 +55,50 @@ function requestGraphQL<T extends GQL.IQuery | GQL.IMutation>(options: {
     return from(background.requestGraphQL<T>(options))
 }
 
-const ensureValidSite = (): Observable<GQL.ISite> => fetchSite(requestGraphQL)
-
-class Options extends React.Component<{}, State> {
-    public state: State = {
-        sourcegraphURL: null,
-        isActivated: true,
-        allowErrorReporting: false,
-        experimentalLinkPreviews: false,
-        experimentalTextFieldCompletion: false,
-    }
-
-    private subscriptions = new Subscription()
-
-    public componentDidMount(): void {
-        this.subscriptions.add(
-            observeStorageKey('sync', 'featureFlags').subscribe(featureFlags => {
-                const { allowErrorReporting, experimentalLinkPreviews, experimentalTextFieldCompletion } = {
-                    ...featureFlagDefaults,
-                    ...featureFlags,
+const props: OptionsMenuProps = {
+    observeIsDisabled: () => observeStorageKey('sync', 'disableExtension'),
+    observeFeatureFlags: (): any =>
+        observeStorageKey('sync', 'featureFlags').pipe(
+            map(featureFlags => ({
+                ...featureFlagDefaults,
+                ...featureFlags,
+            })),
+            startWith(featureFlagDefaults)
+        ),
+    observeSourcegraphURL: () =>
+        observeStorageKey('sync', 'sourcegraphURL').pipe(
+            filter(isDefined),
+            switchMap(sourcegraphURL => {
+                try {
+                    new URL(sourcegraphURL)
+                } catch (error) {
+                    return [{ status: 'error' as const, error, sourcegraphURL }]
                 }
-                this.setState({
-                    allowErrorReporting,
-                    experimentalLinkPreviews,
-                    experimentalTextFieldCompletion,
-                })
+                return merge(
+                    of({ sourcegraphURL, status: 'connecting' as const }),
+                    fetchSite(requestGraphQL).pipe(
+                        switchMap(async () => {
+                            const hasPermissions = await browser.permissions.contains({
+                                origins: [`${sourcegraphURL}/*`],
+                            })
+                            if (!hasPermissions) {
+                                throw new Error('LOL')
+                            }
+                        }),
+                        mapTo({ status: 'connected' as const, sourcegraphURL }),
+                        catchError(err => [{ status: 'error' as const, sourcegraphURL, error: asError(err) }])
+                    )
+                )
             })
-        )
-
-        this.subscriptions.add(
-            observeSourcegraphURL(IS_EXTENSION).subscribe(sourcegraphURL => {
-                this.setState({ sourcegraphURL })
-            })
-        )
-
-        this.subscriptions.add(
-            observeStorageKey('sync', 'disableExtension').subscribe(disableExtension => {
-                this.setState({
-                    isActivated: !disableExtension,
-                })
-            })
-        )
-    }
-
-    public componentWillUnmount(): void {
-        this.subscriptions.unsubscribe()
-    }
-
-    public render(): React.ReactNode {
-        if (this.state.sourcegraphURL === null) {
-            return null
-        }
-
-        const props: OptionsContainerProps = {
-            sourcegraphURL: this.state.sourcegraphURL,
-            isActivated: this.state.isActivated,
-
-            ensureValidSite,
-            fetchCurrentTabStatus,
-            hasPermissions: url =>
-                browser.permissions.contains({
-                    origins: [`${url}/*`],
-                }),
-            requestPermissions: url =>
-                browser.permissions.request({
-                    origins: [`${url}/*`],
-                }),
-
-            setSourcegraphURL: (sourcegraphURL: string) => storage.sync.set({ sourcegraphURL }),
-            toggleExtensionDisabled: (isActivated: boolean) => storage.sync.set({ disableExtension: !isActivated }),
-            toggleFeatureFlag,
-            featureFlags: [
-                { key: 'allowErrorReporting', value: this.state.allowErrorReporting },
-                { key: 'experimentalLinkPreviews', value: this.state.experimentalLinkPreviews },
-                { key: 'experimentalTextFieldCompletion', value: this.state.experimentalTextFieldCompletion },
-            ],
-        }
-
-        return <OptionsContainer {...props} />
-    }
+        ),
+    fetchCurrentTabStatus,
+    toggleExtensionDisabled: disableExtension => storage.sync.set({ disableExtension }),
+    toggleFeatureFlag,
+    persistSourcegraphURL: sourcegraphURL => storage.sync.set({ sourcegraphURL }),
+    requestPermissions: url =>
+        browser.permissions.request({
+            origins: [`${url}/*`],
+        }),
 }
 
 const inject = (): void => {
@@ -149,7 +108,7 @@ const inject = (): void => {
     // For shared CSS that would otherwise be dark by default
     document.body.classList.add('theme-light')
 
-    render(<Options />, injectDOM)
+    render(<OptionsMenu {...props} />, injectDOM)
 }
 
 document.addEventListener('DOMContentLoaded', inject)

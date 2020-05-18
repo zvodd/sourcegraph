@@ -14,7 +14,7 @@ import { initSentry } from '../../libs/sentry'
 import { fetchSite } from '../../shared/backend/server'
 import { featureFlags } from '../../shared/util/featureFlags'
 import { assertEnv } from '../envAssertion'
-import { map, startWith, switchMap, filter, mapTo, catchError } from 'rxjs/operators'
+import { map, startWith, switchMap, filter, mapTo, catchError, tap } from 'rxjs/operators'
 import { isDefined } from '../../../../shared/src/util/types'
 import { asError } from '../../../../shared/src/util/errors'
 
@@ -79,7 +79,7 @@ const props: OptionsMenuProps = {
                     fetchSite(requestGraphQL).pipe(
                         switchMap(async () => {
                             const hasPermissions = await browser.permissions.contains({
-                                origins: [`${sourcegraphURL}/*`],
+                                origins: [new URL('/*', sourcegraphURL).href],
                             })
                             if (!hasPermissions) {
                                 throw new Error('LOL')

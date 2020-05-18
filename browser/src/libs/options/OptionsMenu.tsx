@@ -8,6 +8,7 @@ import { ServerURLForm, SourcegraphURLWithStatus } from './ServerURLForm'
 import { useObservable } from '../../../../shared/src/util/useObservable'
 import SettingsOutlineIcon from 'mdi-react/SettingsOutlineIcon'
 import { Toggle } from '../../../../shared/src/components/Toggle'
+import { catchError } from 'rxjs/operators'
 
 interface CurrentTabStatus {
     host: string
@@ -60,7 +61,10 @@ export const OptionsMenu: React.FunctionComponent<OptionsMenuProps> = ({
         [settingsOpen]
     )
     const sourcegraphURLAndStatus = useObservable(useMemo(() => observeSourcegraphURL(), [observeSourcegraphURL]))
-    const currentTabStatus = useObservable(useMemo(() => from(fetchCurrentTabStatus()), [fetchCurrentTabStatus]))
+    console.log(sourcegraphURLAndStatus)
+    const currentTabStatus = useObservable(
+        useMemo(() => from(fetchCurrentTabStatus()).pipe(catchError(err => [undefined])), [fetchCurrentTabStatus])
+    )
     const isDisabled = useObservable(useMemo(() => observeIsDisabled(), [observeIsDisabled]))
     const featureFlags = useObservable(useMemo(() => observeFeatureFlags(), [observeFeatureFlags]))
     if (!sourcegraphURLAndStatus) {
@@ -68,7 +72,7 @@ export const OptionsMenu: React.FunctionComponent<OptionsMenuProps> = ({
     }
     return (
         <div className={`options-menu ${isFullPage ? 'options-menu--full' : ''}`}>
-            <div className="options-header">
+            <div className="options-menu__section options-header">
                 <div>
                     <img src="img/sourcegraph-logo.svg" className="options-header__logo" />
                     <div className="options-header__version">v{version}</div>
@@ -138,7 +142,7 @@ export const OptionsMenu: React.FunctionComponent<OptionsMenuProps> = ({
                 <div className="options-menu__section">
                     <label>Configuration</label>
                     <div>
-                        {Object.entries(featureFlags).map(([ key, value ]) => (
+                        {Object.entries(featureFlags).map(([key, value]) => (
                             <div className="form-check" key={key}>
                                 <label className="form-check-label">
                                     <input

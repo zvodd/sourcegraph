@@ -1,9 +1,6 @@
 import { upperFirst } from 'lodash'
-import React, { useState, useCallback } from 'react'
-import { merge, Subject, Subscription } from 'rxjs'
-import { debounceTime, takeUntil } from 'rxjs/operators'
+import React, { useState, useCallback, useEffect } from 'react'
 import { ErrorLike } from '../../../../shared/src/util/errors'
-import { isErrorLike } from '@sourcegraph/codeintellify/lib/errors'
 
 const statusClassNames = {
     connecting: 'warning',
@@ -36,16 +33,20 @@ export interface ServerURLFormProps {
 export const ServerURLForm: React.FunctionComponent<ServerURLFormProps> = props => {
     const [sourcegraphURLAndStatus, setSourcegraphURLAndStatus] = useState<
         SourcegraphURLWithStatus | (SourcegraphURL & { status: 'editing' })
-    >(props.sourcegraphURLAndStatus)
+    >()
+    useEffect(() => {
+        setSourcegraphURLAndStatus(props.sourcegraphURLAndStatus)
+    }, [props.sourcegraphURLAndStatus])
     const onSourcegraphURLChange = useCallback(({ target }: React.ChangeEvent<HTMLInputElement>) => {
         setSourcegraphURLAndStatus({ sourcegraphURL: target.value, status: 'editing' as const })
     }, [])
-
     const handleSubmit = useCallback(
         (event: React.FormEvent<HTMLFormElement>): void => {
             event.preventDefault()
-            const { sourcegraphURL } = sourcegraphURLAndStatus
-            props.persistSourcegraphURL(sourcegraphURL)
+            if (sourcegraphURLAndStatus) {
+                const { sourcegraphURL } = sourcegraphURLAndStatus
+                props.persistSourcegraphURL(sourcegraphURL)
+            }
         },
         [props, sourcegraphURLAndStatus]
     )
@@ -67,7 +68,7 @@ export const ServerURLForm: React.FunctionComponent<ServerURLFormProps> = props 
                                     'bg-' +
                                     (sourcegraphURLAndStatus.status === 'editing'
                                         ? 'secondary'
-                                        : /* statusClassNames[this.props.status] */ 'PRIMARY')
+                                        : statusClassNames[sourcegraphURLAndStatus.status])
                                 }
                             />{' '}
                             <span className="e2e-connection-status">
@@ -89,7 +90,7 @@ export const ServerURLForm: React.FunctionComponent<ServerURLFormProps> = props 
                     autoCorrect="off"
                 />
             </div>
-            {isErrorLike(sourcegraphURLAndStatus.status) && (
+            {/* {isErrorLike(sourcegraphURLAndStatus.status) && (
                 <div className="alert alert-danger mt-2 mb-0">
                     Authentication to Sourcegraph failed.{' '}
                     <a href={sourcegraphURLAndStatus.sourcegraphURL} target="_blank" rel="noopener noreferrer">
@@ -136,7 +137,7 @@ export const ServerURLForm: React.FunctionComponent<ServerURLFormProps> = props 
                         .
                     </p>
                 </div>
-            )}
+            )} */}
         </form>
     )
 }

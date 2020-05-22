@@ -1,6 +1,7 @@
 import { upperFirst } from 'lodash'
 import React, { useState, useCallback, useEffect } from 'react'
 import { ErrorLike } from '../../../../shared/src/util/errors'
+import { failedWithHTTPStatus } from '../../../../shared/src/backend/fetch'
 
 const statusClassNames = {
     connecting: 'warning',
@@ -28,6 +29,22 @@ export interface ServerURLFormProps {
     sourcegraphURLAndStatus: SourcegraphURLWithStatus
     persistSourcegraphURL: (url: string) => void
     requestPermissions: (url: string) => void
+}
+
+const INVALID_SOURCEGRAPH_URL_ERROR_NAME = 'InvalidSourcegraphURLError'
+export class InvalidSourcegraphURLError extends Error {
+    public readonly name = INVALID_SOURCEGRAPH_URL_ERROR_NAME
+    constructor(url: string) {
+        super(`Invalid Sourcegraph URL: ${url}`)
+    }
+}
+
+const SOURCEGRAPH_URL_PERMISSIONS_ERROR_NAME = 'SourcegraphURLPermissionsErrorName'
+export class SourcegraphURLPermissionsError extends Error {
+    public readonly name = SOURCEGRAPH_URL_PERMISSIONS_ERROR_NAME
+    constructor(url: string) {
+        super(`No permissions for Sourcegraph URL ${url}`)
+    }
 }
 
 export const ServerURLForm: React.FunctionComponent<ServerURLFormProps> = props => {
@@ -90,54 +107,43 @@ export const ServerURLForm: React.FunctionComponent<ServerURLFormProps> = props 
                     autoCorrect="off"
                 />
             </div>
-            {/* {isErrorLike(sourcegraphURLAndStatus.status) && (
+            {sourcegraphURLAndStatus.status === 'error' && (
                 <div className="alert alert-danger mt-2 mb-0">
-                    Authentication to Sourcegraph failed.{' '}
-                    <a href={sourcegraphURLAndStatus.sourcegraphURL} target="_blank" rel="noopener noreferrer">
-                        Sign in to your instance
-                    </a>{' '}
-                    to continue.
-                </div>
-            )}
-            {!this.state.isUpdating && this.props.connectionError === ConnectionErrors.UnableToConnect && (
-                <div className="alert alert-danger mt-2 mb-0">
-                    <p>
-                        Unable to connect to{' '}
-                        <a href={sourcegraphURLAndStatus.sourcegraphURL} target="_blank" rel="noopener noreferrer">
-                            {sourcegraphURLAndStatus.sourcegraphURL}
-                        </a>
-                        . Ensure the URL is correct and you are{' '}
-                        <a
-                            href={new URL('/sign-in', sourcegraphURLAndStatus.sourcegraphURL).href}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                        >
-                            signed in
-                        </a>
-                        .
-                    </p>
-                    {!this.props.urlHasPermissions && (
-                        <p>
-                            You may need to{' '}
-                            <a href="#" onClick={this.requestServerURLPermissions}>
-                                grant the Sourcegraph browser extension additional permissions
+                    {failedWithHTTPStatus(sourcegraphURLAndStatus.error, 401) ||
+                    failedWithHTTPStatus(sourcegraphURLAndStatus.error, 403) ? (
+                        <>
+                            Authentication to Sourcegraph failed.{' '}
+                            <a href={sourcegraphURLAndStatus.sourcegraphURL} target="_blank" rel="noopener noreferrer">
+                                Sign in to your instance
                             </a>{' '}
-                            for this URL.
+                            to continue.
+                        </>
+                    ) : sourcegraphURLAndStatus.error.name === INVALID_SOURCEGRAPH_URL_ERROR_NAME ? (
+                        <>Invalid URL.</>
+                    ) : sourcegraphURLAndStatus.error.name === SOURCEGRAPH_URL_PERMISSIONS_ERROR_NAME ? (
+                        <>
+                            To use Sourcegraph, you must grant the browser extension permissions to your Sourcegraph
+                            URL.
+                        </>
+                    ) : (
+                        <p>
+                            Unable to connect to{' '}
+                            <a href={sourcegraphURLAndStatus.sourcegraphURL} target="_blank" rel="noopener noreferrer">
+                                {sourcegraphURLAndStatus.sourcegraphURL}
+                            </a>
+                            . Ensure the URL is correct and you are{' '}
+                            <a
+                                href={new URL('/sign-in', sourcegraphURLAndStatus.sourcegraphURL).href}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                            >
+                                signed in
+                            </a>
+                            .
                         </p>
                     )}
-                    <p className="mb-0">
-                        <b>Site admins:</b> ensure that{' '}
-                        <a
-                            href="https://docs.sourcegraph.com/admin/config/site_config"
-                            target="_blank"
-                            rel="noopener noreferrer"
-                        >
-                            all users can create access tokens
-                        </a>
-                        .
-                    </p>
                 </div>
-            )} */}
+            )}
         </form>
     )
 }

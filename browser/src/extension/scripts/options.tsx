@@ -10,11 +10,12 @@ import { background } from '../../browser/runtime'
 import { observeStorageKey, storage } from '../../browser/storage'
 import { featureFlagDefaults, FeatureFlags } from '../../browser/types'
 import { OptionsMenuProps, OptionsMenu } from '../../libs/options/OptionsMenu'
+import { InvalidSourcegraphURLError, SourcegraphURLPermissionsError } from '../../libs/options/ServerURLForm'
 import { initSentry } from '../../libs/sentry'
 import { fetchSite } from '../../shared/backend/server'
 import { featureFlags } from '../../shared/util/featureFlags'
 import { assertEnv } from '../envAssertion'
-import { map, startWith, switchMap, filter, mapTo, catchError, tap } from 'rxjs/operators'
+import { map, startWith, switchMap, filter, mapTo, catchError } from 'rxjs/operators'
 import { isDefined } from '../../../../shared/src/util/types'
 import { asError } from '../../../../shared/src/util/errors'
 
@@ -71,22 +72,28 @@ const props: OptionsMenuProps = {
             switchMap(sourcegraphURL => {
                 try {
                     new URL(sourcegraphURL)
-                } catch (error) {
-                    return [{ status: 'error' as const, error, sourcegraphURL }]
+                } catch {
+                    return [
+                        {
+                            status: 'error' as const,
+                            error: new InvalidSourcegraphURLError(sourcegraphURL),
+                            sourcegraphURL,
+                        },
+                    ]
                 }
                 return merge(
                     of({ sourcegraphURL, status: 'connecting' as const }),
                     fetchSite(requestGraphQL).pipe(
-                        switchMap(async () => {
+                        mapTo({ status: 'connected' as const, sourcegraphURL }),
+                        catchError(async err => {
                             const hasPermissions = await browser.permissions.contains({
                                 origins: [new URL('/*', sourcegraphURL).href],
                             })
                             if (!hasPermissions) {
-                                throw new Error('LOL')
+                                err = new SourcegraphURLPermissionsError(sourcegraphURL)
                             }
-                        }),
-                        mapTo({ status: 'connected' as const, sourcegraphURL }),
-                        catchError(err => [{ status: 'error' as const, sourcegraphURL, error: asError(err) }])
+                            return { status: 'error' as const, sourcegraphURL, error: asError(err) }
+                        })
                     )
                 )
             })
@@ -97,7 +104,7 @@ const props: OptionsMenuProps = {
     persistSourcegraphURL: sourcegraphURL => storage.sync.set({ sourcegraphURL }),
     requestPermissions: url =>
         browser.permissions.request({
-            origins: [`${url}/*`],
+            origins: [new URL('/*', url).href],
         }),
 }
 

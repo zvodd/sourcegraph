@@ -33,6 +33,7 @@ import (
 	"github.com/sourcegraph/sourcegraph/internal/api"
 	"github.com/sourcegraph/sourcegraph/internal/conf"
 	"github.com/sourcegraph/sourcegraph/internal/env"
+	"github.com/sourcegraph/sourcegraph/internal/gitserver"
 	"github.com/sourcegraph/sourcegraph/internal/gitserver/protocol"
 	"github.com/sourcegraph/sourcegraph/internal/honey"
 	"github.com/sourcegraph/sourcegraph/internal/lazyregexp"
@@ -115,6 +116,10 @@ type Server struct {
 
 	// DiskSizer tells how much disk is free and how large the disk is.
 	DiskSizer DiskSizer
+
+	// Store where we write git metadata for other Sourcegraph services
+	// to use without querying gitserver every time.
+	Store gitserver.Store
 
 	// skipCloneForTests is set by tests to avoid clones.
 	skipCloneForTests bool

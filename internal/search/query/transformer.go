@@ -113,6 +113,29 @@ func containsUppercase(s string) bool {
 	return false
 }
 
+func OrExpressionsToRegexp(nodes []Node) []Node {
+	return MapOperator(nodes, func(kind operatorKind, operands []Node) []Node {
+		isPattern := func(node Node) bool {
+			if pattern, ok := node.(Pattern); ok && !pattern.Negated {
+				return true
+			}
+			return false
+		}
+		if kind == Or {
+			if forAll(operands, isPattern) {
+				var values []string
+				for _, node := range operands {
+					values = append(values, node.(Pattern).Value)
+				}
+				valueString := strings.Join(values, "|")
+				return []Node{Pattern{Value: valueString}}
+			}
+			return nodes
+		}
+		return nodes
+	})
+}
+
 // Map pipes query through one or more query transformer functions.
 func Map(query []Node, fns ...func([]Node) []Node) []Node {
 	for _, fn := range fns {

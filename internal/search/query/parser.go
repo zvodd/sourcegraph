@@ -23,8 +23,9 @@ Parser implements a parser for the following grammar:
 
 OrTerm     → AndTerm { OR AndTerm }
 AndTerm    → Term { AND Term }
-Term       → (OrTerm) | Parameters
-Parameters → Parameter { " " Parameter }
+Term       → (OrTerm) | Leaf
+Leaf       -> Parameters | Pattern
+Leaves → Leaf ...
 */
 
 type Node interface {

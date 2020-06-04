@@ -13,7 +13,10 @@ CREATE TABLE git_commits (
   committer_name text NOT NULL,
   committer_email text NOT NULL,
   created_at timestamptz DEFAULT now() NOT NULL,
-  updated_at timestamptz,
+  updated_at timestamptz
 );
+
+CREATE INDEX git_commits_refs ON git_commits (refs);
+CREATE INDEX git_commits_committer_date ON git_commits (committer_date);
 
 COMMIT;

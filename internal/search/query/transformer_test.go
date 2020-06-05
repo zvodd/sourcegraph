@@ -193,26 +193,30 @@ func TestOrOperator(t *testing.T) {
 			want:  `"foo|bar"`,
 		},
 		{
-			input: "repo:foobar (foo or (bar or baz))",
+			input: "(foo or (bar or baz))",
 			want:  `"foo|bar|baz"`,
+		},
+		{
+			input: "repo:foobar foo or (bar or baz)",
+			want:  `(or "bar|baz" (and "repo:foobar" "foo"))`,
 		},
 		{
 			input: "(foo or (bar or baz)) and foobar",
-			want:  `"foo|bar|baz"`,
+			want:  `(and "foo|bar|baz" "foobar")`,
 		},
 		{
-			input: "(foo or (bar and baz)",
-			want:  `(or "(foo" (and "(bar" "baz)"))`,
+			input: "(foo or (bar and baz))",
+			want:  `(or "foo" (and "bar" "baz"))`,
 		},
 		{
 			input: "foo or (bar and baz) or foobar",
-			want:  `(or "foo" (and "bar" "baz") "foobar")`,
+			want:  `(or "foo|foobar" (and "bar" "baz"))`,
 		},
 	}
 	for _, c := range cases {
 		t.Run("Map query", func(t *testing.T) {
 			query, _ := ParseAndOr(c.input)
-			got := prettyPrint(OrExpressionsToRegexp(query))
+			got := prettyPrint(convertOrToRegexp(query))
 			if diff := cmp.Diff(c.want, got); diff != "" {
 				t.Fatal(diff)
 			}

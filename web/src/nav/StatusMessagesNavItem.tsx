@@ -2,7 +2,6 @@ import CloudAlertIcon from 'mdi-react/CloudAlertIcon'
 import CloudCheckIcon from 'mdi-react/CloudCheckIcon'
 import CloudSyncIcon from 'mdi-react/CloudSyncIcon'
 import React from 'react'
-import { ButtonDropdown, DropdownMenu, DropdownToggle } from 'reactstrap'
 import { Observable, Subscription } from 'rxjs'
 import { catchError, map, repeatWhen, delay } from 'rxjs/operators'
 import { Link } from '../../../shared/src/components/Link'
@@ -14,6 +13,7 @@ import classNames from 'classnames'
 import { ErrorAlert } from '../components/alerts'
 import * as H from 'history'
 import { repeatUntil } from '../../../shared/src/util/rxjs/repeatUntil'
+import Dropdown from 'react-bootstrap/Dropdown'
 
 export function fetchAllStatusMessages(): Observable<GQL.StatusMessage[]> {
     return queryGraphQL(
@@ -210,16 +210,12 @@ export class StatusMessagesNavItem extends React.PureComponent<Props, State> {
 
     public render(): JSX.Element | null {
         return (
-            <ButtonDropdown
-                isOpen={this.state.isOpen}
-                toggle={this.toggleIsOpen}
-                className="nav-link py-0 px-0 status-messages-nav-item__nav-link"
-            >
-                <DropdownToggle caret={false} className="btn btn-link" nav={true}>
+            <Dropdown className="nav-link py-0 px-0 status-messages-nav-item__nav-link">
+                <Dropdown.Toggle id="status-messages-nav-item-toggle" className="btn btn-link" variant="link">
                     {this.renderIcon()}
-                </DropdownToggle>
+                </Dropdown.Toggle>
 
-                <DropdownMenu right={true} className="status-messages-nav-item__dropdown-menu">
+                <Dropdown.Menu className="status-messages-nav-item__dropdown-menu">
                     <h3>Code host status</h3>
                     <div className="status-messages-nav-item__dropdown-menu-content">
                         {isErrorLike(this.state.messagesOrError) ? (
@@ -243,8 +239,8 @@ export class StatusMessagesNavItem extends React.PureComponent<Props, State> {
                             />
                         )}
                     </div>
-                </DropdownMenu>
-            </ButtonDropdown>
+                </Dropdown.Menu>
+            </Dropdown>
         )
     }
 }

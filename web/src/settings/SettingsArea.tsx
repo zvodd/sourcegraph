@@ -1,9 +1,9 @@
 import AlertCircleIcon from 'mdi-react/AlertCircleIcon'
 import MapSearchIcon from 'mdi-react/MapSearchIcon'
-import * as React from 'react'
+import React, { useEffect, useCallback } from 'react'
 import { Route, RouteComponentProps, Switch } from 'react-router'
-import { combineLatest, Observable, Subject, Subscription } from 'rxjs'
-import { catchError, distinctUntilChanged, map, startWith, switchMap } from 'rxjs/operators'
+import { Observable, merge, of } from 'rxjs'
+import { catchError, map, startWith, switchMap, switchMapTo } from 'rxjs/operators'
 import { extensionIDsFromSettings } from '../../../shared/src/extensions/extension'
 import { queryConfiguredRegistryExtensions } from '../../../shared/src/extensions/helpers'
 import { gql } from '../../../shared/src/graphql/graphql'
@@ -19,6 +19,7 @@ import { mergeSettingsSchemas } from './configuration'
 import { SettingsPage } from './SettingsPage'
 import { ErrorMessage } from '../components/alerts'
 import * as H from 'history'
+import { useEventObservable } from '../../../shared/src/util/useObservable'
 
 const NotFoundPage: React.FunctionComponent = () => <HeroPage icon={MapSearchIcon} title="404: Not Found" />
 
@@ -53,145 +54,118 @@ interface Props extends SettingsAreaPageCommonProps, RouteComponentProps<{}> {
     history: H.History
 }
 
-const LOADING = 'loading' as const
-
-interface State {
-    /**
-     * The data, loading, or an error.
-     */
-    dataOrError: typeof LOADING | SettingsData | ErrorLike
-}
-
 /**
  * A settings area with a top-level JSON editor and sub-pages for editing nested settings values.
  */
-export class SettingsArea extends React.Component<Props, State> {
-    public state: State = { dataOrError: LOADING }
+export const SettingsArea: React.FunctionComponent<Props> = props => {
+    useEffect(() => {
+        eventLogger.logViewEvent(`Settings${props.subject.__typename}`)
+    }, [props.subject])
 
-    private componentUpdates = new Subject<Props>()
-    private refreshRequests = new Subject<void>()
-    private subscriptions = new Subscription()
-
-    public componentDidMount(): void {
-        eventLogger.logViewEvent(`Settings${this.props.subject.__typename}`)
-        // Load settings.
-        this.subscriptions.add(
-            combineLatest([
-                this.componentUpdates.pipe(
-                    map(props => props.subject),
-                    distinctUntilChanged()
-                ),
-                this.refreshRequests.pipe(startWith<void>(undefined)),
-            ])
-                .pipe(
-                    switchMap(([{ id }]) =>
-                        fetchSettingsCascade(id).pipe(
-                            switchMap(cascade =>
-                                this.getMergedSettingsJSONSchema(cascade).pipe(
-                                    map(settingsJSONSchema => ({ subjects: cascade.subjects, settingsJSONSchema }))
+    const [nextRefreshRequest, dataOrError] = useEventObservable(
+        useCallback(
+            (refreshRequests: Observable<void>): Observable<SettingsData | ErrorLike | undefined> =>
+                refreshRequests.pipe(
+                    startWith<void>(undefined),
+                    switchMapTo(
+                        merge(
+                            of(undefined),
+                            fetchSettingsCascade(props.subject.id).pipe(
+                                switchMap(cascade =>
+                                    queryConfiguredRegistryExtensions(
+                                        props.platformContext,
+                                        extensionIDsFromSettings(gqlToCascade(cascade))
+                                    ).pipe(
+                                        catchError(error => {
+                                            console.warn(
+                                                'Unable to get extension settings JSON Schemas for settings editor.',
+                                                {
+                                                    error,
+                                                }
+                                            )
+                                            return [null]
+                                        }),
+                                        map(configuredExtensions => ({
+                                            subjects: cascade.subjects,
+                                            settingsJSONSchema: {
+                                                $id: 'mergedSettings.schema.json#',
+                                                ...(configuredExtensions
+                                                    ? mergeSettingsSchemas(configuredExtensions)
+                                                    : null),
+                                            },
+                                        }))
+                                    )
                                 )
-                            ),
-                            catchError(error => [asError(error)]),
-                            map(dataOrError => ({ dataOrError }))
+                            )
                         )
-                    )
-                )
-                .subscribe(
-                    stateUpdate => this.setState(stateUpdate),
-                    error => console.error(error)
-                )
+                    ),
+                    catchError(error => [asError(error)])
+                ),
+            [props.platformContext, props.subject.id]
         )
+    )
 
-        this.componentUpdates.next(this.props)
+    const onUpdate = useCallback((): void => nextRefreshRequest(), [nextRefreshRequest])
+
+    if (dataOrError === undefined) {
+        return null // loading
     }
-
-    public componentDidUpdate(): void {
-        this.componentUpdates.next(this.props)
-    }
-
-    public componentWillUnmount(): void {
-        this.subscriptions.unsubscribe()
-    }
-
-    public render(): JSX.Element | null {
-        if (this.state.dataOrError === LOADING) {
-            return null // loading
-        }
-        if (isErrorLike(this.state.dataOrError)) {
-            return (
-                <HeroPage
-                    icon={AlertCircleIcon}
-                    title="Error"
-                    subtitle={<ErrorMessage error={this.state.dataOrError} history={this.props.history} />}
-                />
-            )
-        }
-
-        let term: string
-        switch (this.props.subject.__typename) {
-            case 'User':
-                term = 'User'
-                break
-            case 'Org':
-                term = 'Organization'
-                break
-            case 'Site':
-                term = 'Global'
-                break
-            case 'DefaultSettings':
-                term = 'Default settings'
-                break
-            default:
-                term = 'Unknown'
-                break
-        }
-
-        const transferProps: SettingsAreaPageProps = {
-            data: this.state.dataOrError,
-            subject: this.props.subject,
-            authenticatedUser: this.props.authenticatedUser,
-            onUpdate: this.onUpdate,
-            isLightTheme: this.props.isLightTheme,
-            platformContext: this.props.platformContext,
-            settingsCascade: this.props.settingsCascade,
-        }
-
+    if (isErrorLike(dataOrError)) {
         return (
-            <div className={`h-100 d-flex flex-column ${this.props.className || ''}`}>
-                <h2>{term} settings</h2>
-                {this.props.extraHeader}
-                <Switch>
-                    {/* eslint-disable react/jsx-no-bind */}
-                    <Route
-                        path={this.props.match.url}
-                        key="hardcoded-key" // see https://github.com/ReactTraining/react-router/issues/4578#issuecomment-334489490
-                        exact={true}
-                        render={routeComponentProps => <SettingsPage {...routeComponentProps} {...transferProps} />}
-                    />
-                    <Route key="hardcoded-key" component={NotFoundPage} />
-                    {/* eslint-enable react/jsx-no-bind */}
-                </Switch>
-            </div>
+            <HeroPage
+                icon={AlertCircleIcon}
+                title="Error"
+                subtitle={<ErrorMessage error={dataOrError} history={props.history} />}
+            />
         )
     }
 
-    private onUpdate = (): void => this.refreshRequests.next()
-
-    private getMergedSettingsJSONSchema(cascade: Pick<GQL.ISettingsCascade, 'subjects'>): Observable<{ $id: string }> {
-        return queryConfiguredRegistryExtensions(
-            this.props.platformContext,
-            extensionIDsFromSettings(gqlToCascade(cascade))
-        ).pipe(
-            catchError(error => {
-                console.warn('Unable to get extension settings JSON Schemas for settings editor.', { error })
-                return [null]
-            }),
-            map(configuredExtensions => ({
-                $id: 'mergedSettings.schema.json#',
-                ...(configuredExtensions ? mergeSettingsSchemas(configuredExtensions) : null),
-            }))
-        )
+    let term: string
+    switch (props.subject.__typename) {
+        case 'User':
+            term = 'User'
+            break
+        case 'Org':
+            term = 'Organization'
+            break
+        case 'Site':
+            term = 'Global'
+            break
+        case 'DefaultSettings':
+            term = 'Default settings'
+            break
+        default:
+            term = 'Unknown'
+            break
     }
+
+    const transferProps: SettingsAreaPageProps = {
+        data: dataOrError,
+        subject: props.subject,
+        authenticatedUser: props.authenticatedUser,
+        onUpdate,
+        isLightTheme: props.isLightTheme,
+        platformContext: props.platformContext,
+        settingsCascade: props.settingsCascade,
+    }
+
+    return (
+        <div className={`h-100 d-flex flex-column ${props.className || ''}`}>
+            <h2>{term} settings</h2>
+            {props.extraHeader}
+            <Switch>
+                {/* eslint-disable react/jsx-no-bind */}
+                <Route
+                    path={props.match.url}
+                    key="hardcoded-key" // see https://github.com/ReactTraining/react-router/issues/4578#issuecomment-334489490
+                    exact={true}
+                    render={routeComponentProps => <SettingsPage {...routeComponentProps} {...transferProps} />}
+                />
+                <Route key="hardcoded-key" component={NotFoundPage} />
+                {/* eslint-enable react/jsx-no-bind */}
+            </Switch>
+        </div>
+    )
 }
 
 function fetchSettingsCascade(subject: GQL.ID): Observable<Pick<GQL.ISettingsCascade, 'subjects'>> {

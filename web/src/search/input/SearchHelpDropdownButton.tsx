@@ -1,7 +1,7 @@
 import ExternalLinkIcon from 'mdi-react/ExternalLinkIcon'
 import HelpCircleOutlineIcon from 'mdi-react/HelpCircleOutlineIcon'
 import React, { useCallback, useState } from 'react'
-import { DropdownItem, DropdownMenu, DropdownToggle, ButtonDropdown } from 'reactstrap'
+import Dropdown from 'react-bootstrap/Dropdown'
 
 /**
  * A dropdown button that shows a menu with reference documentation for Sourcegraph search query
@@ -12,21 +12,21 @@ export const SearchHelpDropdownButton: React.FunctionComponent = () => {
     const toggleIsOpen = useCallback(() => setIsOpen(!isOpen), [isOpen])
     const documentationUrlPrefix = window.context?.sourcegraphDotComMode ? 'https://docs.sourcegraph.com' : '/help'
     return (
-        <ButtonDropdown isOpen={isOpen} toggle={toggleIsOpen} className="d-flex">
-            <DropdownToggle
-                tag="span"
-                caret={false}
-                className="px-2 btn btn-link d-flex align-items-center cursor-pointer"
+        <Dropdown className="d-flex">
+            <Dropdown.Toggle
+                id="search-help-dropdown-button"
+                className="search-help-dropdown-button px-2 btn btn-link d-flex align-items-center cursor-pointer"
                 aria-label="Quick help for search"
+                variant="link"
             >
                 <HelpCircleOutlineIcon className="icon-inline small" aria-hidden="true" />
-            </DropdownToggle>
-            <DropdownMenu right={true} className="pb-0">
-                <DropdownItem header={true}>
+            </Dropdown.Toggle>
+            <Dropdown.Menu className="pb-0">
+                <Dropdown.Header>
                     <strong>Search reference</strong>
-                </DropdownItem>
-                <DropdownItem divider={true} />
-                <DropdownItem header={true}>Finding matches:</DropdownItem>
+                </Dropdown.Header>
+                <Dropdown.Divider />
+                <Dropdown.Header>Finding matches:</Dropdown.Header>
                 <ul className="list-unstyled px-2 mb-2">
                     <li>
                         <span className="text-muted small">Regexp:</span>{' '}
@@ -41,8 +41,8 @@ export const SearchHelpDropdownButton: React.FunctionComponent = () => {
                         </code>
                     </li>
                 </ul>
-                <DropdownItem divider={true} />
-                <DropdownItem header={true}>Common search keywords:</DropdownItem>
+                <Dropdown.Divider />
+                <Dropdown.Header>Common search keywords:</Dropdown.Header>
                 <ul className="list-unstyled px-2 mb-2">
                     <li>
                         <code>
@@ -67,8 +67,8 @@ export const SearchHelpDropdownButton: React.FunctionComponent = () => {
                         </code>
                     </li>
                 </ul>
-                <DropdownItem divider={true} />
-                <DropdownItem header={true}>Diff/commit search keywords:</DropdownItem>
+                <Dropdown.Divider />
+                <Dropdown.Header>Diff/commit search keywords:</Dropdown.Header>
                 <ul className="list-unstyled px-2 mb-2">
                     <li>
                         <code>type:diff</code> <em className="text-muted small">or</em> <code>type:commit</code>
@@ -90,7 +90,7 @@ export const SearchHelpDropdownButton: React.FunctionComponent = () => {
                         <span className="text-muted small">(all branches)</span>
                     </li>
                 </ul>
-                <DropdownItem divider={true} className="mb-0" />
+                <Dropdown.Divider className="mb-0" />
                 <a
                     // eslint-disable-next-line react/jsx-no-target-blank
                     target="_blank"
@@ -107,7 +107,7 @@ export const SearchHelpDropdownButton: React.FunctionComponent = () => {
                         repositories.
                     </div>
                 )}
-            </DropdownMenu>
-        </ButtonDropdown>
+            </Dropdown.Menu>
+        </Dropdown>
     )
 }

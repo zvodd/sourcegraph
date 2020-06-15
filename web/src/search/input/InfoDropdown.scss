@@ -11,4 +11,10 @@
     p {
         margin-bottom: 0;
     }
+
+    &__toggle {
+        &:after {
+            display: none;
+        }
+    }
 }

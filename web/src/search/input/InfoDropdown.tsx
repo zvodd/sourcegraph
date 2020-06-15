@@ -11,16 +11,12 @@ interface Props {
     examples?: QueryFieldExample[]
 }
 
-interface State {
-    isOpen: boolean
-}
-
 export const InfoDropdown: React.FunctionComponent<Props> = (props: Props) => (
     <Dropdown>
         <Dropdown.Toggle
             id="info-dropdown-toggle"
             variant="link"
-            className="pl-2 pr-0 btn btn-link d-flex align-items-center"
+            className="info-dropdown__toggle pl-2 pr-0 btn btn-link d-flex align-items-center"
         >
             <HelpCircleOutlineIcon className="icon-inline small" />
         </Dropdown.Toggle>

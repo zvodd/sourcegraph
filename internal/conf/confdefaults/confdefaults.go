@@ -18,6 +18,7 @@ import "github.com/sourcegraph/sourcegraph/internal/conf/conftypes"
 // Note: This actually generally only applies to 'go test' because we always
 // override this configuration via *_CONFIG_FILE environment variables.
 var DevAndTesting = conftypes.RawUnified{
+	Critical: `{}`,
 	Site: `{
 	"auth.providers": [
 		{
@@ -33,6 +34,7 @@ var DevAndTesting = conftypes.RawUnified{
 // DockerContainer is the default configuration applied to Docker
 // single-container instances of Sourcegraph.
 var DockerContainer = conftypes.RawUnified{
+	Critical: `{}`,
 	Site: `{
 	// The externally accessible URL for Sourcegraph (i.e., what you type into your browser)
 	// This is required to be configured for Sourcegraph to work correctly.
@@ -53,6 +55,7 @@ var DockerContainer = conftypes.RawUnified{
 // KubernetesOrDockerComposeOrPureDocker is the default configuration
 // applied to Kubernetes, Docker Compose, and pure Docker instances of Sourcegraph.
 var KubernetesOrDockerComposeOrPureDocker = conftypes.RawUnified{
+	Critical: `{}`,
 	Site: `{
 	// The externally accessible URL for Sourcegraph (i.e., what you type into your browser)
 	// This is required to be configured for Sourcegraph to work correctly.

@@ -127,7 +127,7 @@ func init() {
 			return []*Alert{
 				{
 					TypeValue:    AlertTypeError,
-					MessageValue: `Update [**site configuration**](/site-admin/configuration) to resolve problems: ` + err.Error(),
+					MessageValue: `Update [**critical configuration**](/help/admin/management_console) to resolve problems: ` + err.Error(),
 				},
 			}
 		}

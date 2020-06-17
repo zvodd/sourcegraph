@@ -51,14 +51,23 @@ func printConfigValidation() {
 func handleConfigOverrides() error {
 	ctx := context.Background()
 
+	overrideCriticalConfig := os.Getenv("CRITICAL_CONFIG_FILE")
 	overrideSiteConfig := os.Getenv("SITE_CONFIG_FILE")
 	overrideExtSvcConfig := os.Getenv("EXTSVC_CONFIG_FILE")
 	overrideGlobalSettings := os.Getenv("GLOBAL_SETTINGS_FILE")
-	overrideAny := overrideSiteConfig != "" || overrideExtSvcConfig != "" || overrideGlobalSettings != ""
+	overrideAny := overrideCriticalConfig != "" || overrideSiteConfig != "" || overrideExtSvcConfig != "" || overrideGlobalSettings != ""
 	if overrideAny || conf.IsDev(conf.DeployType()) {
 		raw, err := (&configurationSource{}).Read(ctx)
 		if err != nil {
 			return errors.Wrap(err, "reading existing config for applying overrides")
+		}
+
+		if overrideCriticalConfig != "" {
+			critical, err := ioutil.ReadFile(overrideCriticalConfig)
+			if err != nil {
+				return errors.Wrap(err, "reading CRITICAL_CONFIG_FILE")
+			}
+			raw.Critical = string(critical)
 		}
 
 		if overrideSiteConfig != "" {
@@ -69,10 +78,10 @@ func handleConfigOverrides() error {
 			raw.Site = string(site)
 		}
 
-		if overrideSiteConfig != "" {
+		if overrideCriticalConfig != "" || overrideSiteConfig != "" {
 			err := (&configurationSource{}).Write(ctx, raw)
 			if err != nil {
-				return errors.Wrap(err, "writing site config overrides to database")
+				return errors.Wrap(err, "writing critical/site config overrides to database")
 			}
 		}
 
@@ -103,7 +112,7 @@ func handleConfigOverrides() error {
 		if overrideExtSvcConfig != "" {
 			parsed, err := conf.ParseConfig(raw)
 			if err != nil {
-				return errors.Wrap(err, "parsing extsvc config")
+				return errors.Wrap(err, "parsing critical/site config")
 			}
 			confGet := func() *conf.Unified { return parsed }
 
@@ -205,21 +214,36 @@ func handleConfigOverrides() error {
 type configurationSource struct{}
 
 func (c configurationSource) Read(ctx context.Context) (conftypes.RawUnified, error) {
+	critical, err := confdb.CriticalGetLatest(ctx)
+	if err != nil {
+		return conftypes.RawUnified{}, errors.Wrap(err, "confdb.CriticalGetLatest")
+	}
 	site, err := confdb.SiteGetLatest(ctx)
 	if err != nil {
 		return conftypes.RawUnified{}, errors.Wrap(err, "confdb.SiteGetLatest")
 	}
 	return conftypes.RawUnified{
-		Site:               site.Contents,
+		Critical: critical.Contents,
+		Site:     site.Contents,
+
 		ServiceConnections: serviceConnections(),
 	}, nil
 }
 
 func (c configurationSource) Write(ctx context.Context, input conftypes.RawUnified) error {
 	// TODO(slimsag): future: pass lastID through for race prevention
+	critical, err := confdb.CriticalGetLatest(ctx)
+	if err != nil {
+		return errors.Wrap(err, "confdb.CriticalGetLatest")
+	}
 	site, err := confdb.SiteGetLatest(ctx)
 	if err != nil {
 		return errors.Wrap(err, "confdb.SiteGetLatest")
+	}
+
+	_, err = confdb.CriticalCreateIfUpToDate(ctx, &critical.ID, input.Critical)
+	if err != nil {
+		return errors.Wrap(err, "confdb.CriticalCreateIfUpToDate")
 	}
 	_, err = confdb.SiteCreateIfUpToDate(ctx, &site.ID, input.Site)
 	if err != nil {

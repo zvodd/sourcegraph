@@ -94,6 +94,9 @@ func (s *store) MaybeUpdate(rawConfig conftypes.RawUnified) (updateResult, error
 		New:     s.lastValid,
 	}
 
+	if rawConfig.Critical == "" {
+		return result, errors.New("invalid critical configuration (empty string)")
+	}
 	if rawConfig.Site == "" {
 		return result, errors.New("invalid site configuration (empty string)")
 	}

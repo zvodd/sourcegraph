@@ -20,6 +20,7 @@ import (
 // Unified represents the overall global Sourcegraph configuration from various
 // sources:
 //
+// - The critical configuration, from the database (from the management console).
 // - The site configuration, from the database (from the site-admin panel).
 // - Service connections, from the frontend (e.g. which gitservers to talk to).
 //
@@ -83,6 +84,7 @@ func initDefaultClient() *client {
 
 		// Seed the client store with an empty configuration.
 		_, err := clientStore.MaybeUpdate(conftypes.RawUnified{
+			Critical:           "{}",
 			Site:               "{}",
 			ServiceConnections: conftypes.ServiceConnections{},
 		})

@@ -28,6 +28,7 @@ import GitlabIcon from 'mdi-react/GitlabIcon'
 import BitbucketIcon from 'mdi-react/BitbucketIcon'
 import { RepogroupMetadata, RepositoryType, CodeHosts } from './types'
 import { SearchPageInput } from '../search/input/SearchPageInput'
+import { ReactGA } from 'react-ga'
 
 export interface RepogroupPageProps
     extends SettingsCascadeProps<Settings>,
@@ -61,6 +62,10 @@ export interface RepogroupPageProps
 
 export const RepogroupPage: React.FunctionComponent<RepogroupPageProps> = (props: RepogroupPageProps) => {
     useEffect(() => eventLogger.logViewEvent(`Repogroup:${props.repogroupMetadata.name}`))
+    useEffect(() => {
+        ReactGA.initialize('UA-40540747-20')
+        ReactGA.pageview(window.location.pathname + window.location.search)
+    })
 
     const repogroupQuery = `repogroup:${props.repogroupMetadata.name}`
 

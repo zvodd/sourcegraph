@@ -4,7 +4,7 @@ import * as H from 'history'
 import { isEqual } from 'lodash'
 import * as React from 'react'
 import { combineLatest, NEVER, Observable, of, Subject, Subscription } from 'rxjs'
-import { distinctUntilChanged, filter, map, switchMap } from 'rxjs/operators'
+import { distinctUntilChanged, filter, map, switchMap, tap } from 'rxjs/operators'
 import { ActionItemAction } from '../../../../shared/src/actions/ActionItem'
 import { DecorationMapByLine, groupDecorationsByLine } from '../../../../shared/src/api/client/services/decoration'
 import { HoverMerged } from '../../../../shared/src/api/client/types/hover'
@@ -88,15 +88,19 @@ export class FileDiffHunks extends React.Component<FileHunksProps, FileDiffHunks
         }
 
         if (this.props.extensionInfo) {
+            console.log('Hoverify!')
             this.subscriptions.add(
                 this.props.extensionInfo.hoverifier.hoverify({
                     dom: diffDomFunctions,
                     positionEvents: this.codeElements.pipe(
                         filter(isDefined),
-                        findPositionsFromEvents({ domFunctions: diffDomFunctions })
+                        tap(codeElement => console.log({ codeElement })),
+                        findPositionsFromEvents({ domFunctions: diffDomFunctions }),
+                        tap(position => console.log({ position }))
                     ),
                     positionJumps: NEVER, // TODO support diff URLs
                     resolveContext: hoveredToken => {
+                        console.log('Resolve context!')
                         // if part is undefined, it doesn't matter whether we chose head or base, the line stayed the same
                         const { repoName, revision, filePath, commitID } = this.props.extensionInfo![
                             hoveredToken.part || 'head'

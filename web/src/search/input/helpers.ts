@@ -31,6 +31,7 @@ export function convertPlainTextToInteractiveQuery(
                 member.token.filterValue &&
                 validateFilter(member.token.filterType.token.value, member.token.filterValue).valid
             ) {
+                // Add valid filters to filtersInQuery
                 const filterType = member.token.filterType.token.value as FilterType
                 newFiltersInQuery[isSingularFilter(filterType) ? filterType : uniqueId(filterType)] = {
                     type: isNegatedFilter(filterType) ? resolveNegatedFilter(filterType) : filterType,
@@ -38,17 +39,13 @@ export function convertPlainTextToInteractiveQuery(
                     editable: false,
                     negated: isNegatedFilter(filterType),
                 }
-            } else if (
-                member.token.type === 'literal' ||
-                member.token.type === 'quoted' ||
-                (member.token.type === 'filter' &&
-                    !validateFilter(member.token.filterType.token.value, member.token.filterValue).valid)
-            ) {
-                newNavbarQuery = [newNavbarQuery, query.slice(member.range.start, member.range.end)]
-                    .filter(query => query.length > 0)
-                    .join(' ')
+            } else {
+                // Add every other token (including whitespace) to newNavbarQuery
+                newNavbarQuery += query.slice(member.range.start, member.range.end)
             }
         }
+        // Deduplicate and trim all whitespace
+        newNavbarQuery = newNavbarQuery.replace(/\s+/g, ' ').trim()
     }
 
     return { filtersInQuery: newFiltersInQuery, navbarQuery: newNavbarQuery }

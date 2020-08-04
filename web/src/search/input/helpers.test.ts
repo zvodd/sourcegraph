@@ -64,5 +64,27 @@ describe('Search input helpers', () => {
                         }
             )
         })
+
+        test('preserves parentheses in query', () => {
+            const newQuery = convertPlainTextToInteractiveQuery('\\(\\) archived:no')
+            expect(
+                newQuery.navbarQuery === '\\(\\)' &&
+                    newQuery.filtersInQuery ===
+                        {
+                            case: {
+                                type: 'archived' as const,
+                                value: 'yes',
+                                editable: false,
+                                negated: false,
+                            },
+                            archived: {
+                                type: 'archived' as const,
+                                value: 'no',
+                                editable: false,
+                                negated: false,
+                            },
+                        }
+            )
+        })
     })
 })

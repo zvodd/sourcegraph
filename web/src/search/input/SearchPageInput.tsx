@@ -1,6 +1,7 @@
 import * as H from 'history'
 import * as GQL from '../../../../shared/src/graphql/schema'
-import React, { useState, useCallback } from 'react'
+import * as Monaco from 'monaco-editor'
+import React, { useState, useCallback, useEffect } from 'react'
 import { InteractiveModeInput } from './interactive/InteractiveModeInput'
 import { Form } from 'reactstrap'
 import { SearchModeToggle } from './interactive/SearchModeToggle'
@@ -61,6 +62,8 @@ interface Props
     /** A query fragment to appear at the beginning of the input. */
     queryPrefix?: string
     autoFocus?: boolean
+    endFirstStep?: (editor: Monaco.editor.IStandaloneCodeEditor) => void
+    endSecondStep?: () => void
 
     // For NavLinks
     authRequired?: boolean
@@ -73,6 +76,10 @@ export const SearchPageInput: React.FunctionComponent<Props> = (props: Props) =>
         query: props.queryPrefix ? props.queryPrefix : '',
         cursorPosition: props.queryPrefix ? props.queryPrefix.length : 0,
     })
+
+    useEffect(() => {
+        setUserQueryState({ query: props.queryPrefix || '', cursorPosition: props.queryPrefix?.length || 0 })
+    }, [props.queryPrefix])
 
     const quickLinks =
         (isSettingsValid<Settings>(props.settingsCascade) && props.settingsCascade.final.quicklinks) || []
@@ -101,7 +108,11 @@ export const SearchPageInput: React.FunctionComponent<Props> = (props: Props) =>
                 />
             ) : (
                 <>
-                    <Form className="flex-grow-1 flex-shrink-past-contents" onSubmit={onSubmit}>
+                    <Form
+                        className="flex-grow-1 flex-shrink-past-contents"
+                        onSubmit={onSubmit}
+                        onChange={props.endFirstStep}
+                    >
                         <div className="search-page__input-container">
                             {props.splitSearchModes && (
                                 <SearchModeToggle {...props} interactiveSearchMode={props.interactiveSearchMode} />

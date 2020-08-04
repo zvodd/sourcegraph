@@ -1,5 +1,6 @@
 import * as H from 'history'
-import React, { useEffect, useMemo } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
+import * as Monaco from 'monaco-editor'
 import {
     PatternTypeProps,
     InteractiveSearchProps,
@@ -32,6 +33,8 @@ import { repogroupList, homepageLanguageList } from '../../repogroups/HomepageCo
 import { SearchPageInput } from './SearchPageInput'
 import { KeyboardShortcutsProps } from '../../keyboardShortcuts/keyboardShortcuts'
 import { PrivateCodeCta } from './PrivateCodeCta'
+import { searchOnboardingTour } from './SearchOnboardingTour'
+import { isEqual } from 'lodash'
 
 interface Props
     extends SettingsCascadeProps<Settings>,
@@ -68,10 +71,95 @@ const SearchExampleClicked = (url: string) => (): void => eventLogger.log('Examp
 const LanguageExampleClicked = (language: string) => (): void =>
     eventLogger.log('ExampleLanguageSearchClicked', { language })
 
+function endFirstStep(editor: Monaco.editor.IStandaloneCodeEditor): void {
+    // if (isEqual(searchOnboardingTour.getCurrentStep(), searchOnboardingTour.getById('step-2'))) {
+    //     searchOnboardingTour.hide()
+    // }
+    // editor.trigger('endingFirstStep', 'editor.action.triggerSuggest', [])
+    searchOnboardingTour.next()
+}
+
+function endSecondStep(): void {
+    if (
+        isEqual(searchOnboardingTour.getCurrentStep(), searchOnboardingTour.getById('step-2')) &&
+        searchOnboardingTour.getCurrentStep()?.isOpen()
+    ) {
+        searchOnboardingTour.next()
+    }
+}
 /**
  * The search page
  */
 export const SearchPage: React.FunctionComponent<Props> = props => {
+    const [queryPrefix, setQueryPrefix] = useState('')
+
+    const onboardingTour = searchOnboardingTour.addSteps([
+        {
+            id: 'step-1',
+
+            text: '<h3>Code search tour</h3><div>How would you like to begin?</div>',
+            attachTo: {
+                element: '.search-page__search-container',
+                on: 'bottom',
+            },
+            classes: 'example-step-extra-class',
+            buttons: [
+                {
+                    text: 'Search a language',
+                    action: () => {
+                        setQueryPrefix('lang:')
+                        // onboardingTour.next()
+                        // console.log(searchOnboardingTour.getCurrentStep())
+                    },
+                },
+            ],
+        },
+        {
+            id: 'step-2',
+
+            text: '<h3>Type to filter the language autocomplete</div>',
+            attachTo: {
+                element: '.search-page__search-container',
+                on: 'bottom',
+            },
+        },
+        {
+            id: 'step-3',
+            text:
+                '<h3>Add code to your search></h3><div>Type the name of a function, variable or other code. Or try an example:',
+            attachTo: {
+                element: '.search-page__search-container',
+                on: 'bottom',
+            },
+            buttons: [
+                {
+                    text: 'Search a language',
+                    action: () => {
+                        setQueryPrefix('lang:')
+                    },
+                },
+            ],
+        },
+        {
+            id: 'step-4',
+            text: "<h3>Use the 'return' key or the search button to run your search</h3>",
+            attachTo: {
+                element: '.search-page__search-container',
+                on: 'bottom',
+            },
+            buttons: [
+                {
+                    text: 'Search a language',
+                    action: () => {
+                        setQueryPrefix('lang:')
+                    },
+                },
+            ],
+        },
+    ])
+
+    useMemo(() => onboardingTour.start(), [onboardingTour])
+
     useEffect(() => eventLogger.logViewEvent('Home'))
 
     const codeInsightsEnabled =
@@ -100,7 +188,13 @@ export const SearchPage: React.FunctionComponent<Props> = props => {
                     'search-page__search-container--with-repogroups': props.isSourcegraphDotCom,
                 })}
             >
-                <SearchPageInput {...props} source="home" />
+                <SearchPageInput
+                    {...props}
+                    queryPrefix={queryPrefix}
+                    endFirstStep={endFirstStep}
+                    endSecondStep={endSecondStep}
+                    source="home"
+                />
                 {views && <ViewGrid {...props} className="mt-5" views={views} />}
             </div>
             {props.isSourcegraphDotCom && props.showRepogroupHomepage && (

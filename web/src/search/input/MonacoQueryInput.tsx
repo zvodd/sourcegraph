@@ -31,6 +31,8 @@ export interface MonacoQueryInputProps
     onSubmit: () => void
     autoFocus?: boolean
     keyboardShortcutForFocus?: KeyboardShortcut
+    endFirstStep?: (editor: Monaco.editor.IStandaloneCodeEditor) => void
+    endSecondStep?: () => void
 
     // Whether globbing is enabled for filters.
     globbing: boolean
@@ -231,7 +233,15 @@ export class MonacoQueryInput extends React.PureComponent<MonacoQueryInputProps>
         )
     }
 
-    private onChange = (query: string): void => {
+    private onChange = (editor: Monaco.editor.IStandaloneCodeEditor, query: string): void => {
+        if (this.props.endFirstStep) {
+            this.props.endFirstStep(editor)
+        }
+
+        if (this.props.endSecondStep && query !== 'lang:') {
+            this.props.endSecondStep()
+        }
+
         // Cursor position is irrelevant for the Monaco query input.
         this.props.onChange({ query, cursorPosition: 0, fromUserInput: true })
     }
@@ -286,7 +296,7 @@ export class MonacoQueryInput extends React.PureComponent<MonacoQueryInputProps>
         this.subscriptions.add(
             toUnsubscribable(
                 editor.onDidChangeModelContent(() => {
-                    this.onChange(editor.getValue().replace(/[\n\r↵]/g, ''))
+                    this.onChange(editor, editor.getValue().replace(/[\n\r↵]/g, ''))
                 })
             )
         )

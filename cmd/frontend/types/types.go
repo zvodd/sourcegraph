@@ -32,6 +32,12 @@ type RepoFields struct {
 
 	// Cloned is whether this repository is cloned.
 	Cloned bool
+
+	// The codehost repository source json blobs.
+	Sources string
+
+	// Metadata is the collection of metadata fields provided by the code host.
+	Metadata string
 }
 
 // Repo represents a source code repository.

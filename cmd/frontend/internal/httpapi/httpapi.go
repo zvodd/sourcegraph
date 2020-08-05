@@ -92,6 +92,7 @@ func NewInternalHandler(m *mux.Router, schema *graphql.Schema, newCodeIntelUploa
 
 	m.Get(apirouter.ExternalServiceConfigs).Handler(trace.TraceRoute(handler(serveExternalServiceConfigs)))
 	m.Get(apirouter.ExternalServicesList).Handler(trace.TraceRoute(handler(serveExternalServicesList)))
+	m.Get(apirouter.ExternalServicesUpsert).Handler(trace.TraceRoute(handler(serveExternalServicesUpsert)))
 	m.Get(apirouter.PhabricatorRepoCreate).Handler(trace.TraceRoute(handler(servePhabricatorRepoCreate)))
 	reposList := &reposListServer{
 		SourcegraphDotComMode: envvar.SourcegraphDotComMode(),

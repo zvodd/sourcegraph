@@ -121,6 +121,24 @@ func serveExternalServicesList(w http.ResponseWriter, r *http.Request) error {
 	return json.NewEncoder(w).Encode(services)
 }
 
+func serveExternalServicesUpsert(w http.ResponseWriter, r *http.Request) error {
+	var req api.ExternalServicesUpsertRequest
+	err := json.NewDecoder(r.Body).Decode(&req)
+	if err != nil {
+		return err
+	}
+
+	services, err := db.ExternalServices.List(r.Context(), db.ExternalServicesListOptions{
+		IDs:     req.IDs,
+		RepoIDs: req.RepoIDs,
+		Kinds:   req.Kinds,
+	})
+	if err != nil {
+		return err
+	}
+	return json.NewEncoder(w).Encode(services)
+}
+
 func serveConfiguration(w http.ResponseWriter, r *http.Request) error {
 	raw, err := globals.ConfigurationServerFrontendOnly.Source.Read(r.Context())
 	if err != nil {

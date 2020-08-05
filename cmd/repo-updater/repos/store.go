@@ -123,7 +123,21 @@ func (s frontendClientStore) ListExternalServices(ctx context.Context, args Stor
 }
 
 func (s frontendClientStore) UpsertExternalServices(ctx context.Context, svcs ...*ExternalService) error {
-	return nil
+	apiSvcs := make([]*api.ExternalService, 0, len(svcs))
+	for _, svc := range svcs {
+		apiSvcs = append(apiSvcs, &api.ExternalService{
+			ID:          svc.ID,
+			Kind:        svc.Kind,
+			DisplayName: svc.DisplayName,
+			Config:      svc.Config,
+			CreatedAt:   svc.CreatedAt,
+			UpdatedAt:   svc.UpdatedAt,
+			DeletedAt:   svc.DeletedAt,
+		})
+	}
+	return api.InternalClient.ExternalServicesUpsert(ctx, api.ExternalServicesUpsertRequest{
+		Services: apiSvcs,
+	})
 }
 
 // DBStore implements the Store interface for reading and writing repos directly

@@ -51,6 +51,7 @@ const (
 	SearchConfiguration    = "internal.search-configuration"
 	ExternalServiceConfigs = "internal.external-services.configs"
 	ExternalServicesList   = "internal.external-services.list"
+	ExternalServicesUpsert = "internal.external-services.upsert"
 )
 
 // New creates a new API router with route URL pattern definitions but
@@ -111,6 +112,7 @@ func NewInternal(base *mux.Router) *mux.Router {
 	base.Path("/phabricator/repo-create").Methods("POST").Name(PhabricatorRepoCreate)
 	base.Path("/external-services/configs").Methods("POST").Name(ExternalServiceConfigs)
 	base.Path("/external-services/list").Methods("POST").Name(ExternalServicesList)
+	base.Path("/external-services/upsert").Methods("POST").Name(ExternalServicesUpsert)
 	base.Path("/repos/inventory-uncached").Methods("POST").Name(ReposInventoryUncached)
 	base.Path("/repos/inventory").Methods("POST").Name(ReposInventory)
 	base.Path("/repos/list").Methods("POST").Name(ReposList)

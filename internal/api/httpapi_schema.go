@@ -51,3 +51,7 @@ type ExternalServicesListRequest struct {
 	// Kinds of external services to list. When zero-valued, this is omitted from the predicate set.
 	Kinds []string
 }
+
+type ExternalServicesUpsertRequest struct {
+	Services []*ExternalService
+}

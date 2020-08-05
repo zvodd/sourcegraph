@@ -404,6 +404,72 @@ func (e externalServiceNotFoundError) NotFound() bool {
 	return true
 }
 
+// Upsert the svcs.
+//
+// 🚨 SECURITY: The caller must ensure that the actor is a site admin.
+func (*ExternalServicesStore) Upsert(ctx context.Context, svcs ...*types.ExternalService) error {
+	if len(svcs) == 0 {
+		return nil
+	}
+
+	q := upsertExternalServicesQuery(svcs)
+	_, err := dbconn.Global.ExecContext(ctx, q.Query(sqlf.PostgresBindVar), q.Args()...)
+	return err
+}
+
+func upsertExternalServicesQuery(svcs []*types.ExternalService) *sqlf.Query {
+	vals := make([]*sqlf.Query, 0, len(svcs))
+	for _, s := range svcs {
+		var deletedAt *time.Time
+		if s.DeletedAt != nil {
+			t := s.DeletedAt.UTC()
+			deletedAt = &t
+		}
+		vals = append(vals, sqlf.Sprintf(
+			upsertExternalServicesQueryValueFmtstr,
+			s.ID,
+			s.Kind,
+			s.DisplayName,
+			s.Config,
+			s.CreatedAt.UTC(),
+			s.UpdatedAt.UTC(),
+			deletedAt,
+		))
+	}
+
+	return sqlf.Sprintf(
+		upsertExternalServicesQueryFmtstr,
+		sqlf.Join(vals, ",\n"),
+	)
+}
+
+const upsertExternalServicesQueryValueFmtstr = `
+  (COALESCE(NULLIF(%s, 0), (SELECT nextval('external_services_id_seq'))), UPPER(%s), %s, %s, %s, %s, %s)
+`
+
+const upsertExternalServicesQueryFmtstr = `
+-- source: cmd/repo-updater/repos/store.go:DBStore.UpsertExternalServices
+INSERT INTO external_services (
+  id,
+  kind,
+  display_name,
+  config,
+  created_at,
+  updated_at,
+  deleted_at
+)
+VALUES %s
+ON CONFLICT(id) DO UPDATE
+SET
+  kind         = UPPER(excluded.kind),
+  display_name = excluded.display_name,
+  config       = excluded.config,
+  created_at   = excluded.created_at,
+  updated_at   = excluded.updated_at,
+  deleted_at   = excluded.deleted_at
+RETURNING *
+`
+
 // Delete deletes an external service.
 //
 // 🚨 SECURITY: The caller must ensure that the actor is a site admin.

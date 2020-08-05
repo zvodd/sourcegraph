@@ -14,6 +14,7 @@ import (
 	"github.com/keegancsmith/sqlf"
 	"github.com/pkg/errors"
 	"github.com/sourcegraph/sourcegraph/cmd/frontend/types"
+	"github.com/sourcegraph/sourcegraph/internal/api"
 	"github.com/sourcegraph/sourcegraph/internal/conf"
 	"github.com/sourcegraph/sourcegraph/internal/db/dbconn"
 	"github.com/sourcegraph/sourcegraph/internal/db/dbutil"
@@ -57,20 +58,56 @@ type ExternalServiceKind struct {
 
 // ExternalServicesListOptions contains options for listing external services.
 type ExternalServicesListOptions struct {
+	// IDs of external services to list. When zero-valued, this is omitted from the predicate set.
+	IDs []int64
+	// RepoIDs that the listed external services own.
+	RepoIDs []api.RepoID
+	// Kinds of external services to list. When zero-valued, this is omitted from the predicate set.
 	Kinds []string
+
 	*LimitOffset
 }
 
-func (o ExternalServicesListOptions) sqlConditions() []*sqlf.Query {
-	conds := []*sqlf.Query{sqlf.Sprintf("deleted_at IS NULL")}
-	if len(o.Kinds) > 0 {
-		kinds := make([]*sqlf.Query, 0, len(o.Kinds))
-		for _, kind := range o.Kinds {
-			kinds = append(kinds, sqlf.Sprintf("%s", kind))
+const listRepoExternalServiceIDsSubquery = `
+SELECT DISTINCT(split_part(jsonb_object_keys(sources), ':', 3)::bigint) repo_external_service_ids
+FROM repo
+WHERE id IN (%s)
+`
+
+func (o *ExternalServicesListOptions) sqlConditions() []*sqlf.Query {
+	preds := []*sqlf.Query{sqlf.Sprintf("deleted_at IS NULL")}
+
+	if len(o.IDs) > 0 {
+		ids := make([]*sqlf.Query, 0, len(o.IDs))
+		for _, id := range o.IDs {
+			if id != 0 {
+				ids = append(ids, sqlf.Sprintf("%d", id))
+			}
 		}
-		conds = append(conds, sqlf.Sprintf("kind IN (%s)", sqlf.Join(kinds, ",")))
+		preds = append(preds, sqlf.Sprintf("id IN (%s)", sqlf.Join(ids, ",")))
+	} else if len(o.RepoIDs) > 0 {
+		ids := make([]*sqlf.Query, 0, len(o.RepoIDs))
+		for _, id := range o.RepoIDs {
+			if id != 0 {
+				ids = append(ids, sqlf.Sprintf("%d", id))
+			}
+		}
+		preds = append(preds, sqlf.Sprintf(
+			"id IN ("+listRepoExternalServiceIDsSubquery+")",
+			sqlf.Join(ids, ","),
+		))
 	}
-	return conds
+
+	if len(o.Kinds) > 0 {
+		ks := make([]*sqlf.Query, 0, len(o.Kinds))
+		for _, kind := range o.Kinds {
+			ks = append(ks, sqlf.Sprintf("%s", strings.ToLower(kind)))
+		}
+		preds = append(preds,
+			sqlf.Sprintf("LOWER(kind) IN (%s)", sqlf.Join(ks, ",")))
+	}
+
+	return preds
 }
 
 // ValidateConfig validates the given external service configuration.

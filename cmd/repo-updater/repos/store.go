@@ -87,6 +87,45 @@ type TxStore interface {
 	Done(...*error)
 }
 
+type frontendClientStore struct {
+}
+
+func (s frontendClientStore) ListExternalServices(ctx context.Context, args StoreListExternalServicesArgs) ([]*ExternalService, error) {
+	apiSvcs, err := api.InternalClient.ExternalServicesList(ctx, api.ExternalServicesListRequest{
+		IDs:     args.IDs,
+		RepoIDs: args.RepoIDs,
+		Kinds:   args.Kinds,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	svcs := make([]*ExternalService, 0, len(apiSvcs))
+	for _, svc := range apiSvcs {
+		// HACK(tsenart): The syncer and all other places that load all external
+		// services do not want phabricator instances. These are handled separately
+		// by RunPhabricatorRepositorySyncWorker.
+		if svc.Kind == extsvc.KindPhabricator {
+			continue
+		}
+
+		svcs = append(svcs, &ExternalService{
+			ID:          svc.ID,
+			Kind:        svc.Kind,
+			DisplayName: svc.DisplayName,
+			Config:      svc.Config,
+			CreatedAt:   svc.CreatedAt,
+			UpdatedAt:   svc.UpdatedAt,
+		})
+	}
+
+	return svcs, err
+}
+
+func (s frontendClientStore) UpsertExternalServices(ctx context.Context, svcs ...*ExternalService) error {
+	return nil
+}
+
 // DBStore implements the Store interface for reading and writing repos directly
 // from the Postgres database.
 type DBStore struct {

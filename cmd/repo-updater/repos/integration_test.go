@@ -29,7 +29,7 @@ func TestIntegration(t *testing.T) {
 
 	db := dbtest.NewDB(t, *dsn)
 
-	dbstore := repos.NewDBStore(db, sql.TxOptions{
+	dbstore := repos.NewStore(db, sql.TxOptions{
 		Isolation: sql.LevelSerializable,
 	})
 
@@ -48,9 +48,6 @@ func TestIntegration(t *testing.T) {
 		test func(*testing.T)
 	}{
 		{"DBStore/Transact", testDBStoreTransact(dbstore)},
-		{"DBStore/ListExternalServices", testStoreListExternalServices(store)},
-		{"DBStore/ListExternalServices/ByRepo", testStoreListExternalServicesByRepos(store)},
-		{"DBStore/UpsertExternalServices", testStoreUpsertExternalServices(store)},
 		{"DBStore/UpsertRepos", testStoreUpsertRepos(store)},
 		{"DBStore/ListRepos", testStoreListRepos(store)},
 		{"DBStore/ListRepos/Pagination", testStoreListReposPagination(store)},

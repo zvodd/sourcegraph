@@ -125,6 +125,10 @@ func (s frontendClientStore) ListExternalServices(ctx context.Context, args Stor
 func (s frontendClientStore) UpsertExternalServices(ctx context.Context, svcs ...*ExternalService) error {
 	apiSvcs := make([]*api.ExternalService, 0, len(svcs))
 	for _, svc := range svcs {
+		var deletedAt *time.Time
+		if !svc.DeletedAt.IsZero() {
+			deletedAt = &svc.DeletedAt
+		}
 		apiSvcs = append(apiSvcs, &api.ExternalService{
 			ID:          svc.ID,
 			Kind:        svc.Kind,
@@ -132,7 +136,7 @@ func (s frontendClientStore) UpsertExternalServices(ctx context.Context, svcs ..
 			Config:      svc.Config,
 			CreatedAt:   svc.CreatedAt,
 			UpdatedAt:   svc.UpdatedAt,
-			DeletedAt:   svc.DeletedAt,
+			DeletedAt:   deletedAt,
 		})
 	}
 	return api.InternalClient.ExternalServicesUpsert(ctx, api.ExternalServicesUpsertRequest{
@@ -147,8 +151,8 @@ type DBStore struct {
 	txOpts sql.TxOptions
 }
 
-// NewDBStore instantiates and returns a new DBStore with prepared statements.
-func NewDBStore(db dbutil.DB, txOpts sql.TxOptions) *DBStore {
+// NewStore instantiates and returns a new DBStore with prepared statements.
+func NewStore(db dbutil.DB, txOpts sql.TxOptions) *DBStore {
 	return &DBStore{db: db, txOpts: txOpts}
 }
 
@@ -195,164 +199,6 @@ func (s *DBStore) Done(errs ...*error) {
 		_ = tx.Commit()
 	}
 }
-
-// ListExternalServices lists all stored external services matching the given args.
-func (s DBStore) ListExternalServices(ctx context.Context, args StoreListExternalServicesArgs) (svcs []*ExternalService, _ error) {
-	return svcs, s.paginate(ctx, 0, 500, listExternalServicesQuery(args),
-		func(sc scanner) (last, count int64, err error) {
-			var svc ExternalService
-			err = scanExternalService(&svc, sc)
-			if err != nil {
-				return 0, 0, err
-			}
-			svcs = append(svcs, &svc)
-			return svc.ID, 1, nil
-		},
-	)
-}
-
-const listExternalServicesQueryFmtstr = `
--- source: cmd/repo-updater/repos/store.go:DBStore.ListExternalServices
-SELECT
-  id,
-  kind,
-  display_name,
-  config,
-  created_at,
-  updated_at,
-  deleted_at
-FROM external_services
-WHERE id > %s
-AND %s
-ORDER BY id ASC LIMIT %s
-`
-
-const listRepoExternalServiceIDsSubquery = `
-SELECT DISTINCT(split_part(jsonb_object_keys(sources), ':', 3)::bigint) repo_external_service_ids
-FROM repo
-WHERE id IN (%s)
-`
-
-func listExternalServicesQuery(args StoreListExternalServicesArgs) paginatedQuery {
-	var preds []*sqlf.Query
-
-	if len(args.IDs) > 0 {
-		ids := make([]*sqlf.Query, 0, len(args.IDs))
-		for _, id := range args.IDs {
-			if id != 0 {
-				ids = append(ids, sqlf.Sprintf("%d", id))
-			}
-		}
-		preds = append(preds, sqlf.Sprintf("id IN (%s)", sqlf.Join(ids, ",")))
-	} else if len(args.RepoIDs) > 0 {
-		ids := make([]*sqlf.Query, 0, len(args.RepoIDs))
-		for _, id := range args.RepoIDs {
-			if id != 0 {
-				ids = append(ids, sqlf.Sprintf("%d", id))
-			}
-		}
-		preds = append(preds, sqlf.Sprintf(
-			"id IN ("+listRepoExternalServiceIDsSubquery+")",
-			sqlf.Join(ids, ","),
-		))
-	}
-
-	if len(args.Kinds) > 0 {
-		ks := make([]*sqlf.Query, 0, len(args.Kinds))
-		for _, kind := range args.Kinds {
-			ks = append(ks, sqlf.Sprintf("%s", strings.ToLower(kind)))
-		}
-		preds = append(preds,
-			sqlf.Sprintf("LOWER(kind) IN (%s)", sqlf.Join(ks, ",")))
-	} else {
-		// HACK(tsenart): The syncer and all other places that load all external
-		// services do not want phabricator instances. These are handled separately
-		// by RunPhabricatorRepositorySyncWorker.
-		preds = append(preds,
-			sqlf.Sprintf("LOWER(kind) != 'phabricator'"))
-	}
-
-	preds = append(preds, sqlf.Sprintf("deleted_at IS NULL"))
-
-	return func(cursor, limit int64) *sqlf.Query {
-		return sqlf.Sprintf(
-			listExternalServicesQueryFmtstr,
-			cursor,
-			sqlf.Join(preds, "\n AND "),
-			limit,
-		)
-	}
-}
-
-// UpsertExternalServices updates or inserts the given ExternalServices.
-func (s DBStore) UpsertExternalServices(ctx context.Context, svcs ...*ExternalService) error {
-	if len(svcs) == 0 {
-		return nil
-	}
-
-	q := upsertExternalServicesQuery(svcs)
-	rows, err := s.db.QueryContext(ctx, q.Query(sqlf.PostgresBindVar), q.Args()...)
-	if err != nil {
-		return err
-	}
-
-	i := -1
-	_, _, err = scanAll(rows, func(sc scanner) (last, count int64, err error) {
-		i++
-		err = scanExternalService(svcs[i], sc)
-		return int64(svcs[i].ID), 1, err
-	})
-
-	return err
-}
-
-func upsertExternalServicesQuery(svcs []*ExternalService) *sqlf.Query {
-	vals := make([]*sqlf.Query, 0, len(svcs))
-	for _, s := range svcs {
-		vals = append(vals, sqlf.Sprintf(
-			upsertExternalServicesQueryValueFmtstr,
-			s.ID,
-			s.Kind,
-			s.DisplayName,
-			s.Config,
-			s.CreatedAt.UTC(),
-			s.UpdatedAt.UTC(),
-			nullTimeColumn(s.DeletedAt.UTC()),
-		))
-	}
-
-	return sqlf.Sprintf(
-		upsertExternalServicesQueryFmtstr,
-		sqlf.Join(vals, ",\n"),
-	)
-}
-
-const upsertExternalServicesQueryValueFmtstr = `
-  (COALESCE(NULLIF(%s, 0), (SELECT nextval('external_services_id_seq'))), UPPER(%s), %s, %s, %s, %s, %s)
-`
-
-const upsertExternalServicesQueryFmtstr = `
--- source: cmd/repo-updater/repos/store.go:DBStore.UpsertExternalServices
-INSERT INTO external_services (
-  id,
-  kind,
-  display_name,
-  config,
-  created_at,
-  updated_at,
-  deleted_at
-)
-VALUES %s
-ON CONFLICT(id) DO UPDATE
-SET
-  kind         = UPPER(excluded.kind),
-  display_name = excluded.display_name,
-  config       = excluded.config,
-  created_at   = excluded.created_at,
-  updated_at   = excluded.updated_at,
-  deleted_at   = excluded.deleted_at
-RETURNING *
-`
 
 // ListRepos lists all stored repos that match the given arguments.
 func (s DBStore) ListRepos(ctx context.Context, args StoreListReposArgs) (repos []*Repo, _ error) {

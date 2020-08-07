@@ -35,6 +35,7 @@ import { KeyboardShortcutsProps } from '../../keyboardShortcuts/keyboardShortcut
 import { PrivateCodeCta } from './PrivateCodeCta'
 import { searchOnboardingTour } from './SearchOnboardingTour'
 import { isEqual } from 'lodash'
+import { generateLangsList } from './MonacoQueryInput'
 
 interface Props
     extends SettingsCascadeProps<Settings>,
@@ -71,51 +72,94 @@ const SearchExampleClicked = (url: string) => (): void => eventLogger.log('Examp
 const LanguageExampleClicked = (language: string) => (): void =>
     eventLogger.log('ExampleLanguageSearchClicked', { language })
 
-function endFirstStep(editor: Monaco.editor.IStandaloneCodeEditor): void {
-    // if (isEqual(searchOnboardingTour.getCurrentStep(), searchOnboardingTour.getById('step-2'))) {
-    //     searchOnboardingTour.hide()
-    // }
-    // editor.trigger('endingFirstStep', 'editor.action.triggerSuggest', [])
-    searchOnboardingTour.next()
-}
-
-function endSecondStep(): void {
+function endFirstStep(): void {
     if (
-        isEqual(searchOnboardingTour.getCurrentStep(), searchOnboardingTour.getById('step-2')) &&
+        isEqual(searchOnboardingTour.getCurrentStep(), searchOnboardingTour.getById('step-1')) &&
         searchOnboardingTour.getCurrentStep()?.isOpen()
     ) {
         searchOnboardingTour.next()
+        // focus search bar
     }
 }
+
 /**
  * The search page
  */
 export const SearchPage: React.FunctionComponent<Props> = props => {
     const [queryPrefix, setQueryPrefix] = useState('')
 
+    // const step3OnClick = (example: string): void => {
+    //     setQueryPrefix(queryPrefix + example)
+    // }
+    function generateStep1(): HTMLElement {
+        const element = document.createElement('div')
+        const title = document.createElement('h3')
+        title.textContent = 'Code search tour'
+        const description = document.createElement('div')
+        description.textContent = 'How would you like to begin?'
+        const languageButton = document.createElement('button')
+        languageButton.className = 'btn btn-link'
+        languageButton.textContent = 'Search a language'
+        languageButton.addEventListener('click', () => setQueryPrefix('lang:'))
+        const repositoryButton = document.createElement('button')
+        repositoryButton.className = 'btn btn-link'
+        repositoryButton.textContent = 'Search a repository'
+        repositoryButton.addEventListener('click', () => setQueryPrefix('repo:'))
+        element.append(title)
+        element.append(description)
+        element.append(languageButton)
+        element.append(repositoryButton)
+        return element
+    }
+
+    function generateStep3(query: string): HTMLElement {
+        const langsList = generateLangsList()
+        let example = ''
+        if (Object.keys(langsList).includes(query)) {
+            example = langsList[query]
+        }
+        const element = document.createElement('div')
+        const title = document.createElement('h3')
+        title.textContent = 'Add code to your search'
+        const description = document.createElement('div')
+        description.textContent = 'Type the name of a function, variable or other code. Or try an example:'
+        const examplebutton = document.createElement('button')
+        examplebutton.className = 'btn btn-link'
+        examplebutton.textContent = example
+        examplebutton.addEventListener('click', () => {
+            setQueryPrefix([query, example].join(' '))
+            searchOnboardingTour.next()
+        })
+        element.append(title)
+        element.append(description)
+        element.append(examplebutton)
+        return element
+    }
+
+    function endSecondStep(query: string): void {
+        if (
+            isEqual(searchOnboardingTour.getCurrentStep(), searchOnboardingTour.getById('step-2')) &&
+            searchOnboardingTour.getCurrentStep()?.isOpen()
+        ) {
+            searchOnboardingTour.next()
+            searchOnboardingTour.getById('step-3').updateStepOptions({ text: generateStep3(query) })
+            // focus search bar
+        }
+    }
+
     const onboardingTour = searchOnboardingTour.addSteps([
         {
             id: 'step-1',
 
-            text: '<h3>Code search tour</h3><div>How would you like to begin?</div>',
+            text: generateStep1(),
             attachTo: {
                 element: '.search-page__search-container',
                 on: 'bottom',
             },
             classes: 'example-step-extra-class',
-            buttons: [
-                {
-                    text: 'Search a language',
-                    action: () => {
-                        setQueryPrefix('lang:')
-                        // onboardingTour.next()
-                        // console.log(searchOnboardingTour.getCurrentStep())
-                    },
-                },
-            ],
         },
         {
-            id: 'step-2',
+            id: 'step-2-lang',
 
             text: '<h3>Type to filter the language autocomplete</div>',
             attachTo: {
@@ -124,41 +168,50 @@ export const SearchPage: React.FunctionComponent<Props> = props => {
             },
         },
         {
-            id: 'step-3',
-            text:
-                '<h3>Add code to your search></h3><div>Type the name of a function, variable or other code. Or try an example:',
+            id: 'step-2-repo',
+            text: "Type the name of a repository you've used recently to filter the autocomplete list",
             attachTo: {
                 element: '.search-page__search-container',
                 on: 'bottom',
             },
-            buttons: [
-                {
-                    text: 'Search a language',
-                    action: () => {
-                        setQueryPrefix('lang:')
-                    },
-                },
-            ],
+        },
+        {
+            id: 'step-3',
+            attachTo: {
+                element: '.search-page__search-container',
+                on: 'bottom',
+            },
+        },
+        {
+            id: 'step-3-repo',
+            text: '<h3>Add code to your search</h3><div>Type the name of a function, variable, or other code.</div>',
+            attachTo: {
+                element: '.search-page__search-container',
+                on: 'bottom',
+            },
+        },
+        {
+            id: 'step-4-repo',
+            text: 'Review the search reference',
+            attachTo: {
+                element: '.search-page__search-container',
+                on: 'bottom',
+            },
         },
         {
             id: 'step-4',
             text: "<h3>Use the 'return' key or the search button to run your search</h3>",
             attachTo: {
-                element: '.search-page__search-container',
+                element: '.search-button',
                 on: 'bottom',
             },
-            buttons: [
-                {
-                    text: 'Search a language',
-                    action: () => {
-                        setQueryPrefix('lang:')
-                    },
-                },
-            ],
         },
     ])
 
-    useMemo(() => onboardingTour.start(), [onboardingTour])
+    useEffect(() => {
+        onboardingTour.start()
+        return () => onboardingTour.complete()
+    }, [onboardingTour])
 
     useEffect(() => eventLogger.logViewEvent('Home'))
 

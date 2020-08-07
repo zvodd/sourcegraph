@@ -62,8 +62,8 @@ interface Props
     /** A query fragment to appear at the beginning of the input. */
     queryPrefix?: string
     autoFocus?: boolean
-    endFirstStep?: (editor: Monaco.editor.IStandaloneCodeEditor) => void
-    endSecondStep?: () => void
+    endFirstStep?: () => void
+    endSecondStep?: (query: string) => void
 
     // For NavLinks
     authRequired?: boolean
@@ -95,6 +95,19 @@ export const SearchPageInput: React.FunctionComponent<Props> = (props: Props) =>
         [props, userQueryState.query]
     )
 
+    const onChange = useCallback(
+        (event?: React.FormEvent<HTMLFormElement>): void => {
+            // eslint-disable-next-line no-unused-expressions
+            event?.preventDefault()
+
+            if (props.endFirstStep) {
+                // TODO farhan: Check tour is open
+                props.endFirstStep()
+            }
+        },
+        [props]
+    )
+
     return (
         <div className="d-flex flex-row flex-shrink-past-contents">
             {props.splitSearchModes && props.interactiveSearchMode ? (
@@ -108,11 +121,7 @@ export const SearchPageInput: React.FunctionComponent<Props> = (props: Props) =>
                 />
             ) : (
                 <>
-                    <Form
-                        className="flex-grow-1 flex-shrink-past-contents"
-                        onSubmit={onSubmit}
-                        onChange={props.endFirstStep}
-                    >
+                    <Form className="flex-grow-1 flex-shrink-past-contents" onSubmit={onSubmit} onChange={onChange}>
                         <div className="search-page__input-container">
                             {props.splitSearchModes && (
                                 <SearchModeToggle {...props} interactiveSearchMode={props.interactiveSearchMode} />

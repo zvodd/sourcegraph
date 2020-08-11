@@ -31,6 +31,9 @@ import { PlatformContextProps } from '../../../../shared/src/platform/context'
 import { VersionContextProps } from '../../../../shared/src/search/util'
 import { VersionContext } from '../../schema/site.schema'
 import { submitSearch, SubmitSearchParams } from '../helpers'
+import { searchOnboardingTour } from './SearchOnboardingTour'
+import { generateLangsList } from './MonacoQueryInput'
+import { isEqual } from 'lodash'
 
 interface Props
     extends SettingsCascadeProps<Settings>,
@@ -69,6 +72,15 @@ interface Props
     showCampaigns: boolean
 }
 
+function endFirstStep(): void {
+    if (
+        isEqual(searchOnboardingTour.getCurrentStep(), searchOnboardingTour.getById('step-1')) &&
+        searchOnboardingTour.getCurrentStep()?.isOpen()
+    ) {
+        searchOnboardingTour.next()
+    }
+}
+
 export const SearchPageInput: React.FunctionComponent<Props> = (props: Props) => {
     /** The query cursor position and value entered by the user in the query input */
     const [userQueryState, setUserQueryState] = useState({
@@ -79,6 +91,147 @@ export const SearchPageInput: React.FunctionComponent<Props> = (props: Props) =>
     useEffect(() => {
         setUserQueryState({ query: props.queryPrefix || '', cursorPosition: props.queryPrefix?.length || 0 })
     }, [props.queryPrefix])
+
+    /** Onboarding tour */
+    function generateStep1(): HTMLElement {
+        const element = document.createElement('div')
+        element.className = 'd-flex flex-column'
+        const title = document.createElement('h4')
+        title.textContent = 'Code search tour'
+        const description = document.createElement('div')
+        description.textContent = 'How would you like to begin?'
+        const languageListItem = document.createElement('li')
+        languageListItem.className = 'list-group-item p-0 border-0'
+        languageListItem.textContent = '-'
+        const languageButton = document.createElement('button')
+        languageButton.className = 'btn btn-link p-0 pl-1'
+        languageButton.textContent = 'Search a language'
+        languageListItem.append(languageButton)
+        // TODO farhan: Need to tell our tour that we're on the lang path
+        languageButton.addEventListener('click', () => {
+            setUserQueryState({ query: 'lang:', cursorPosition: 'lang:'.length })
+            searchOnboardingTour.show('step-2-lang')
+        })
+        const repositoryListItem = document.createElement('li')
+        repositoryListItem.className = 'list-group-item p-0 border-0'
+        repositoryListItem.textContent = '-'
+        const repositoryButton = document.createElement('button')
+        repositoryButton.className = 'btn btn-link p-0 pl-1'
+        repositoryButton.textContent = 'Search a repository'
+        // TODO farhan: Need to tell our tour that we're on the repo path
+        repositoryButton.addEventListener('click', () => {
+            setUserQueryState({ query: 'repo:', cursorPosition: 'repo:'.length })
+            searchOnboardingTour.show('step-2-repo')
+        })
+        repositoryListItem.append(repositoryButton)
+        element.append(title)
+        element.append(description)
+        element.append(languageListItem)
+        element.append(repositoryListItem)
+        return element
+    }
+
+    function generateStep3(query: string): HTMLElement {
+        const langsList = generateLangsList()
+        let example = ''
+        if (Object.keys(langsList).includes(query)) {
+            example = langsList[query]
+        }
+        const element = document.createElement('div')
+        const title = document.createElement('h4')
+        title.textContent = 'Add code to your search'
+        const description = document.createElement('div')
+        description.textContent = 'Type the name of a function, variable or other code. Or try an example:'
+        const listItem = document.createElement('li')
+        listItem.className = 'list-group-item p-0 border-0'
+        listItem.textContent = '>'
+        const exampleButton = document.createElement('button')
+        exampleButton.className = 'btn btn-link'
+        exampleButton.textContent = example
+        exampleButton.addEventListener('click', () => {
+            const fullQuery = [query, example].join(' ')
+            setUserQueryState({ query: fullQuery, cursorPosition: fullQuery.length })
+            if (query.startsWith('lang:')) {
+                searchOnboardingTour.show('step-4')
+            } else {
+                searchOnboardingTour.show('step-4-repo')
+            }
+        })
+        listItem.append(exampleButton)
+        element.append(title)
+        element.append(description)
+        element.append(listItem)
+        return element
+    }
+
+    function endSecondStep(query: string): void {
+        if (
+            isEqual(searchOnboardingTour.getCurrentStep(), searchOnboardingTour.getById('step-2-lang')) &&
+            searchOnboardingTour.getCurrentStep()?.isOpen()
+        ) {
+            searchOnboardingTour.show('step-3')
+            searchOnboardingTour.getById('step-3').updateStepOptions({ text: generateStep3(query) })
+        }
+    }
+
+    const onboardingTour = searchOnboardingTour.addSteps([
+        {
+            id: 'step-1',
+            text: generateStep1(),
+            attachTo: {
+                element: '.search-page__search-container',
+                on: 'bottom',
+            },
+            classes: 'example-step-extra-class',
+        },
+        {
+            id: 'step-2-lang',
+
+            text: '<h4>Type to filter the language autocomplete</h4>',
+            attachTo: {
+                element: '.search-page__search-container',
+                on: 'bottom',
+            },
+        },
+        {
+            id: 'step-2-repo',
+            text: "Type the name of a repository you've used recently to filter the autocomplete list",
+            attachTo: {
+                element: '.search-page__search-container',
+                on: 'bottom',
+            },
+        },
+        {
+            id: 'step-3',
+            attachTo: {
+                element: '.search-page__search-container',
+                on: 'bottom',
+            },
+        },
+        {
+            id: 'step-4',
+            text: 'Review the search reference',
+            attachTo: {
+                element: '.search-help-dropdown-button',
+                on: 'bottom',
+            },
+            advanceOn: { selector: '.search-help-dropdown-button', event: 'click' },
+        },
+        {
+            id: 'final-step',
+            text: "<h4>Use the 'return' key or the search button to run your search</h4>",
+            attachTo: {
+                element: '.search-button',
+                on: 'bottom',
+            },
+            advanceOn: { selector: '.search-button__btn', event: 'click' },
+        },
+    ])
+
+    useEffect(() => {
+        onboardingTour.start()
+        return () => onboardingTour.complete()
+    }, [onboardingTour])
 
     const quickLinks =
         (isSettingsValid<Settings>(props.settingsCascade) && props.settingsCascade.final.quicklinks) || []
@@ -142,6 +295,8 @@ export const SearchPageInput: React.FunctionComponent<Props> = (props: Props) =>
                                     onChange={setUserQueryState}
                                     onSubmit={onSubmit}
                                     autoFocus={props.autoFocus !== false}
+                                    endFirstStep={endFirstStep}
+                                    endSecondStep={endSecondStep}
                                 />
                             ) : (
                                 <QueryInput

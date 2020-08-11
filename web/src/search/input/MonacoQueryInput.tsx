@@ -154,6 +154,7 @@ export function generateLangsList(): { [key: string]: string } {
 }
 
 const isValidLangQuery = (query: string): boolean => Object.keys(generateLangsList()).includes(query)
+const isValidRepoQuery = (query: string): boolean => query.startsWith('repo:')
 
 /**
  * A search query input backed by the Monaco editor, allowing it to provide
@@ -275,7 +276,7 @@ export class MonacoQueryInput extends React.PureComponent<MonacoQueryInputProps>
     }
 
     private onChange = (editor: Monaco.editor.IStandaloneCodeEditor, query: string): void => {
-        if (this.props.endFirstStep) {
+        if (this.props.endFirstStep && (query === 'lang:' || query === 'repo:')) {
             this.props.endFirstStep(editor)
             editor.trigger('Tour', 'editor.action.triggerSuggest', {})
         }

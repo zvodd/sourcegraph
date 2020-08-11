@@ -77,6 +77,7 @@ function endFirstStep(): void {
         isEqual(searchOnboardingTour.getCurrentStep(), searchOnboardingTour.getById('step-1')) &&
         searchOnboardingTour.getCurrentStep()?.isOpen()
     ) {
+        // TODO farhan: check that the query value is what we want.
         searchOnboardingTour.next()
     }
 }

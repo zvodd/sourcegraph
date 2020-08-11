@@ -72,16 +72,23 @@ interface Props
     showCampaigns: boolean
 }
 
-// function endFirstStep(): void {
-//     if (
-//         isEqual(searchOnboardingTour.getCurrentStep(), searchOnboardingTour.getById('step-1')) &&
-//         searchOnboardingTour.getCurrentStep()?.isOpen()
-//     ) {
-//         // TODO farhan: check that the query value is what we want.
-//         searchOnboardingTour.next()
-//     }
-// }
+/**
+ * generateStep creates a generic tooltip for the search tour. All steps that just contain
+ * simple text should use this function to populate the step's `text` field.
+ */
+function generateStep(stepNumber: number, text: string): HTMLElement {
+    const element = document.createElement('div')
+    element.innerHTML = text
+    const bottomRow = generateBottomRow(stepNumber)
+    element.append(bottomRow)
+    return element
+}
 
+/**
+ * Generates the bottom row.
+ *
+ * @param stepNumber the number of the step in the tour sequence.
+ */
 function generateBottomRow(stepNumber: number): HTMLElement {
     const stepNumberLabel = document.createElement('span')
     stepNumberLabel.textContent = `Step ${stepNumber} of 5`
@@ -90,7 +97,7 @@ function generateBottomRow(stepNumber: number): HTMLElement {
     closeTourButton.className = 'btn btn-link p-0'
     closeTourButton.textContent = 'Close tour'
     closeTourButton.addEventListener('click', () => {
-        searchOnboardingTour.back()
+        searchOnboardingTour.cancel()
     })
 
     const bottomRow = document.createElement('div')
@@ -241,7 +248,7 @@ export const SearchPageInput: React.FunctionComponent<Props> = (props: Props) =>
         {
             id: 'step-2-lang',
 
-            text: '<h4>Type to filter the language autocomplete</h4>',
+            text: generateStep(2, '<h4>Type to filter the language autocomplete</h4>'),
             attachTo: {
                 element: '.search-page__search-container',
                 on: 'bottom',
@@ -249,7 +256,7 @@ export const SearchPageInput: React.FunctionComponent<Props> = (props: Props) =>
         },
         {
             id: 'step-2-repo',
-            text: "Type the name of a repository you've used recently to filter the autocomplete list",
+            text: generateStep(2, "Type the name of a repository you've used recently to filter the autocomplete list"),
             attachTo: {
                 element: '.search-page__search-container',
                 on: 'bottom',
@@ -264,7 +271,7 @@ export const SearchPageInput: React.FunctionComponent<Props> = (props: Props) =>
         },
         {
             id: 'step-4',
-            text: 'Review the search reference',
+            text: generateStep(4, '<h4>Review the search reference</h4>'),
             attachTo: {
                 element: '.search-help-dropdown-button',
                 on: 'bottom',
@@ -273,7 +280,7 @@ export const SearchPageInput: React.FunctionComponent<Props> = (props: Props) =>
         },
         {
             id: 'final-step',
-            text: "<h4>Use the 'return' key or the search button to run your search</h4>",
+            text: generateStep(5, "<h4>Use the 'return' key or the search button to run your search</h4>"),
             attachTo: {
                 element: '.search-button',
                 on: 'bottom',

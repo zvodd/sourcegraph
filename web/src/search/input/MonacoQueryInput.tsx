@@ -190,6 +190,7 @@ export class MonacoQueryInput extends React.PureComponent<MonacoQueryInputProps>
     private containerRefs = new Subject<HTMLElement | null>()
     private editorRefs = new Subject<Monaco.editor.IStandaloneCodeEditor | null>()
     private subscriptions = new Subscription()
+    private suggestionTriggers = new Subject<void>()
 
     constructor(props: MonacoQueryInputProps) {
         super(props)
@@ -206,6 +207,19 @@ export class MonacoQueryInput extends React.PureComponent<MonacoQueryInputProps>
                 )
                 .subscribe(editor => {
                     editor.layout()
+                })
+        )
+
+        this.subscriptions.add(
+            this.suggestionTriggers
+                .pipe(
+                    withLatestFrom(this.editorRefs),
+                    map(([, editor]) => editor),
+                    filter(isDefined)
+                )
+                .subscribe(editor => {
+                    console.log('suggestion triggers')
+                    editor.trigger('triggerSuggestions', 'editor.action.triggerSuggest', {})
                 })
         )
     }
@@ -274,6 +288,9 @@ export class MonacoQueryInput extends React.PureComponent<MonacoQueryInputProps>
                         className="monaco-query-input-container__toggle-container"
                     />
                 </div>
+                {/* <button type="button" onClick={this.suggestionTriggers.next.bind(this.suggestionTriggers)}>
+                    trigger suggestions
+                </button> */}
             </>
         )
     }
@@ -281,20 +298,12 @@ export class MonacoQueryInput extends React.PureComponent<MonacoQueryInputProps>
     private onChange = (editor: Monaco.editor.IStandaloneCodeEditor, query: string): void => {
         // Advance from step 1 once the lang or repo filter has been added.
         // Trigger the suggestions.
-        if (
-            isEqual(searchOnboardingTour.getCurrentStep(), searchOnboardingTour.getById('step-1')) &&
-            this.props.endFirstStep &&
-            (query === 'lang:' || query === 'repo:')
-        ) {
-            // TODO farhan: We don't need this if we add event listeners to the buttons.
-            this.props.endFirstStep(editor)
-            editor.trigger('Tour', 'editor.action.triggerSuggest', {})
-        }
+        console.log('onchange')
+        this.suggestionTriggers.next()
 
         if (this.props.endSecondStep && query !== 'lang:' && query !== 'repo:' && isValidLangQuery(query)) {
             this.props.endSecondStep(query)
         }
-        editor.trigger('Tour', 'editor.action.triggerSuggest', {})
 
         // Cursor position is irrelevant for the Monaco query input.
         this.props.onChange({ query, cursorPosition: 0, fromUserInput: true })
@@ -362,16 +371,7 @@ export class MonacoQueryInput extends React.PureComponent<MonacoQueryInputProps>
                         queryState.query !== 'repo:'
                     ) {
                         this.props.endRepoInputStep()
-                    }
-                    //  else if (
-                    //     isEqual(searchOnboardingTour.getCurrentStep(), searchOnboardingTour.getById('step-3')) &&
-                    //     this.props.endSecondStep &&
-                    //     queryState.query.startsWith('lang:') &&
-                    //     queryState.query !== 'lang:'
-                    // ) {
-                    //     this.props.endSecondStep(queryState.query)
-                    // }
-                    else if (
+                    } else if (
                         isEqual(searchOnboardingTour.getCurrentStep(), searchOnboardingTour.getById('step-3')) &&
                         this.props.endAddCodeToYourQuery &&
                         queryState.query.startsWith('repo:') &&

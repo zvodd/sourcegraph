@@ -1,6 +1,5 @@
 import * as H from 'history'
 import * as GQL from '../../../../shared/src/graphql/schema'
-import * as Monaco from 'monaco-editor'
 import React, { useState, useCallback, useEffect } from 'react'
 import { InteractiveModeInput } from './interactive/InteractiveModeInput'
 import { Form } from 'reactstrap'

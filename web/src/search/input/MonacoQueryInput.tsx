@@ -7,7 +7,16 @@ import { QueryState } from '../helpers'
 import { getProviders } from '../../../../shared/src/search/parser/providers'
 import { Subscription, Observable, Subject, Unsubscribable } from 'rxjs'
 import { fetchSuggestions } from '../backend'
-import { map, distinctUntilChanged, publishReplay, refCount, filter, switchMap, withLatestFrom } from 'rxjs/operators'
+import {
+    map,
+    distinctUntilChanged,
+    publishReplay,
+    refCount,
+    filter,
+    switchMap,
+    withLatestFrom,
+    debounceTime,
+} from 'rxjs/operators'
 import { Omit } from 'utility-types'
 import { ThemeProps } from '../../../../shared/src/theme'
 import { CaseSensitivityProps, PatternTypeProps, CopyQueryButtonProps } from '..'
@@ -17,7 +26,6 @@ import { hasProperty, isDefined } from '../../../../shared/src/util/types'
 import { KeyboardShortcut } from '../../../../shared/src/keyboardShortcuts'
 import { KEYBOARD_SHORTCUT_FOCUS_SEARCHBAR } from '../../keyboardShortcuts/keyboardShortcuts'
 import { observeResize } from '../../util/dom'
-import { LANGUAGES } from '../../../../shared/src/search/parser/filters'
 
 export interface MonacoQueryInputProps
     extends Omit<TogglesProps, 'navbarSearchQuery' | 'filtersInQuery'>,
@@ -269,7 +277,9 @@ export class MonacoQueryInput extends React.PureComponent<MonacoQueryInputProps>
     private onChange = (editor: Monaco.editor.IStandaloneCodeEditor, query: string): void => {
         if (this.props.endFirstStep) {
             this.props.endFirstStep(editor)
+            editor.trigger('Tour', 'editor.action.triggerSuggest', {})
         }
+        editor.trigger('Tour', 'editor.action.triggerSuggest', {})
 
         if (this.props.endSecondStep && query !== 'lang:' && query !== 'repo:' && isValidLangQuery(query)) {
             this.props.endSecondStep(query)
@@ -325,6 +335,21 @@ export class MonacoQueryInput extends React.PureComponent<MonacoQueryInputProps>
                 })
         )
 
+        this.subscriptions.add(
+            this.componentUpdates
+                .pipe(
+                    debounceTime(300),
+                    map(({ queryState }) => queryState),
+                    filter(({ fromUserInput }) => !!fromUserInput)
+                )
+                .subscribe(queryState => {
+                    // TODO farhan: endRepoStep8 instead of seconds tep
+                    if (this.props.endSecondStep && queryState.query.startsWith('repo:')) {
+                        this.props.endSecondStep(queryState.query)
+                    }
+                    console.log('last key up')
+                })
+        )
         // Prevent newline insertion in model, and surface query changes with stripped newlines.
         this.subscriptions.add(
             toUnsubscribable(

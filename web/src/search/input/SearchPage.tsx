@@ -1,6 +1,5 @@
 import * as H from 'history'
 import React, { useEffect, useMemo, useState } from 'react'
-import * as Monaco from 'monaco-editor'
 import {
     PatternTypeProps,
     InteractiveSearchProps,
@@ -78,9 +77,10 @@ function endFirstStep(): void {
         searchOnboardingTour.getCurrentStep()?.isOpen()
     ) {
         searchOnboardingTour.next()
-        // focus search bar
     }
 }
+
+function endRepoEnterStep(): void {}
 
 /**
  * The search page
@@ -88,27 +88,41 @@ function endFirstStep(): void {
 export const SearchPage: React.FunctionComponent<Props> = props => {
     const [queryPrefix, setQueryPrefix] = useState('')
 
-    // const step3OnClick = (example: string): void => {
-    //     setQueryPrefix(queryPrefix + example)
-    // }
     function generateStep1(): HTMLElement {
         const element = document.createElement('div')
+        element.className = 'd-flex flex-column'
         const title = document.createElement('h3')
         title.textContent = 'Code search tour'
         const description = document.createElement('div')
         description.textContent = 'How would you like to begin?'
+        const languageListItem = document.createElement('li')
+        languageListItem.className = 'list-group-item p-0 border-0'
+        languageListItem.textContent = '-'
         const languageButton = document.createElement('button')
-        languageButton.className = 'btn btn-link'
+        languageButton.className = 'btn btn-link p-0 pl-1'
         languageButton.textContent = 'Search a language'
-        languageButton.addEventListener('click', () => setQueryPrefix('lang:'))
+        languageListItem.append(languageButton)
+        // TODO farhan: Need to tell our tour that we're on the lang path
+        languageButton.addEventListener('click', () => {
+            setQueryPrefix('lang:')
+            searchOnboardingTour.show('step-2-lang')
+        })
+        const repositoryListItem = document.createElement('li')
+        repositoryListItem.className = 'list-group-item p-0 border-0'
+        repositoryListItem.textContent = '-'
         const repositoryButton = document.createElement('button')
-        repositoryButton.className = 'btn btn-link'
+        repositoryButton.className = 'btn btn-link p-0 pl-1'
         repositoryButton.textContent = 'Search a repository'
-        repositoryButton.addEventListener('click', () => setQueryPrefix('repo:'))
+        // TODO farhan: Need to tell our tour that we're on the repo path
+        repositoryButton.addEventListener('click', () => {
+            setQueryPrefix('repo:')
+            searchOnboardingTour.show('step-2-repo')
+        })
+        repositoryListItem.append(repositoryButton)
         element.append(title)
         element.append(description)
-        element.append(languageButton)
-        element.append(repositoryButton)
+        element.append(languageListItem)
+        element.append(repositoryListItem)
         return element
     }
 
@@ -123,34 +137,40 @@ export const SearchPage: React.FunctionComponent<Props> = props => {
         title.textContent = 'Add code to your search'
         const description = document.createElement('div')
         description.textContent = 'Type the name of a function, variable or other code. Or try an example:'
-        const examplebutton = document.createElement('button')
-        examplebutton.className = 'btn btn-link'
-        examplebutton.textContent = example
-        examplebutton.addEventListener('click', () => {
+        const listItem = document.createElement('li')
+        listItem.className = 'list-group-item p-0 border-0'
+        listItem.textContent = '>'
+        const exampleButton = document.createElement('button')
+        exampleButton.className = 'btn btn-link'
+        exampleButton.textContent = example
+        exampleButton.addEventListener('click', () => {
             setQueryPrefix([query, example].join(' '))
-            searchOnboardingTour.next()
+            if (query.startsWith('lang:')) {
+                searchOnboardingTour.show('step-4')
+            } else {
+                searchOnboardingTour.show('step-4-repo')
+            }
         })
+        listItem.append(exampleButton)
         element.append(title)
         element.append(description)
-        element.append(examplebutton)
+        element.append(listItem)
         return element
     }
 
     function endSecondStep(query: string): void {
         if (
-            isEqual(searchOnboardingTour.getCurrentStep(), searchOnboardingTour.getById('step-2')) &&
+            isEqual(searchOnboardingTour.getCurrentStep(), searchOnboardingTour.getById('step-2-lang')) &&
             searchOnboardingTour.getCurrentStep()?.isOpen()
         ) {
-            searchOnboardingTour.next()
+            searchOnboardingTour.show('step-3')
             searchOnboardingTour.getById('step-3').updateStepOptions({ text: generateStep3(query) })
-            // focus search bar
         }
     }
 
     const onboardingTour = searchOnboardingTour.addSteps([
         {
             id: 'step-1',
-
             text: generateStep1(),
             attachTo: {
                 element: '.search-page__search-container',
@@ -183,28 +203,22 @@ export const SearchPage: React.FunctionComponent<Props> = props => {
             },
         },
         {
-            id: 'step-3-repo',
-            text: '<h3>Add code to your search</h3><div>Type the name of a function, variable, or other code.</div>',
-            attachTo: {
-                element: '.search-page__search-container',
-                on: 'bottom',
-            },
-        },
-        {
-            id: 'step-4-repo',
+            id: 'step-4',
             text: 'Review the search reference',
             attachTo: {
-                element: '.search-page__search-container',
+                element: '.search-help-dropdown-button',
                 on: 'bottom',
             },
+            advanceOn: { selector: '.search-help-dropdown-button', event: 'click' },
         },
         {
-            id: 'step-4',
+            id: 'final-step',
             text: "<h3>Use the 'return' key or the search button to run your search</h3>",
             attachTo: {
                 element: '.search-button',
                 on: 'bottom',
             },
+            advanceOn: { selector: '.search-button__btn', event: 'click' },
         },
     ])
 

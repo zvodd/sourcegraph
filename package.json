@@ -301,6 +301,7 @@
     "react-grid-layout": "^0.18.3",
     "react-router": "^5.2.0",
     "react-router-dom": "^5.2.0",
+    "react-shepherd": "^3.3.0",
     "react-stripe-elements": "^6.1.2",
     "react-visibility-sensor": "^5.1.1",
     "reactstrap": "^8.4.1",

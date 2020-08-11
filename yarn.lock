@@ -18305,6 +18305,13 @@ react-select@^3.0.8:
     react-input-autosize "^2.2.2"
     react-transition-group "^2.2.1"
 
+react-shepherd@^3.3.0:
+  version "3.3.0"
+  resolved "https://registry.npmjs.org/react-shepherd/-/react-shepherd-3.3.0.tgz#7b231fea26db1104be92e54921af838e16cd56f0"
+  integrity sha512-w9ulB7ILt+uNJpRQmLsdBZSS600UkquDcToOsWGg2xv52FgcbMkGAIFtHAx7beXha/Pu6FFHy0SM67ZqUGWAxA==
+  dependencies:
+    shepherd.js "^8.0.0"
+
 react-sizeme@^2.6.7:
   version "2.6.7"
   resolved "https://registry.npmjs.org/react-sizeme/-/react-sizeme-2.6.7.tgz#231339ce8821ac2c26424c791e0027f89dae3e90"
@@ -19763,7 +19770,7 @@ shellwords@^0.1.1:
   resolved "https://registry.npmjs.org/shellwords/-/shellwords-0.1.1.tgz#d6b9181c1a48d397324c84871efbcfc73fc0654b"
   integrity sha512-vFwSUfQvqybiICwZY5+DAWIPLKsWO31Q91JSKl3UYv+K5c2QRPzn0qzec6QPu1Qc9eHYItiP3NdJqNVqetYAww==
 
-shepherd.js@^8.0.2:
+shepherd.js@^8.0.0, shepherd.js@^8.0.2:
   version "8.0.2"
   resolved "https://registry.npmjs.org/shepherd.js/-/shepherd.js-8.0.2.tgz#30675a68883c474b5c7b4056b98f2423b577708f"
   integrity sha512-qFt5vrnVoshg6fS5gKGQznYGyIaEclyKKSl1Siw6gO7GyKnCEJ2aBDrp8pxKusMfZo5J5dtgeKJtsRav5cimjA==

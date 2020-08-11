@@ -1,3 +1,14 @@
 .shepherd-content {
     border-radius: 1rem;
 }
+
+.sheperd-arrow {
+    border-width: 0;
+    height: auto;
+    width: auto;
+}
+
+.shepherd-element .shepherd-arrow:after {
+    content: url('/.assets/img/arrow.svg');
+    display: inline-block;
+}

@@ -13,6 +13,7 @@ export const searchOnboardingTour = new Shepherd.Tour({
                 },
             ],
         },
+        attachTo: { on: 'bottom' },
         scrollTo: false,
     },
 })

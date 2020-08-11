@@ -1,7 +1,7 @@
 import React from 'react'
 import * as H from 'history'
 import * as Monaco from 'monaco-editor'
-import { isPlainObject } from 'lodash'
+import { isPlainObject, isEqual } from 'lodash'
 import { MonacoEditor } from '../../components/MonacoEditor'
 import { QueryState } from '../helpers'
 import { getProviders } from '../../../../shared/src/search/parser/providers'
@@ -26,6 +26,7 @@ import { hasProperty, isDefined } from '../../../../shared/src/util/types'
 import { KeyboardShortcut } from '../../../../shared/src/keyboardShortcuts'
 import { KEYBOARD_SHORTCUT_FOCUS_SEARCHBAR } from '../../keyboardShortcuts/keyboardShortcuts'
 import { observeResize } from '../../util/dom'
+import { searchOnboardingTour } from './SearchOnboardingTour'
 
 export interface MonacoQueryInputProps
     extends Omit<TogglesProps, 'navbarSearchQuery' | 'filtersInQuery'>,
@@ -42,6 +43,8 @@ export interface MonacoQueryInputProps
     keyboardShortcutForFocus?: KeyboardShortcut
     endFirstStep?: (editor: Monaco.editor.IStandaloneCodeEditor) => void
     endSecondStep?: (query: string) => void
+    endRepoInputStep?: () => void
+    endAddCodeToYourQuery?: () => void
 
     // Whether globbing is enabled for filters.
     globbing: boolean
@@ -276,15 +279,22 @@ export class MonacoQueryInput extends React.PureComponent<MonacoQueryInputProps>
     }
 
     private onChange = (editor: Monaco.editor.IStandaloneCodeEditor, query: string): void => {
-        if (this.props.endFirstStep && (query === 'lang:' || query === 'repo:')) {
+        // Advance from step 1 once the lang or repo filter has been added.
+        // Trigger the suggestions.
+        if (
+            isEqual(searchOnboardingTour.getCurrentStep(), searchOnboardingTour.getById('step-1')) &&
+            this.props.endFirstStep &&
+            (query === 'lang:' || query === 'repo:')
+        ) {
+            // TODO farhan: We don't need this if we add event listeners to the buttons.
             this.props.endFirstStep(editor)
             editor.trigger('Tour', 'editor.action.triggerSuggest', {})
         }
-        editor.trigger('Tour', 'editor.action.triggerSuggest', {})
 
         if (this.props.endSecondStep && query !== 'lang:' && query !== 'repo:' && isValidLangQuery(query)) {
             this.props.endSecondStep(query)
         }
+        editor.trigger('Tour', 'editor.action.triggerSuggest', {})
 
         // Cursor position is irrelevant for the Monaco query input.
         this.props.onChange({ query, cursorPosition: 0, fromUserInput: true })
@@ -336,6 +346,7 @@ export class MonacoQueryInput extends React.PureComponent<MonacoQueryInputProps>
                 })
         )
 
+        // Advance the search tour
         this.subscriptions.add(
             this.componentUpdates
                 .pipe(
@@ -344,13 +355,33 @@ export class MonacoQueryInput extends React.PureComponent<MonacoQueryInputProps>
                     filter(({ fromUserInput }) => !!fromUserInput)
                 )
                 .subscribe(queryState => {
-                    // TODO farhan: endRepoStep8 instead of seconds tep
-                    if (this.props.endSecondStep && queryState.query.startsWith('repo:')) {
-                        this.props.endSecondStep(queryState.query)
+                    if (
+                        isEqual(searchOnboardingTour.getCurrentStep(), searchOnboardingTour.getById('step-2-repo')) &&
+                        this.props.endRepoInputStep &&
+                        queryState.query.startsWith('repo:') &&
+                        queryState.query !== 'repo:'
+                    ) {
+                        this.props.endRepoInputStep()
                     }
-                    console.log('last key up')
+                    //  else if (
+                    //     isEqual(searchOnboardingTour.getCurrentStep(), searchOnboardingTour.getById('step-3')) &&
+                    //     this.props.endSecondStep &&
+                    //     queryState.query.startsWith('lang:') &&
+                    //     queryState.query !== 'lang:'
+                    // ) {
+                    //     this.props.endSecondStep(queryState.query)
+                    // }
+                    else if (
+                        isEqual(searchOnboardingTour.getCurrentStep(), searchOnboardingTour.getById('step-3')) &&
+                        this.props.endAddCodeToYourQuery &&
+                        queryState.query.startsWith('repo:') &&
+                        queryState.query !== 'repo:'
+                    ) {
+                        this.props.endAddCodeToYourQuery()
+                    }
                 })
         )
+
         // Prevent newline insertion in model, and surface query changes with stripped newlines.
         this.subscriptions.add(
             toUnsubscribable(

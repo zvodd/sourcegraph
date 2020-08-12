@@ -24,6 +24,7 @@ import {
     InteractiveSearchProps,
     SmartSearchFieldProps,
     CopyQueryButtonProps,
+    OnboardingTourProps,
 } from '..'
 import { EventLoggerProps } from '../../tracking/eventLogger'
 import { ExtensionsControllerProps } from '../../../../shared/src/extensions/controller'
@@ -34,6 +35,7 @@ import { submitSearch, SubmitSearchParams } from '../helpers'
 import { searchOnboardingTour } from './SearchOnboardingTour'
 import { generateLangsList } from './MonacoQueryInput'
 import { isEqual } from 'lodash'
+import { useLocalStorage } from '../../util/useLocalStorage'
 
 interface Props
     extends SettingsCascadeProps<Settings>,
@@ -50,7 +52,8 @@ interface Props
         SmartSearchFieldProps,
         CopyQueryButtonProps,
         Pick<SubmitSearchParams, 'source'>,
-        VersionContextProps {
+        VersionContextProps,
+        OnboardingTourProps {
     authenticatedUser: GQL.IUser | null
     location: H.Location
     history: H.History
@@ -117,6 +120,9 @@ export const SearchPageInput: React.FunctionComponent<Props> = (props: Props) =>
     useEffect(() => {
         setUserQueryState({ query: props.queryPrefix || '', cursorPosition: props.queryPrefix?.length || 0 })
     }, [props.queryPrefix])
+
+    const [hasSeenTour, setHasSeenTour] = useLocalStorage('has-seen-onboarding-tour', false)
+    const [hasCancelledTour, setHasCancelledTour] = useLocalStorage('has-cancelled-onboarding-tour', false)
 
     /** Onboarding tour */
     function generateStep1(): HTMLElement {
@@ -289,9 +295,12 @@ export const SearchPageInput: React.FunctionComponent<Props> = (props: Props) =>
     ])
 
     useEffect(() => {
-        onboardingTour.start()
-        return () => onboardingTour.complete()
-    }, [onboardingTour])
+        if (props.showOnboardingTour) {
+            onboardingTour.start()
+            return () => onboardingTour.complete()
+        }
+        return
+    }, [props.showOnboardingTour, onboardingTour])
 
     const quickLinks =
         (isSettingsValid<Settings>(props.settingsCascade) && props.settingsCascade.final.quicklinks) || []

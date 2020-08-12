@@ -32,9 +32,6 @@ import { repogroupList, homepageLanguageList } from '../../repogroups/HomepageCo
 import { SearchPageInput } from './SearchPageInput'
 import { KeyboardShortcutsProps } from '../../keyboardShortcuts/keyboardShortcuts'
 import { PrivateCodeCta } from './PrivateCodeCta'
-import { searchOnboardingTour } from './SearchOnboardingTour'
-import { isEqual } from 'lodash'
-import { generateLangsList } from './MonacoQueryInput'
 
 interface Props
     extends SettingsCascadeProps<Settings>,
@@ -71,160 +68,10 @@ const SearchExampleClicked = (url: string) => (): void => eventLogger.log('Examp
 const LanguageExampleClicked = (language: string) => (): void =>
     eventLogger.log('ExampleLanguageSearchClicked', { language })
 
-// function endFirstStep(): void {
-//     if (
-//         isEqual(searchOnboardingTour.getCurrentStep(), searchOnboardingTour.getById('step-1')) &&
-//         searchOnboardingTour.getCurrentStep()?.isOpen()
-//     ) {
-//         searchOnboardingTour.next()
-//     }
-// }
-
 /**
  * The search page
  */
 export const SearchPage: React.FunctionComponent<Props> = props => {
-    const [queryPrefix, setQueryPrefix] = useState('')
-
-    // function generateStep1(): HTMLElement {
-    //     const element = document.createElement('div')
-    //     element.className = 'd-flex flex-column'
-    //     const title = document.createElement('h4')
-    //     title.textContent = 'Code search tour'
-    //     const description = document.createElement('div')
-    //     description.textContent = 'How would you like to begin?'
-    //     const languageListItem = document.createElement('li')
-    //     languageListItem.className = 'list-group-item p-0 border-0'
-    //     languageListItem.textContent = '-'
-    //     const languageButton = document.createElement('button')
-    //     languageButton.className = 'btn btn-link p-0 pl-1'
-    //     languageButton.textContent = 'Search a language'
-    //     languageListItem.append(languageButton)
-    //     // TODO farhan: Need to tell our tour that we're on the lang path
-    //     languageButton.addEventListener('click', () => {
-    //         setQueryPrefix('lang:')
-    //         searchOnboardingTour.show('step-2-lang')
-    //     })
-    //     const repositoryListItem = document.createElement('li')
-    //     repositoryListItem.className = 'list-group-item p-0 border-0'
-    //     repositoryListItem.textContent = '-'
-    //     const repositoryButton = document.createElement('button')
-    //     repositoryButton.className = 'btn btn-link p-0 pl-1'
-    //     repositoryButton.textContent = 'Search a repository'
-    //     // TODO farhan: Need to tell our tour that we're on the repo path
-    //     repositoryButton.addEventListener('click', () => {
-    //         setQueryPrefix('repo:')
-    //         searchOnboardingTour.show('step-2-repo')
-    //     })
-    //     repositoryListItem.append(repositoryButton)
-    //     element.append(title)
-    //     element.append(description)
-    //     element.append(languageListItem)
-    //     element.append(repositoryListItem)
-    //     return element
-    // }
-
-    // function generateStep3(query: string): HTMLElement {
-    //     const langsList = generateLangsList()
-    //     let example = ''
-    //     if (Object.keys(langsList).includes(query)) {
-    //         example = langsList[query]
-    //     }
-    //     const element = document.createElement('div')
-    //     const title = document.createElement('h4')
-    //     title.textContent = 'Add code to your search'
-    //     const description = document.createElement('div')
-    //     description.textContent = 'Type the name of a function, variable or other code. Or try an example:'
-    //     const listItem = document.createElement('li')
-    //     listItem.className = 'list-group-item p-0 border-0'
-    //     listItem.textContent = '>'
-    //     const exampleButton = document.createElement('button')
-    //     exampleButton.className = 'btn btn-link'
-    //     exampleButton.textContent = example
-    //     exampleButton.addEventListener('click', () => {
-    //         setQueryPrefix([query, example].join(' '))
-    //         if (query.startsWith('lang:')) {
-    //             searchOnboardingTour.show('step-4')
-    //         } else {
-    //             searchOnboardingTour.show('step-4-repo')
-    //         }
-    //     })
-    //     listItem.append(exampleButton)
-    //     element.append(title)
-    //     element.append(description)
-    //     element.append(listItem)
-    //     return element
-    // }
-
-    // function endSecondStep(query: string): void {
-    //     if (
-    //         isEqual(searchOnboardingTour.getCurrentStep(), searchOnboardingTour.getById('step-2-lang')) &&
-    //         searchOnboardingTour.getCurrentStep()?.isOpen()
-    //     ) {
-    //         searchOnboardingTour.show('step-3')
-    //         searchOnboardingTour.getById('step-3').updateStepOptions({ text: generateStep3(query) })
-    //     }
-    // }
-
-    // const onboardingTour = searchOnboardingTour.addSteps([
-    //     {
-    //         id: 'step-1',
-    //         text: generateStep1(),
-    //         attachTo: {
-    //             element: '.search-page__search-container',
-    //             on: 'bottom',
-    //         },
-    //         classes: 'example-step-extra-class',
-    //     },
-    //     {
-    //         id: 'step-2-lang',
-
-    //         text: '<h4>Type to filter the language autocomplete</h4>',
-    //         attachTo: {
-    //             element: '.search-page__search-container',
-    //             on: 'bottom',
-    //         },
-    //     },
-    //     {
-    //         id: 'step-2-repo',
-    //         text: "Type the name of a repository you've used recently to filter the autocomplete list",
-    //         attachTo: {
-    //             element: '.search-page__search-container',
-    //             on: 'bottom',
-    //         },
-    //     },
-    //     {
-    //         id: 'step-3',
-    //         attachTo: {
-    //             element: '.search-page__search-container',
-    //             on: 'bottom',
-    //         },
-    //     },
-    //     {
-    //         id: 'step-4',
-    //         text: 'Review the search reference',
-    //         attachTo: {
-    //             element: '.search-help-dropdown-button',
-    //             on: 'bottom',
-    //         },
-    //         advanceOn: { selector: '.search-help-dropdown-button', event: 'click' },
-    //     },
-    //     {
-    //         id: 'final-step',
-    //         text: "<h4>Use the 'return' key or the search button to run your search</h4>",
-    //         attachTo: {
-    //             element: '.search-button',
-    //             on: 'bottom',
-    //         },
-    //         advanceOn: { selector: '.search-button__btn', event: 'click' },
-    //     },
-    // ])
-
-    // useEffect(() => {
-    //     onboardingTour.start()
-    //     return () => onboardingTour.complete()
-    // }, [onboardingTour])
-
     useEffect(() => eventLogger.logViewEvent('Home'))
 
     const codeInsightsEnabled =
@@ -253,7 +100,7 @@ export const SearchPage: React.FunctionComponent<Props> = props => {
                     'search-page__search-container--with-repogroups': props.isSourcegraphDotCom,
                 })}
             >
-                <SearchPageInput {...props} queryPrefix={queryPrefix} source="home" />
+                <SearchPageInput {...props} source="home" />
                 {views && <ViewGrid {...props} className="mt-5" views={views} />}
             </div>
             {props.isSourcegraphDotCom && props.showRepogroupHomepage && (

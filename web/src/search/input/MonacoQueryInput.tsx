@@ -157,7 +157,6 @@ export function generateLangsList(): { [key: string]: string } {
 }
 
 const isValidLangQuery = (query: string): boolean => Object.keys(generateLangsList()).includes(query)
-const isValidRepoQuery = (query: string): boolean => query.startsWith('repo:')
 
 /**
  * A search query input backed by the Monaco editor, allowing it to provide
@@ -218,7 +217,6 @@ export class MonacoQueryInput extends React.PureComponent<MonacoQueryInputProps>
                     filter(isDefined)
                 )
                 .subscribe(editor => {
-                    console.log('suggestion triggers')
                     editor.trigger('triggerSuggestions', 'editor.action.triggerSuggest', {})
                 })
         )
@@ -296,11 +294,7 @@ export class MonacoQueryInput extends React.PureComponent<MonacoQueryInputProps>
     }
 
     private onChange = (editor: Monaco.editor.IStandaloneCodeEditor, query: string): void => {
-        // Advance from step 1 once the lang or repo filter has been added.
-        // Trigger the suggestions.
-        console.log('onchange')
-        this.suggestionTriggers.next()
-
+        // TODO farhan: is this needed? Can we move this?
         if (this.props.endSecondStep && query !== 'lang:' && query !== 'repo:' && isValidLangQuery(query)) {
             this.props.endSecondStep(query)
         }
@@ -364,6 +358,12 @@ export class MonacoQueryInput extends React.PureComponent<MonacoQueryInputProps>
                     filter(({ fromUserInput }) => !!fromUserInput)
                 )
                 .subscribe(queryState => {
+                    if (
+                        isEqual(searchOnboardingTour.getCurrentStep(), searchOnboardingTour.getById('step-2-repo')) ||
+                        isEqual(searchOnboardingTour.getCurrentStep(), searchOnboardingTour.getById('step-2-lang'))
+                    ) {
+                        this.suggestionTriggers.next()
+                    }
                     if (
                         isEqual(searchOnboardingTour.getCurrentStep(), searchOnboardingTour.getById('step-2-repo')) &&
                         this.props.endRepoInputStep &&

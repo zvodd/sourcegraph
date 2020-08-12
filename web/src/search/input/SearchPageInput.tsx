@@ -247,11 +247,10 @@ export const SearchPageInput: React.FunctionComponent<Props> = (props: Props) =>
         },
         {
             id: 'step-2-lang',
-
             text: generateStep(2, '<h4>Type to filter the language autocomplete</h4>'),
             attachTo: {
                 element: '.search-page__input-container',
-                on: 'bottom',
+                on: 'top',
             },
         },
         {
@@ -259,7 +258,7 @@ export const SearchPageInput: React.FunctionComponent<Props> = (props: Props) =>
             text: generateStep(2, "Type the name of a repository you've used recently to filter the autocomplete list"),
             attachTo: {
                 element: '.search-page__input-container',
-                on: 'bottom',
+                on: 'top',
             },
         },
         {
@@ -283,7 +282,7 @@ export const SearchPageInput: React.FunctionComponent<Props> = (props: Props) =>
             text: generateStep(5, "<h4>Use the 'return' key or the search button to run your search</h4>"),
             attachTo: {
                 element: '.search-button',
-                on: 'bottom',
+                on: 'top',
             },
             advanceOn: { selector: '.search-button__btn', event: 'click' },
         },
@@ -307,19 +306,6 @@ export const SearchPageInput: React.FunctionComponent<Props> = (props: Props) =>
         },
         [props, userQueryState.query]
     )
-
-    // const onChange = useCallback(
-    //     (event?: React.FormEvent<HTMLFormElement>): void => {
-    //         // eslint-disable-next-line no-unused-expressions
-    //         event?.preventDefault()
-
-    //         if (props.endFirstStep) {
-    //             // TODO farhan: Check tour is open
-    //             props.endFirstStep()
-    //         }
-    //     },
-    //     [props]
-    // )
 
     return (
         <div className="d-flex flex-row flex-shrink-past-contents">

@@ -4,6 +4,7 @@
 
 .tour-card {
     box-shadow: 0px 4px 36px rgba(0, 0, 0, 0.4);
+    border-radius: 10px;
 }
 
 .shepherd-arrow {
@@ -11,12 +12,12 @@
     position: absolute;
     width: 0;
     height: 0;
-    margin-left: -0.5em;
-    top: -25px;
     box-sizing: border-box;
     border: 1em solid black;
     border-color: transparent transparent white transparent;
     transform-origin: 0 0;
-
-    // box-shadow: -3px 3px 3px 0 rgba(0, 0, 0, 0.4);
+    // TODO farhan: if tooltips are positioned differently, the position needs to be different.
+    // this is the correct positioning for tooltips that are placed below the search bar.
+    // if bottom, we also need to transform differently.
+    top: -25px;
 }

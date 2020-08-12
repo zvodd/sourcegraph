@@ -241,7 +241,7 @@ export const SearchPageInput: React.FunctionComponent<Props> = (props: Props) =>
             id: 'step-1',
             text: generateStep1(),
             attachTo: {
-                element: '.search-page__search-container',
+                element: '.search-page__input-container',
                 on: 'bottom',
             },
         },
@@ -250,7 +250,7 @@ export const SearchPageInput: React.FunctionComponent<Props> = (props: Props) =>
 
             text: generateStep(2, '<h4>Type to filter the language autocomplete</h4>'),
             attachTo: {
-                element: '.search-page__search-container',
+                element: '.search-page__input-container',
                 on: 'bottom',
             },
         },
@@ -258,14 +258,14 @@ export const SearchPageInput: React.FunctionComponent<Props> = (props: Props) =>
             id: 'step-2-repo',
             text: generateStep(2, "Type the name of a repository you've used recently to filter the autocomplete list"),
             attachTo: {
-                element: '.search-page__search-container',
+                element: '.search-page__input-container',
                 on: 'bottom',
             },
         },
         {
             id: 'step-3',
             attachTo: {
-                element: '.search-page__search-container',
+                element: '.search-page__input-container',
                 on: 'bottom',
             },
         },

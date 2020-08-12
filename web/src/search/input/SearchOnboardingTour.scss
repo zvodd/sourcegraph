@@ -2,13 +2,21 @@
     border-radius: 1rem;
 }
 
-.sheperd-arrow {
-    border-width: 0;
-    height: auto;
-    width: auto;
+.tour-card {
+    box-shadow: 0px 4px 36px rgba(0, 0, 0, 0.4);
 }
 
-.shepherd-element .shepherd-arrow:after {
-    content: url('/.assets/img/arrow.svg');
-    display: inline-block;
+.shepherd-arrow {
+    content: '';
+    position: absolute;
+    width: 0;
+    height: 0;
+    margin-left: -0.5em;
+    top: -25px;
+    box-sizing: border-box;
+    border: 1em solid black;
+    border-color: transparent transparent white transparent;
+    transform-origin: 0 0;
+
+    // box-shadow: -3px 3px 3px 0 rgba(0, 0, 0, 0.4);
 }

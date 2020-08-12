@@ -4,7 +4,7 @@ export const searchOnboardingTour = new Shepherd.Tour({
     useModalOverlay: false,
     defaultStepOptions: {
         arrow: true,
-        classes: 'card p-2 rounded',
+        classes: 'tour-card card p-2 rounded',
         popperOptions: {
             modifiers: [
                 {

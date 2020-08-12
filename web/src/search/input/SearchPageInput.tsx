@@ -1,6 +1,6 @@
 import * as H from 'history'
 import * as GQL from '../../../../shared/src/graphql/schema'
-import React, { useState, useCallback, useEffect } from 'react'
+import React, { useState, useCallback, useEffect, useMemo } from 'react'
 import { InteractiveModeInput } from './interactive/InteractiveModeInput'
 import { Form } from 'reactstrap'
 import { SearchModeToggle } from './interactive/SearchModeToggle'
@@ -32,8 +32,15 @@ import { PlatformContextProps } from '../../../../shared/src/platform/context'
 import { VersionContextProps } from '../../../../shared/src/search/util'
 import { VersionContext } from '../../schema/site.schema'
 import { submitSearch, SubmitSearchParams } from '../helpers'
-import { searchOnboardingTour } from './SearchOnboardingTour'
-import { generateLangsList } from './MonacoQueryInput'
+import {
+    searchOnboardingTour,
+    generateLanguageExampleList,
+    generateBottomRow,
+    generateStep,
+    generateStep1,
+    generateLangInputStep,
+    generateAddCodeStep,
+} from './SearchOnboardingTour'
 import { isEqual } from 'lodash'
 import { useLocalStorage } from '../../util/useLocalStorage'
 
@@ -68,46 +75,11 @@ interface Props
     queryPrefix?: string
     autoFocus?: boolean
     endFirstStep?: () => void
-    endSecondStep?: (query: string) => void
+    endLangInputStep?: (query: string) => void
 
     // For NavLinks
     authRequired?: boolean
     showCampaigns: boolean
-}
-
-/**
- * generateStep creates a generic tooltip for the search tour. All steps that just contain
- * simple text should use this function to populate the step's `text` field.
- */
-function generateStep(stepNumber: number, text: string): HTMLElement {
-    const element = document.createElement('div')
-    element.innerHTML = text
-    const bottomRow = generateBottomRow(stepNumber)
-    element.append(bottomRow)
-    return element
-}
-
-/**
- * Generates the bottom row.
- *
- * @param stepNumber the number of the step in the tour sequence.
- */
-function generateBottomRow(stepNumber: number): HTMLElement {
-    const stepNumberLabel = document.createElement('span')
-    stepNumberLabel.textContent = `Step ${stepNumber} of 5`
-
-    const closeTourButton = document.createElement('button')
-    closeTourButton.className = 'btn btn-link p-0'
-    closeTourButton.textContent = 'Close tour'
-    closeTourButton.addEventListener('click', () => {
-        searchOnboardingTour.cancel()
-    })
-
-    const bottomRow = document.createElement('div')
-    bottomRow.className = 'd-flex justify-content-between pt-2'
-    bottomRow.append(stepNumberLabel)
-    bottomRow.append(closeTourButton)
-    return bottomRow
 }
 
 export const SearchPageInput: React.FunctionComponent<Props> = (props: Props) => {
@@ -124,96 +96,6 @@ export const SearchPageInput: React.FunctionComponent<Props> = (props: Props) =>
     const [hasSeenTour, setHasSeenTour] = useLocalStorage('has-seen-onboarding-tour', false)
     const [hasCancelledTour, setHasCancelledTour] = useLocalStorage('has-cancelled-onboarding-tour', false)
 
-    /** Onboarding tour */
-    function generateStep1(): HTMLElement {
-        const element = document.createElement('div')
-        element.className = 'd-flex flex-column'
-        const title = document.createElement('h4')
-        title.textContent = 'Code search tour'
-        const description = document.createElement('div')
-        description.textContent = 'How would you like to begin?'
-        const languageListItem = document.createElement('li')
-        languageListItem.className = 'list-group-item p-0 border-0'
-        languageListItem.textContent = '-'
-        const languageButton = document.createElement('button')
-        languageButton.className = 'btn btn-link p-0 pl-1'
-        languageButton.textContent = 'Search a language'
-        languageListItem.append(languageButton)
-        // TODO farhan: Need to tell our tour that we're on the lang path
-        languageButton.addEventListener('click', () => {
-            setUserQueryState({ query: 'lang:', cursorPosition: 'lang:'.length })
-            searchOnboardingTour.show('step-2-lang')
-        })
-        const repositoryListItem = document.createElement('li')
-        repositoryListItem.className = 'list-group-item p-0 border-0'
-        repositoryListItem.textContent = '-'
-        const repositoryButton = document.createElement('button')
-        repositoryButton.className = 'btn btn-link p-0 pl-1'
-        repositoryButton.textContent = 'Search a repository'
-        // TODO farhan: Need to tell our tour that we're on the repo path
-        repositoryButton.addEventListener('click', () => {
-            setUserQueryState({ query: 'repo:', cursorPosition: 'repo:'.length })
-            searchOnboardingTour.show('step-2-repo')
-        })
-        repositoryListItem.append(repositoryButton)
-        element.append(title)
-        element.append(description)
-        element.append(languageListItem)
-        element.append(repositoryListItem)
-        const bottomRow = generateBottomRow(1)
-        element.append(bottomRow)
-        return element
-    }
-
-    /**
-     * Generates the content for step 3 in the tour, which asks users to input their own query
-     *
-     * @param languageQuery the current query including a `lang:` filter. Used for language queries so we know what examples to suggest.
-     */
-    function generateStep3(languageQuery?: string): HTMLElement {
-        const element = document.createElement('div')
-        const title = document.createElement('h4')
-        title.textContent = 'Add code to your search'
-        const description = document.createElement('div')
-        element.append(title)
-
-        description.textContent = 'Type the name of a function, variable or other code.'
-        element.append(description)
-        if (languageQuery) {
-            description.textContent = 'Type the name of a function, variable or other code. Or try an example:'
-            const listItem = document.createElement('li')
-            listItem.className = 'list-group-item p-0 border-0'
-            listItem.textContent = '>'
-
-            const exampleButton = document.createElement('button')
-            exampleButton.className = 'btn btn-link'
-
-            const langsList = generateLangsList()
-            let example = ''
-            if (languageQuery && Object.keys(langsList).includes(languageQuery)) {
-                example = langsList[languageQuery]
-            }
-
-            exampleButton.textContent = example
-            exampleButton.addEventListener('click', () => {
-                const fullQuery = [languageQuery, example].join(' ')
-                setUserQueryState({ query: fullQuery, cursorPosition: fullQuery.length })
-                if (languageQuery?.startsWith('lang:')) {
-                    searchOnboardingTour.show('step-4')
-                } else {
-                    searchOnboardingTour.show('step-4-repo')
-                }
-            })
-            listItem.append(exampleButton)
-            element.append(listItem)
-            const bottomRow = generateBottomRow(3)
-            element.append(bottomRow)
-        }
-
-        generateBottomRow(3)
-        return element
-    }
-
     function endAddCodeToYourQuery(): void {
         if (
             isEqual(searchOnboardingTour.getCurrentStep(), searchOnboardingTour.getById('step-3')) &&
@@ -222,13 +104,17 @@ export const SearchPageInput: React.FunctionComponent<Props> = (props: Props) =>
             searchOnboardingTour.show('step-4')
         }
     }
-    function endSecondStep(query: string): void {
+    function endLangInputStep(query: string): void {
         if (
             isEqual(searchOnboardingTour.getCurrentStep(), searchOnboardingTour.getById('step-2-lang')) &&
             searchOnboardingTour.getCurrentStep()?.isOpen()
         ) {
             searchOnboardingTour.show('step-3')
-            searchOnboardingTour.getById('step-3').updateStepOptions({ text: generateStep3(query) })
+            searchOnboardingTour.getById('step-3').updateStepOptions({
+                text: generateLangInputStep(query, (query: string) => {
+                    setUserQueryState({ query, cursorPosition: query.length + 1 })
+                }),
+            })
         }
     }
 
@@ -238,14 +124,23 @@ export const SearchPageInput: React.FunctionComponent<Props> = (props: Props) =>
             searchOnboardingTour.getCurrentStep()?.isOpen()
         ) {
             searchOnboardingTour.show('step-3')
-            searchOnboardingTour.getById('step-3').updateStepOptions({ text: generateStep3() })
+            searchOnboardingTour.getById('step-3').updateStepOptions({ text: generateAddCodeStep() })
         }
     }
 
     const onboardingTour = searchOnboardingTour.addSteps([
         {
             id: 'step-1',
-            text: generateStep1(),
+            text: generateStep1(
+                () => {
+                    setUserQueryState({ query: 'lang:', cursorPosition: 'lang:'.length })
+                    searchOnboardingTour.show('step-2-lang')
+                },
+                () => {
+                    setUserQueryState({ query: 'repo:', cursorPosition: 'repo:'.length })
+                    searchOnboardingTour.show('step-2-repo')
+                }
+            ),
             attachTo: {
                 element: '.search-page__input-container',
                 on: 'bottom',
@@ -253,7 +148,7 @@ export const SearchPageInput: React.FunctionComponent<Props> = (props: Props) =>
         },
         {
             id: 'step-2-lang',
-            text: generateStep(2, '<h4>Type to filter the language autocomplete</h4>'),
+            text: generateStep(2, '<h4>Type to filter the language autocomplete</h4>', () => setHasCancelledTour(true)),
             attachTo: {
                 element: '.search-page__input-container',
                 on: 'top',
@@ -261,7 +156,11 @@ export const SearchPageInput: React.FunctionComponent<Props> = (props: Props) =>
         },
         {
             id: 'step-2-repo',
-            text: generateStep(2, "Type the name of a repository you've used recently to filter the autocomplete list"),
+            text: generateStep(
+                2,
+                "Type the name of a repository you've used recently to filter the autocomplete list",
+                () => setHasCancelledTour(true)
+            ),
             attachTo: {
                 element: '.search-page__input-container',
                 on: 'top',
@@ -276,7 +175,7 @@ export const SearchPageInput: React.FunctionComponent<Props> = (props: Props) =>
         },
         {
             id: 'step-4',
-            text: generateStep(4, '<h4>Review the search reference</h4>'),
+            text: generateStep(4, '<h4>Review the search reference</h4>', () => {}),
             attachTo: {
                 element: '.search-help-dropdown-button',
                 on: 'bottom',
@@ -285,7 +184,9 @@ export const SearchPageInput: React.FunctionComponent<Props> = (props: Props) =>
         },
         {
             id: 'final-step',
-            text: generateStep(5, "<h4>Use the 'return' key or the search button to run your search</h4>"),
+            text: generateStep(5, "<h4>Use the 'return' key or the search button to run your search</h4>", () =>
+                setHasCancelledTour(true)
+            ),
             attachTo: {
                 element: '.search-button',
                 on: 'top',
@@ -295,12 +196,28 @@ export const SearchPageInput: React.FunctionComponent<Props> = (props: Props) =>
     ])
 
     useEffect(() => {
-        if (props.showOnboardingTour) {
+        if (props.showOnboardingTour && !hasCancelledTour && !hasSeenTour) {
             onboardingTour.start()
-            return () => onboardingTour.complete()
         }
         return
-    }, [props.showOnboardingTour, onboardingTour])
+    }, [props.showOnboardingTour, onboardingTour, hasCancelledTour, hasSeenTour])
+
+    useEffect(
+        () => () => {
+            // End tour on unmount.
+            searchOnboardingTour.complete()
+        },
+        []
+    )
+
+    useMemo(() => {
+        onboardingTour.on('complete', () => {
+            setHasSeenTour(true)
+        })
+        onboardingTour.on('cancel', () => {
+            setHasCancelledTour(true)
+        })
+    }, [onboardingTour, setHasSeenTour, setHasCancelledTour])
 
     const quickLinks =
         (isSettingsValid<Settings>(props.settingsCascade) && props.settingsCascade.final.quicklinks) || []
@@ -351,10 +268,9 @@ export const SearchPageInput: React.FunctionComponent<Props> = (props: Props) =>
                                     onChange={setUserQueryState}
                                     onSubmit={onSubmit}
                                     autoFocus={props.autoFocus !== false}
-                                    // endFirstStep={endFirstStep}
                                     // TODO farhan: Could we combine this to one callback, and then we just
                                     // advance based on what the current step is?
-                                    endSecondStep={endSecondStep}
+                                    endLangInputStep={endLangInputStep}
                                     endRepoInputStep={endRepoInputStep}
                                     endAddCodeToYourQuery={endAddCodeToYourQuery}
                                 />

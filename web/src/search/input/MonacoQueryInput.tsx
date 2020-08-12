@@ -26,7 +26,7 @@ import { hasProperty, isDefined } from '../../../../shared/src/util/types'
 import { KeyboardShortcut } from '../../../../shared/src/keyboardShortcuts'
 import { KEYBOARD_SHORTCUT_FOCUS_SEARCHBAR } from '../../keyboardShortcuts/keyboardShortcuts'
 import { observeResize } from '../../util/dom'
-import { searchOnboardingTour } from './SearchOnboardingTour'
+import { searchOnboardingTour, generateLanguageExampleList } from './SearchOnboardingTour'
 
 export interface MonacoQueryInputProps
     extends Omit<TogglesProps, 'navbarSearchQuery' | 'filtersInQuery'>,
@@ -42,7 +42,7 @@ export interface MonacoQueryInputProps
     autoFocus?: boolean
     keyboardShortcutForFocus?: KeyboardShortcut
     endFirstStep?: (editor: Monaco.editor.IStandaloneCodeEditor) => void
-    endSecondStep?: (query: string) => void
+    endLangInputStep?: (query: string) => void
     endRepoInputStep?: () => void
     endAddCodeToYourQuery?: () => void
 
@@ -126,37 +126,7 @@ const hasKeybindingService = (
     typeof (editor._standaloneKeybindingService as MonacoEditorWithKeybindingsService['_standaloneKeybindingService'])
         .addDynamicKeybinding === 'function'
 
-export function generateLangsList(): { [key: string]: string } {
-    const newList: { [key: string]: string } = {
-        'lang:c': 'try {:[my_match]}',
-        'lang:cpp': 'try {:[my_match]}',
-        'lang:csharp': 'try {:[my_match]}',
-        'lang:css': 'body {:[my_match]}',
-        'lang:go': 'for {:[my_match]}',
-        'lang:graphql': 'Query {:[my_match]}',
-        'lang:haskell': 'if :[my_match] else',
-        'lang:html': '<div class="panel">:[my_match]</div>',
-        'lang:java': 'try {:[my_match]}',
-        'lang:javascript': 'try {:[my_match]}',
-        'lang:json': '"object":{:[my_match]}',
-        'lang:lua': 'function update() :[my_match] end',
-        'lang:markdown': '',
-        'lang:php': 'try {:[my_match]}',
-        'lang:powershell': 'try {:[my_match]}',
-        'lang:python': 'try:[my_match] except',
-        'lang:r': 'tryCatch( :[my_match )',
-        'lang:ruby': 'while :[my_match] end',
-        'lang:sass': 'transition( :[my_match] )',
-        'lang:swift': 'switch :[a]{:[b]}',
-        'lang:typescript': 'try{:[my_match]}',
-    }
-    // for (const language of LANGUAGES) {
-    //     newList.push('lang:typescript')
-    // }
-    return newList
-}
-
-const isValidLangQuery = (query: string): boolean => Object.keys(generateLangsList()).includes(query)
+const isValidLangQuery = (query: string): boolean => Object.keys(generateLanguageExampleList()).includes(query)
 
 /**
  * A search query input backed by the Monaco editor, allowing it to provide
@@ -286,19 +256,11 @@ export class MonacoQueryInput extends React.PureComponent<MonacoQueryInputProps>
                         className="monaco-query-input-container__toggle-container"
                     />
                 </div>
-                {/* <button type="button" onClick={this.suggestionTriggers.next.bind(this.suggestionTriggers)}>
-                    trigger suggestions
-                </button> */}
             </>
         )
     }
 
     private onChange = (editor: Monaco.editor.IStandaloneCodeEditor, query: string): void => {
-        // TODO farhan: is this needed? Can we move this?
-        if (this.props.endSecondStep && query !== 'lang:' && query !== 'repo:' && isValidLangQuery(query)) {
-            this.props.endSecondStep(query)
-        }
-
         // Cursor position is irrelevant for the Monaco query input.
         this.props.onChange({ query, cursorPosition: 0, fromUserInput: true })
     }
@@ -364,6 +326,7 @@ export class MonacoQueryInput extends React.PureComponent<MonacoQueryInputProps>
                     ) {
                         this.suggestionTriggers.next()
                     }
+
                     if (
                         isEqual(searchOnboardingTour.getCurrentStep(), searchOnboardingTour.getById('step-2-repo')) &&
                         this.props.endRepoInputStep &&
@@ -374,10 +337,19 @@ export class MonacoQueryInput extends React.PureComponent<MonacoQueryInputProps>
                     } else if (
                         isEqual(searchOnboardingTour.getCurrentStep(), searchOnboardingTour.getById('step-3')) &&
                         this.props.endAddCodeToYourQuery &&
-                        queryState.query.startsWith('repo:') &&
-                        queryState.query !== 'repo:'
+                        (queryState.query.startsWith('repo:') || queryState.query.startsWith('lang:')) &&
+                        queryState.query !== 'repo:' &&
+                        queryState.query !== 'lang:'
                     ) {
                         this.props.endAddCodeToYourQuery()
+                    } else if (
+                        isEqual(searchOnboardingTour.getCurrentStep(), searchOnboardingTour.getById('step-2-lang')) &&
+                        this.props.endLangInputStep &&
+                        queryState.query !== 'lang:' &&
+                        queryState.query !== 'repo:' &&
+                        isValidLangQuery(queryState.query)
+                    ) {
+                        this.props.endLangInputStep(queryState.query)
                     }
                 })
         )

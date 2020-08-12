@@ -5,7 +5,7 @@ import { isPlainObject, isEqual } from 'lodash'
 import { MonacoEditor } from '../../components/MonacoEditor'
 import { QueryState } from '../helpers'
 import { getProviders } from '../../../../shared/src/search/parser/providers'
-import { Subscription, Observable, Subject, Unsubscribable } from 'rxjs'
+import { Subscription, Observable, Subject, Unsubscribable, ReplaySubject } from 'rxjs'
 import { fetchSuggestions } from '../backend'
 import {
     map,
@@ -166,7 +166,7 @@ const isValidLangQuery = (query: string): boolean => Object.keys(generateLangsLi
  * to avoid bundling the Monaco editor on every page.
  */
 export class MonacoQueryInput extends React.PureComponent<MonacoQueryInputProps> {
-    private componentUpdates = new Subject<MonacoQueryInputProps>()
+    private componentUpdates = new ReplaySubject<MonacoQueryInputProps>(1)
     private searchQueries = this.componentUpdates.pipe(
         map(({ queryState }) => queryState.query),
         distinctUntilChanged(),

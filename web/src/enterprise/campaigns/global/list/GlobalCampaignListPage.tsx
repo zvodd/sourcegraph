@@ -1,13 +1,19 @@
-import React, { useEffect } from 'react'
-import { queryCampaigns as _queryCampaigns } from './backend'
+import React, { useEffect, useCallback } from 'react'
+import { queryCampaigns as _queryCampaigns, queryCampaignsByUser, queryCampaignsByOrg } from './backend'
 import { RouteComponentProps } from 'react-router'
 import { FilteredConnection, FilteredConnectionFilter } from '../../../../components/FilteredConnection'
-import { IUser, CampaignState } from '../../../../../../shared/src/graphql/schema'
-import { CampaignNode, CampaignNodeCampaign, CampaignNodeProps } from '../../list/CampaignNode'
+import { CampaignNode, CampaignNodeProps } from '../../list/CampaignNode'
 import { TelemetryProps } from '../../../../../../shared/src/telemetry/telemetryService'
+import {
+    ListCampaign,
+    CampaignState,
+    Scalars,
+    CampaignsByUserVariables,
+    CampaignsByOrgVariables,
+} from '../../../../graphql-operations'
 
 interface Props extends TelemetryProps, Pick<RouteComponentProps, 'history' | 'location'> {
-    authenticatedUser: Pick<IUser, 'siteAdmin'>
+    displayNamespace?: boolean
     queryCampaigns?: typeof _queryCampaigns
 }
 
@@ -37,6 +43,7 @@ const FILTERS: FilteredConnectionFilter[] = [
  */
 export const GlobalCampaignListPage: React.FunctionComponent<Props> = ({
     queryCampaigns = _queryCampaigns,
+    displayNamespace = true,
     ...props
 }) => {
     useEffect(() => props.telemetryService.logViewEvent('CampaignsListPage'), [props.telemetryService])
@@ -45,7 +52,10 @@ export const GlobalCampaignListPage: React.FunctionComponent<Props> = ({
             <div className="d-flex justify-content-between align-items-end mb-3">
                 <div>
                     <h1 className="mb-2">
-                        Campaigns <span className="badge badge-info">Beta</span>
+                        Campaigns{' '}
+                        <sup>
+                            <span className="badge badge-info text-uppercase">Beta</span>
+                        </sup>
                     </h1>
                     <p className="mb-0">
                         Perform and track large-scale code changes.{' '}
@@ -56,9 +66,7 @@ export const GlobalCampaignListPage: React.FunctionComponent<Props> = ({
 
             <div className="card mt-4 mb-4">
                 <div className="card-body p-3">
-                    <h3>
-                        Welcome to campaigns <span className="badge badge-info">Beta</span>!
-                    </h3>
+                    <h3>Welcome to campaigns!</h3>
                     <p className="mb-1">
                         We're excited for you to use campaigns to remove legacy code, fix critical security issues, pay
                         down tech debt, and more. We look forward to hearing about campaigns you run inside your
@@ -70,10 +78,10 @@ export const GlobalCampaignListPage: React.FunctionComponent<Props> = ({
                 </div>
             </div>
 
-            <FilteredConnection<CampaignNodeCampaign, Omit<CampaignNodeProps, 'node'>>
+            <FilteredConnection<ListCampaign, Omit<CampaignNodeProps, 'node'>>
                 {...props}
                 nodeComponent={CampaignNode}
-                nodeComponentProps={{ history: props.history }}
+                nodeComponentProps={{ history: props.history, displayNamespace }}
                 queryConnection={queryCampaigns}
                 hideSearch={true}
                 filters={FILTERS}
@@ -83,4 +91,48 @@ export const GlobalCampaignListPage: React.FunctionComponent<Props> = ({
             />
         </>
     )
+}
+
+export interface UserCampaignListPageProps extends Props {
+    userID: Scalars['ID']
+}
+
+/**
+ * A list of all campaigns in a users namespace.
+ */
+export const UserCampaignListPage: React.FunctionComponent<UserCampaignListPageProps> = ({ userID, ...props }) => {
+    const queryConnection = useCallback(
+        (args: Partial<CampaignsByUserVariables>) =>
+            queryCampaignsByUser({
+                userID,
+                first: args.first ?? null,
+                // The types for FilteredConnectionQueryArgs don't allow access to the filter arguments.
+                state: (args as { state: CampaignState | undefined }).state ?? null,
+                viewerCanAdminister: null,
+            }),
+        [userID]
+    )
+    return <GlobalCampaignListPage {...props} displayNamespace={false} queryCampaigns={queryConnection} />
+}
+
+export interface OrgCampaignListPageProps extends Props {
+    orgID: Scalars['ID']
+}
+
+/**
+ * A list of all campaigns in an orgs namespace.
+ */
+export const OrgCampaignListPage: React.FunctionComponent<OrgCampaignListPageProps> = ({ orgID, ...props }) => {
+    const queryConnection = useCallback(
+        (args: Partial<CampaignsByOrgVariables>) =>
+            queryCampaignsByOrg({
+                orgID,
+                first: args.first ?? null,
+                // The types for FilteredConnectionQueryArgs don't allow access to the filter arguments.
+                state: (args as { state: CampaignState | undefined }).state ?? null,
+                viewerCanAdminister: null,
+            }),
+        [orgID]
+    )
+    return <GlobalCampaignListPage {...props} displayNamespace={false} queryCampaigns={queryConnection} />
 }

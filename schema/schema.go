@@ -317,6 +317,8 @@ type CampaignSpec struct {
 	ChangesetTemplate *ChangesetTemplate `json:"changesetTemplate,omitempty"`
 	// Description description: The description of the campaign.
 	Description string `json:"description,omitempty"`
+	// ImportChangesets description: Import existing changesets on code hosts.
+	ImportChangesets []*ImportChangesets `json:"importChangesets,omitempty"`
 	// Name description: The name of the campaign, which is unique among all campaigns in the namespace. A campaign's name is case-preserving.
 	Name string `json:"name"`
 	// On description: The set of repositories (and branches) to run the campaign on, specified as a list of search queries (that match repositories) and/or specific repositories.
@@ -635,6 +637,8 @@ type GitLabConnection struct {
 	Token string `json:"token"`
 	// Url description: URL of a GitLab instance, such as https://gitlab.example.com or (for GitLab.com) https://gitlab.com.
 	Url string `json:"url"`
+	// Webhooks description: An array of webhook configurations
+	Webhooks []*GitLabWebhook `json:"webhooks,omitempty"`
 }
 type GitLabNameTransformation struct {
 	// Regex description: The regex to match for the occurrences of its replacement.
@@ -655,6 +659,10 @@ type GitLabRateLimit struct {
 	Enabled bool `json:"enabled"`
 	// RequestsPerHour description: Requests per hour permitted. This is an average, calculated per second.
 	RequestsPerHour float64 `json:"requestsPerHour"`
+}
+type GitLabWebhook struct {
+	// Secret description: The secret used to authenticate incoming webhook requests
+	Secret string `json:"secret"`
 }
 
 // GitoliteConnection description: Configuration for a connection to Gitolite.
@@ -717,6 +725,13 @@ func (v *IdentityProvider) UnmarshalJSON(data []byte) error {
 		return json.Unmarshal(data, &v.Username)
 	}
 	return fmt.Errorf("tagged union type must have a %q property whose value is one of %s", "type", []string{"oauth", "username", "external"})
+}
+
+type ImportChangesets struct {
+	// ExternalIDs description: The changesets to import from the code host. For GitHub this is the PR number, for GitLab this is the MR number, for Bitbucket Server this is the PR number.
+	ExternalIDs []interface{} `json:"externalIDs"`
+	// Repository description: The repository name as configured on your Sourcegraph instance.
+	Repository string `json:"repository"`
 }
 
 // Log description: Configuration for logging and alerting, including to external services.
@@ -790,7 +805,7 @@ type NotifierEmail struct {
 // NotifierOpsGenie description: OpsGenie notifier
 type NotifierOpsGenie struct {
 	ApiKey   string `json:"apiKey"`
-	ApiUrl   string `json:"apiUrl"`
+	ApiUrl   string `json:"apiUrl,omitempty"`
 	Priority string `json:"priority,omitempty"`
 	// Responders description: List of responders responsible for notifications.
 	Responders []*Responders `json:"responders,omitempty"`
@@ -843,6 +858,8 @@ type ObservabilityAlerts struct {
 	// Level description: Sourcegraph alert level to subscribe to notifications for.
 	Level    string   `json:"level"`
 	Notifier Notifier `json:"notifier"`
+	// Owners description: Do not use. When set, only receive alerts owned by the specified teams. Used by Sourcegraph internally.
+	Owners []string `json:"owners,omitempty"`
 }
 
 // ObservabilityTracing description: Controls the settings for distributed tracing.
@@ -1184,10 +1201,6 @@ type SiteConfiguration struct {
 	HtmlHeadTop string `json:"htmlHeadTop,omitempty"`
 	// LicenseKey description: The license key associated with a Sourcegraph product subscription, which is necessary to activate Sourcegraph Enterprise functionality. To obtain this value, contact Sourcegraph to purchase a subscription. To escape the value into a JSON string, you may want to use a tool like https://json-escape-text.now.sh.
 	LicenseKey string `json:"licenseKey,omitempty"`
-	// LightstepAccessToken description: DEPRECATED. Use Jaeger (`"observability.tracing": { "sampling": "selective" }`), instead.
-	LightstepAccessToken string `json:"lightstepAccessToken,omitempty"`
-	// LightstepProject description: DEPRECATED. Use Jaeger (`"observability.tracing": { "sampling": "selective" }`), instead.
-	LightstepProject string `json:"lightstepProject,omitempty"`
 	// Log description: Configuration for logging and alerting, including to external services.
 	Log *Log `json:"log,omitempty"`
 	// LsifEnforceAuth description: Whether or not LSIF uploads will be blocked unless a valid LSIF upload token is provided.

@@ -1,6 +1,5 @@
 import React from 'react'
 import { Markdown } from '../../../../../shared/src/components/Markdown'
-import * as GQL from '../../../../../shared/src/graphql/schema'
 import { renderMarkdown } from '../../../../../shared/src/util/markdown'
 import { CampaignsIcon } from '../icons'
 import { Link } from '../../../../../shared/src/components/Link'
@@ -10,29 +9,29 @@ import parseISO from 'date-fns/parseISO'
 import * as H from 'history'
 import { changesetExternalStateIcons, changesetExternalStateColorClasses } from '../detail/changesets/presentation'
 import { Timestamp } from '../../../components/time/Timestamp'
-
-export type CampaignNodeCampaign = Pick<GQL.ICampaign, 'id' | 'closedAt' | 'name' | 'description' | 'createdAt'> & {
-    author: Pick<GQL.ICampaign['author'], 'username'>
-    changesets: {
-        stats: Pick<GQL.ICampaign['changesets']['stats'], 'open' | 'closed' | 'merged'>
-    }
-}
+import { ListCampaign, ChangesetExternalState } from '../../../graphql-operations'
 
 export interface CampaignNodeProps {
-    node: CampaignNodeCampaign
+    node: ListCampaign
     /** Used for testing purposes. Sets the current date */
     now?: Date
     history: H.History
+    displayNamespace: boolean
 }
 
 /**
  * An item in the list of campaigns.
  */
-export const CampaignNode: React.FunctionComponent<CampaignNodeProps> = ({ node, history, now = new Date() }) => {
+export const CampaignNode: React.FunctionComponent<CampaignNodeProps> = ({
+    node,
+    history,
+    now = new Date(),
+    displayNamespace,
+}) => {
     const campaignIconClass = node.closedAt ? 'text-danger' : 'text-success'
-    const OpenChangesetIcon = changesetExternalStateIcons[GQL.ChangesetExternalState.OPEN]
-    const ClosedChangesetIcon = changesetExternalStateIcons[GQL.ChangesetExternalState.CLOSED]
-    const MergedChangesetIcon = changesetExternalStateIcons[GQL.ChangesetExternalState.MERGED]
+    const OpenChangesetIcon = changesetExternalStateIcons[ChangesetExternalState.OPEN]
+    const ClosedChangesetIcon = changesetExternalStateIcons[ChangesetExternalState.CLOSED]
+    const MergedChangesetIcon = changesetExternalStateIcons[ChangesetExternalState.MERGED]
     return (
         <li className="list-group-item">
             <div className="d-flex align-items-center p-2">
@@ -43,14 +42,21 @@ export const CampaignNode: React.FunctionComponent<CampaignNodeProps> = ({ node,
                 <div className="flex-grow-1 campaign-node__content">
                     <div className="m-0 d-flex align-items-baseline">
                         <h3 className="m-0 d-inline-block">
+                            {displayNamespace && (
+                                <>
+                                    <Link className="text-muted" to={`${node.namespace.url}/campaigns`}>
+                                        {node.namespace.namespaceName}
+                                    </Link>
+                                    <span className="text-muted d-inline-block mx-1">/</span>
+                                </>
+                            )}
                             <Link to={`/campaigns/${node.id}`}>{node.name}</Link>
                         </h3>
                         <small className="ml-2 text-muted">
                             created{' '}
                             <span data-tooltip={<Timestamp date={node.createdAt} />}>
                                 {formatDistance(parseISO(node.createdAt), now)} ago
-                            </span>{' '}
-                            by <span className="badge badge-secondary">{node.author.username}</span>
+                            </span>
                         </small>
                     </div>
                     <Markdown

@@ -1,6 +1,6 @@
 import * as H from 'history'
 import * as GQL from '../../../../shared/src/graphql/schema'
-import React, { useState, useCallback, useEffect, useMemo, useRef } from 'react'
+import React, { useState, useCallback, useEffect, useMemo } from 'react'
 import { InteractiveModeInput } from './interactive/InteractiveModeInput'
 import { Form } from 'reactstrap'
 import { SearchModeToggle } from './interactive/SearchModeToggle'
@@ -127,7 +127,7 @@ export const SearchPageInput: React.FunctionComponent<Props> = (props: Props) =>
             },
             {
                 id: 'step-2-lang',
-                text: generateStep(2, '<h4>Type to filter the language autocomplete</h4>'),
+                text: generateStep(2, '<h4 class="font-weight-bold">Type to filter the language autocomplete</h4>'),
                 attachTo: {
                     element: '.search-page__input-container',
                     on: 'top',
@@ -137,7 +137,7 @@ export const SearchPageInput: React.FunctionComponent<Props> = (props: Props) =>
                 id: 'step-2-repo',
                 text: generateStep(
                     2,
-                    "<h4>Type the name of a repository you've used recently to filter the autocomplete list</h4>"
+                    '<h4 class="font-weight-bold">Type the name of a repository you\'ve used recently to filter the autocomplete list</h4>'
                 ),
                 attachTo: {
                     element: '.search-page__input-container',
@@ -155,7 +155,7 @@ export const SearchPageInput: React.FunctionComponent<Props> = (props: Props) =>
             },
             {
                 id: 'step-4',
-                text: generateStep(4, '<h4>Review the search reference</h4>'),
+                text: generateStep(4, '<h4 class="font-weight-bold">Review the search reference</h4>'),
                 attachTo: {
                     element: '.search-help-dropdown-button',
                     on: 'bottom',
@@ -164,7 +164,10 @@ export const SearchPageInput: React.FunctionComponent<Props> = (props: Props) =>
             },
             {
                 id: 'final-step',
-                text: generateStep(5, "<h4>Use the 'return' key or the search button to run your search</h4>"),
+                text: generateStep(
+                    5,
+                    '<h4 class="font-weight-bold">Use the \'return\' key or the search button to run your search</h4>'
+                ),
                 attachTo: {
                     element: '.search-button',
                     on: 'top',

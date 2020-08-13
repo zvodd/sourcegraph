@@ -50,7 +50,7 @@ export function generateBottomRow(stepNumber: number): HTMLElement {
     })
 
     const bottomRow = document.createElement('div')
-    bottomRow.className = 'd-flex justify-content-between pt-4'
+    bottomRow.className = 'd-flex justify-content-between'
     bottomRow.append(stepNumberLabel)
     bottomRow.append(closeTourButton)
     return bottomRow
@@ -63,11 +63,14 @@ export function createStep1Tooltip(
     const element = document.createElement('div')
     element.className = 'd-flex flex-column'
     const title = document.createElement('h4')
+    title.className = 'font-weight-bold'
     title.textContent = 'Code search tour'
     const description = document.createElement('div')
     description.textContent = 'How would you like to begin?'
+    const list = document.createElement('ul')
+    list.className = 'my-4 list-group'
     const languageListItem = document.createElement('li')
-    languageListItem.className = 'list-group-item p-0 border-0'
+    languageListItem.className = 'list-group-item p-0 border-0 mb-2'
     languageListItem.textContent = '-'
     const languageButton = document.createElement('button')
     languageButton.className = 'btn btn-link p-0 pl-1'
@@ -78,7 +81,7 @@ export function createStep1Tooltip(
         searchOnboardingTour.show('step-2-lang')
     })
     const repositoryListItem = document.createElement('li')
-    repositoryListItem.className = 'list-group-item p-0 border-0'
+    repositoryListItem.className = 'list-group-item p-0 border-0 mb-2'
     repositoryListItem.textContent = '-'
     const repositoryButton = document.createElement('button')
     repositoryButton.className = 'btn btn-link p-0 pl-1'
@@ -90,8 +93,9 @@ export function createStep1Tooltip(
     repositoryListItem.append(repositoryButton)
     element.append(title)
     element.append(description)
-    element.append(languageListItem)
-    element.append(repositoryListItem)
+    list.append(languageListItem)
+    list.append(repositoryListItem)
+    element.append(list)
     const bottomRow = generateBottomRow(1)
     element.append(bottomRow)
     return element
@@ -100,6 +104,7 @@ export function createStep1Tooltip(
 export function createAddCodeStep(): HTMLElement {
     const element = document.createElement('div')
     const title = document.createElement('h4')
+    title.className = 'font-weight-bold'
     title.textContent = 'Add code to your search'
     const description = document.createElement('div')
     description.className = 'add-code-step-description'
@@ -156,6 +161,8 @@ export function createAddCodeStepWithLanguageExample(
         description.textContent = 'Type the name of a function, variable or other code. Or try an example:'
     }
     element.append(baseElement)
+    const list = document.createElement('ul')
+    list.className = 'my-4 list-group'
 
     const listItem = document.createElement('li')
     listItem.className = 'list-group-item p-0 border-0'
@@ -177,7 +184,8 @@ export function createAddCodeStepWithLanguageExample(
         searchOnboardingTour.show('step-4')
     })
     listItem.append(exampleButton)
-    element.append(listItem)
+    list.append(listItem)
+    element.append(list)
     const bottomRow = generateBottomRow(3)
     element.append(bottomRow)
     // TODO farhan -- handler

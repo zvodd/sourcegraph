@@ -137,7 +137,7 @@ export const SearchPageInput: React.FunctionComponent<Props> = (props: Props) =>
                 id: 'step-2-repo',
                 text: generateStep(
                     2,
-                    "Type the name of a repository you've used recently to filter the autocomplete list"
+                    "<h4>Type the name of a repository you've used recently to filter the autocomplete list</h4>"
                 ),
                 attachTo: {
                     element: '.search-page__input-container',

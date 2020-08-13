@@ -4,7 +4,7 @@ export const searchOnboardingTour = new Shepherd.Tour({
     useModalOverlay: true,
     defaultStepOptions: {
         arrow: true,
-        classes: 'web-content tour-card card p-2',
+        classes: 'web-content tour-card card py-4 px-3',
         popperOptions: {
             // Removes default behavior of autofocusing steps
             modifiers: [
@@ -38,6 +38,7 @@ export const HAS_SEEN_TOUR_KEY = 'has-cancelled-onboarding-tour'
 
 export function generateBottomRow(stepNumber: number): HTMLElement {
     const stepNumberLabel = document.createElement('span')
+    stepNumberLabel.className = 'font-weight-light font-italic'
     stepNumberLabel.textContent = `Step ${stepNumber} of 5`
 
     const closeTourButton = document.createElement('button')
@@ -49,7 +50,7 @@ export function generateBottomRow(stepNumber: number): HTMLElement {
     })
 
     const bottomRow = document.createElement('div')
-    bottomRow.className = 'd-flex justify-content-between pt-2'
+    bottomRow.className = 'd-flex justify-content-between pt-4'
     bottomRow.append(stepNumberLabel)
     bottomRow.append(closeTourButton)
     return bottomRow
@@ -161,7 +162,7 @@ export function createAddCodeStepWithLanguageExample(
     listItem.textContent = '>'
 
     const exampleButton = document.createElement('button')
-    exampleButton.className = 'btn btn-link'
+    exampleButton.className = 'btn btn-link text-monospace'
 
     const langsList = languageFilterToSearchExamples
     let example = ''

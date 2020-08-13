@@ -34,7 +34,7 @@ import { VersionContextProps } from '../../../../shared/src/search/util'
 import { VersionContext } from '../../schema/site.schema'
 import { submitSearch, SubmitSearchParams } from '../helpers'
 import {
-    generateStep,
+    generateStepTooltip,
     createStep1Tooltip,
     stepCallbacks,
     HAS_SEEN_TOUR_KEY,
@@ -160,11 +160,7 @@ export const SearchPageInput: React.FunctionComponent<Props> = (props: Props) =>
                 },
                 {
                     id: 'step-2-lang',
-                    text: generateStep(
-                        tour,
-                        2,
-                        '<h4 class="font-weight-bold">Type to filter the language autocomplete</h4>'
-                    ),
+                    text: generateStepTooltip(tour, 'Type to filter the language autocomplete', 2),
                     attachTo: {
                         element: '.search-page__input-container',
                         on: 'top',
@@ -172,10 +168,10 @@ export const SearchPageInput: React.FunctionComponent<Props> = (props: Props) =>
                 },
                 {
                     id: 'step-2-repo',
-                    text: generateStep(
+                    text: generateStepTooltip(
                         tour,
-                        2,
-                        '<h4 class="font-weight-bold">Type the name of a repository you\'ve used recently to filter the autocomplete list</h4>'
+                        "Type the name of a repository you've used recently to filter the autocomplete list",
+                        2
                     ),
                     attachTo: {
                         element: '.search-page__input-container',
@@ -193,7 +189,7 @@ export const SearchPageInput: React.FunctionComponent<Props> = (props: Props) =>
                 },
                 {
                     id: 'step-4',
-                    text: generateStep(tour, 4, '<h4 class="font-weight-bold">Review the search reference</h4>'),
+                    text: generateStepTooltip(tour, 'Review the search reference', 4),
                     attachTo: {
                         element: '.search-help-dropdown-button',
                         on: 'bottom',
@@ -202,11 +198,7 @@ export const SearchPageInput: React.FunctionComponent<Props> = (props: Props) =>
                 },
                 {
                     id: 'final-step',
-                    text: generateStep(
-                        tour,
-                        5,
-                        '<h4 class="font-weight-bold">Use the \'return\' key or the search button to run your search</h4>'
-                    ),
+                    text: generateStepTooltip(tour, "Use the 'return' key or the search button to run your search", 5),
                     attachTo: {
                         element: '.search-button',
                         on: 'top',

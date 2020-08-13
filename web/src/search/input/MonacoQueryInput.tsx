@@ -26,7 +26,7 @@ import { hasProperty, isDefined } from '../../../../shared/src/util/types'
 import { KeyboardShortcut } from '../../../../shared/src/keyboardShortcuts'
 import { KEYBOARD_SHORTCUT_FOCUS_SEARCHBAR } from '../../keyboardShortcuts/keyboardShortcuts'
 import { observeResize } from '../../util/dom'
-import { searchOnboardingTour, generateLanguageExampleList } from './SearchOnboardingTour'
+import { searchOnboardingTour, advanceStepCallbackType } from './SearchOnboardingTour'
 
 export interface MonacoQueryInputProps
     extends Omit<TogglesProps, 'navbarSearchQuery' | 'filtersInQuery'>,
@@ -41,10 +41,11 @@ export interface MonacoQueryInputProps
     onSubmit: () => void
     autoFocus?: boolean
     keyboardShortcutForFocus?: KeyboardShortcut
-    endFirstStep?: (editor: Monaco.editor.IStandaloneCodeEditor) => void
-    endLangInputStep?: (query: string) => void
-    endRepoInputStep?: () => void
-    endAddCodeToYourQuery?: () => void
+    /**
+     * A list of callbacks to advance steps in the search onboarding tour.
+     * These callbacks are called when the query in this query input is updated.
+     */
+    tourAdvanceStepCallbacks?: advanceStepCallbackType[]
 
     // Whether globbing is enabled for filters.
     globbing: boolean
@@ -125,8 +126,6 @@ const hasKeybindingService = (
     hasProperty('_standaloneKeybindingService')(editor) &&
     typeof (editor._standaloneKeybindingService as MonacoEditorWithKeybindingsService['_standaloneKeybindingService'])
         .addDynamicKeybinding === 'function'
-
-const isValidLangQuery = (query: string): boolean => Object.keys(generateLanguageExampleList()).includes(query)
 
 /**
  * A search query input backed by the Monaco editor, allowing it to provide
@@ -311,48 +310,56 @@ export class MonacoQueryInput extends React.PureComponent<MonacoQueryInputProps>
                 })
         )
 
-        // Advance the search tour
-        this.subscriptions.add(
-            this.componentUpdates
-                .pipe(
-                    debounceTime(300),
-                    map(({ queryState }) => queryState),
-                    filter(({ fromUserInput }) => !!fromUserInput)
-                )
-                .subscribe(queryState => {
-                    if (
-                        isEqual(searchOnboardingTour.getCurrentStep(), searchOnboardingTour.getById('step-2-repo')) ||
-                        isEqual(searchOnboardingTour.getCurrentStep(), searchOnboardingTour.getById('step-2-lang'))
-                    ) {
-                        this.suggestionTriggers.next()
-                    }
+        if (searchOnboardingTour.isActive()) {
+            // Handle advancing the search tour.
+            this.subscriptions.add(
+                this.componentUpdates
+                    .pipe(
+                        debounceTime(500),
+                        map(({ queryState }) => queryState),
+                        filter(({ fromUserInput }) => !!fromUserInput)
+                    )
+                    .subscribe(queryState => {
+                        // Trigger the suggestions popup for `repo:` and `lang:` fields
+                        if (
+                            (isEqual(
+                                searchOnboardingTour.getCurrentStep(),
+                                searchOnboardingTour.getById('step-2-repo')
+                            ) &&
+                                queryState.query === 'repo:') ||
+                            (isEqual(
+                                searchOnboardingTour.getCurrentStep(),
+                                searchOnboardingTour.getById('step-2-lang')
+                            ) &&
+                                queryState.query === 'lang:')
+                        ) {
+                            this.suggestionTriggers.next()
+                        }
 
-                    if (
-                        isEqual(searchOnboardingTour.getCurrentStep(), searchOnboardingTour.getById('step-2-repo')) &&
-                        this.props.endRepoInputStep &&
-                        queryState.query.startsWith('repo:') &&
-                        queryState.query !== 'repo:'
-                    ) {
-                        this.props.endRepoInputStep()
-                    } else if (
-                        isEqual(searchOnboardingTour.getCurrentStep(), searchOnboardingTour.getById('step-3')) &&
-                        this.props.endAddCodeToYourQuery &&
-                        (queryState.query.startsWith('repo:') || queryState.query.startsWith('lang:')) &&
-                        queryState.query !== 'repo:' &&
-                        queryState.query !== 'lang:'
-                    ) {
-                        this.props.endAddCodeToYourQuery()
-                    } else if (
-                        isEqual(searchOnboardingTour.getCurrentStep(), searchOnboardingTour.getById('step-2-lang')) &&
-                        this.props.endLangInputStep &&
-                        queryState.query !== 'lang:' &&
-                        queryState.query !== 'repo:' &&
-                        isValidLangQuery(queryState.query)
-                    ) {
-                        this.props.endLangInputStep(queryState.query)
-                    }
-                })
-        )
+                        if (this.props.tourAdvanceStepCallbacks) {
+                            for (const advanceStepCallback of this.props.tourAdvanceStepCallbacks) {
+                                if (
+                                    isEqual(
+                                        searchOnboardingTour.getCurrentStep(),
+                                        searchOnboardingTour.getById(advanceStepCallback.stepToAdvance)
+                                    ) &&
+                                    advanceStepCallback.queryConditions &&
+                                    advanceStepCallback.queryConditions(queryState.query)
+                                ) {
+                                    advanceStepCallback.handler(queryState.query, (newQuery: string) => {
+                                        this.props.onChange({
+                                            query: newQuery,
+                                            cursorPosition: newQuery.length,
+                                            fromUserInput: true,
+                                        })
+                                    })
+                                    break
+                                }
+                            }
+                        }
+                    })
+            )
+        }
 
         // Prevent newline insertion in model, and surface query changes with stripped newlines.
         this.subscriptions.add(

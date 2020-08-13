@@ -1,7 +1,8 @@
 import Shepherd from 'shepherd.js'
+import { isEqual } from 'lodash'
 
 export const searchOnboardingTour = new Shepherd.Tour({
-    useModalOverlay: false,
+    useModalOverlay: true,
     defaultStepOptions: {
         arrow: true,
         classes: 'web-content tour-card card p-2',
@@ -18,6 +19,7 @@ export const searchOnboardingTour = new Shepherd.Tour({
         scrollTo: false,
     },
 })
+
 /**
  * generateStep creates a generic tooltip for the search tour. All steps that just contain
  * simple text should use this function to populate the step's `text` field.
@@ -107,6 +109,33 @@ export function generateAddCodeStep(): HTMLElement {
 }
 
 /**
+ * A list of
+ */
+export const languageFilterToSearchExamples: { [key: string]: string } = {
+    'lang:c': 'try {:[my_match]}',
+    'lang:cpp': 'try {:[my_match]}',
+    'lang:csharp': 'try {:[my_match]}',
+    'lang:css': 'body {:[my_match]}',
+    'lang:go': 'for {:[my_match]}',
+    'lang:graphql': 'Query {:[my_match]}',
+    'lang:haskell': 'if :[my_match] else',
+    'lang:html': '<div class="panel">:[my_match]</div>',
+    'lang:java': 'try {:[my_match]}',
+    'lang:javascript': 'try {:[my_match]}',
+    'lang:json': '"object":{:[my_match]}',
+    'lang:lua': 'function update() :[my_match] end',
+    'lang:markdown': '',
+    'lang:php': 'try {:[my_match]}',
+    'lang:powershell': 'try {:[my_match]}',
+    'lang:python': 'try:[my_match] except',
+    'lang:r': 'tryCatch( :[my_match )',
+    'lang:ruby': 'while :[my_match] end',
+    'lang:sass': 'transition( :[my_match] )',
+    'lang:swift': 'switch :[a]{:[b]}',
+    'lang:typescript': 'try{:[my_match]}',
+}
+
+/**
  * Generates the content for step 3 in the tour, in the language path, which asks users to input their own query
  *
  * @param languageQuery the current query including a `lang:` filter. Used for language queries so we know what examples to suggest.
@@ -127,7 +156,7 @@ export function generateLangInputStep(languageQuery: string, exampleCallback: (q
     const exampleButton = document.createElement('button')
     exampleButton.className = 'btn btn-link'
 
-    const langsList = generateLanguageExampleList()
+    const langsList = languageFilterToSearchExamples
     let example = ''
     if (languageQuery && Object.keys(langsList).includes(languageQuery)) {
         example = langsList[languageQuery]
@@ -148,40 +177,92 @@ export function generateLangInputStep(languageQuery: string, exampleCallback: (q
     return element
 }
 
-// create steps
+export const isValidLangQuery = (query: string): boolean => Object.keys(languageFilterToSearchExamples).includes(query)
 
-/**
- * Interface for handlers to end steps
- *
- * end lang input step (just lang)
- * end repo input step (just repo)
- * end add code to your query step (both repo and lang)
+export function endAddCodeToYourQuery(): void {
+    if (
+        isEqual(searchOnboardingTour.getCurrentStep(), searchOnboardingTour.getById('step-3')) &&
+        searchOnboardingTour.getCurrentStep()?.isOpen()
+    ) {
+        searchOnboardingTour.show('step-4')
+    }
+}
+
+export function endRepoInputStep(): void {
+    if (
+        isEqual(searchOnboardingTour.getCurrentStep(), searchOnboardingTour.getById('step-2-repo')) &&
+        searchOnboardingTour.getCurrentStep()?.isOpen()
+    ) {
+        searchOnboardingTour.show('step-3')
+        searchOnboardingTour.getById('step-3').updateStepOptions({ text: generateAddCodeStep() })
+    }
+}
+
+export function endLangInputStep(query: string, setQueryHandler: (query: string) => void): void {
+    if (
+        isEqual(searchOnboardingTour.getCurrentStep(), searchOnboardingTour.getById('step-2-lang')) &&
+        searchOnboardingTour.getCurrentStep()?.isOpen()
+    ) {
+        searchOnboardingTour.show('step-3')
+        searchOnboardingTour.getById('step-3').updateStepOptions({
+            text: generateLangInputStep(query ?? '', (newQuery: string) => setQueryHandler(newQuery)),
+        })
+    }
+}
+
+/** *
+ * The types below allow us to end steps in the tour from components outside of the SearchPageInput component
+ * where the tour is located. In particular, we want to advance tour steps when a user types or updates the query input
+ * after a debounce period, on certain conditions such as the contents of the query.
  */
 
-export function generateLanguageExampleList(): { [key: string]: string } {
-    const newList: { [key: string]: string } = {
-        'lang:c': 'try {:[my_match]}',
-        'lang:cpp': 'try {:[my_match]}',
-        'lang:csharp': 'try {:[my_match]}',
-        'lang:css': 'body {:[my_match]}',
-        'lang:go': 'for {:[my_match]}',
-        'lang:graphql': 'Query {:[my_match]}',
-        'lang:haskell': 'if :[my_match] else',
-        'lang:html': '<div class="panel">:[my_match]</div>',
-        'lang:java': 'try {:[my_match]}',
-        'lang:javascript': 'try {:[my_match]}',
-        'lang:json': '"object":{:[my_match]}',
-        'lang:lua': 'function update() :[my_match] end',
-        'lang:markdown': '',
-        'lang:php': 'try {:[my_match]}',
-        'lang:powershell': 'try {:[my_match]}',
-        'lang:python': 'try:[my_match] except',
-        'lang:r': 'tryCatch( :[my_match )',
-        'lang:ruby': 'while :[my_match] end',
-        'lang:sass': 'transition( :[my_match] )',
-        'lang:swift': 'switch :[a]{:[b]}',
-        'lang:typescript': 'try{:[my_match]}',
-    }
-
-    return newList
+/**
+ *
+ */
+export interface advanceStepCallback {
+    /**
+     * The ID of the step to advance from.
+     */
+    stepToAdvance: string
+    /**
+     * Conditions that must be true before advancing to the next step.
+     */
+    queryConditions?: (query: string) => boolean
 }
+
+/**
+ * Defines a callback for a normal step.
+ */
+type standardStepCallback = advanceStepCallback & { handler: () => void }
+
+/**
+ * A special case type to define a callback for a the "add code to your query" step on the language path.
+ * The handler takes a query and setQueryHandler, which allows us to generate the appropriate tooltip
+ * content for the next step.
+ */
+type endLanguageInputStep = advanceStepCallback & {
+    handler: (query: string, setQueryHandler: (query: string) => void) => void
+}
+
+export type advanceStepCallbackType = standardStepCallback | endLanguageInputStep
+
+/**
+ * A list of callbacks that will advance certain steps when the query input's value is changed.
+ */
+export const stepCallbacks: advanceStepCallbackType[] = [
+    {
+        stepToAdvance: 'step-2-repo',
+        handler: endRepoInputStep,
+        queryConditions: (query: string): boolean => query !== 'repo:',
+    },
+    {
+        stepToAdvance: 'step-2-lang',
+        handler: endLangInputStep,
+        queryConditions: (query: string): boolean => query !== 'lang:' && isValidLangQuery(query),
+    },
+    {
+        stepToAdvance: 'step-3',
+        handler: endAddCodeToYourQuery,
+        queryConditions: (query: string): boolean => query !== 'repo:' && query !== 'lang:',
+    },
+]

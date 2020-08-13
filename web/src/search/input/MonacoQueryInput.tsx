@@ -26,7 +26,8 @@ import { hasProperty, isDefined } from '../../../../shared/src/util/types'
 import { KeyboardShortcut } from '../../../../shared/src/keyboardShortcuts'
 import { KEYBOARD_SHORTCUT_FOCUS_SEARCHBAR } from '../../keyboardShortcuts/keyboardShortcuts'
 import { observeResize } from '../../util/dom'
-import { searchOnboardingTour, callbackToAdvanceTourStep } from './SearchOnboardingTour'
+import { callbackToAdvanceTourStep } from './SearchOnboardingTour'
+import Shepherd from 'shepherd.js'
 
 export interface MonacoQueryInputProps
     extends Omit<TogglesProps, 'navbarSearchQuery' | 'filtersInQuery'>,
@@ -41,6 +42,10 @@ export interface MonacoQueryInputProps
     onSubmit: () => void
     autoFocus?: boolean
     keyboardShortcutForFocus?: KeyboardShortcut
+    /**
+     * The current onboarding tour instance
+     */
+    tour?: Shepherd.Tour
     /**
      * A list of callbacks to advance steps in the search onboarding tour.
      * These callbacks are called when the query in this query input is updated.
@@ -310,7 +315,8 @@ export class MonacoQueryInput extends React.PureComponent<MonacoQueryInputProps>
                 })
         )
 
-        if (searchOnboardingTour.isActive()) {
+        const tour = this.props.tour
+        if (tour) {
             // Handle advancing the search tour.
             this.subscriptions.add(
                 this.componentUpdates
@@ -322,15 +328,9 @@ export class MonacoQueryInput extends React.PureComponent<MonacoQueryInputProps>
                     .subscribe(queryState => {
                         // Trigger the suggestions popup for `repo:` and `lang:` fields
                         if (
-                            (isEqual(
-                                searchOnboardingTour.getCurrentStep(),
-                                searchOnboardingTour.getById('step-2-repo')
-                            ) &&
+                            (isEqual(tour.getCurrentStep(), tour.getById('step-2-repo')) &&
                                 queryState.query === 'repo:') ||
-                            (isEqual(
-                                searchOnboardingTour.getCurrentStep(),
-                                searchOnboardingTour.getById('step-2-lang')
-                            ) &&
+                            (isEqual(tour.getCurrentStep(), tour.getById('step-2-lang')) &&
                                 queryState.query === 'lang:')
                         ) {
                             this.suggestionTriggers.next()
@@ -339,14 +339,11 @@ export class MonacoQueryInput extends React.PureComponent<MonacoQueryInputProps>
                         if (this.props.tourAdvanceStepCallbacks) {
                             for (const advanceStepCallback of this.props.tourAdvanceStepCallbacks) {
                                 if (
-                                    isEqual(
-                                        searchOnboardingTour.getCurrentStep(),
-                                        searchOnboardingTour.getById(advanceStepCallback.stepToAdvance)
-                                    ) &&
+                                    isEqual(tour.getCurrentStep(), tour.getById(advanceStepCallback.stepToAdvance)) &&
                                     advanceStepCallback.queryConditions &&
                                     advanceStepCallback.queryConditions(queryState.query)
                                 ) {
-                                    advanceStepCallback.handler(queryState.query, (newQuery: string) => {
+                                    advanceStepCallback.handler(tour, queryState.query, (newQuery: string) => {
                                         this.props.onChange({
                                             query: newQuery,
                                             cursorPosition: newQuery.length,

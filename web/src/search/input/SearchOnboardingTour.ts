@@ -1,34 +1,18 @@
+/**
+ * This file contains utility functions for the search onboarding tour.
+ */
 import Shepherd from 'shepherd.js'
-
-export const searchOnboardingTour = new Shepherd.Tour({
-    useModalOverlay: true,
-    defaultStepOptions: {
-        arrow: true,
-        classes: 'web-content tour-card card py-4 px-3',
-        popperOptions: {
-            // Removes default behavior of autofocusing steps
-            modifiers: [
-                {
-                    name: 'focusAfterRender',
-                    enabled: false,
-                },
-            ],
-        },
-        attachTo: { on: 'bottom' },
-        scrollTo: false,
-    },
-})
 
 /**
  * generateStep creates a generic tooltip for the search tour. All steps that just contain
  * simple text should use this function to populate the step's `text` field.
  */
-export function generateStep(stepNumber: number, text: string): HTMLElement {
+export function generateStep(tour: Shepherd.Tour, stepNumber: number, text: string): HTMLElement {
     const element = document.createElement('div')
     const textContainer = document.createElement('div')
     textContainer.innerHTML = text
     element.append(textContainer)
-    const bottomRow = generateBottomRow(stepNumber)
+    const bottomRow = generateBottomRow(tour, stepNumber)
     element.append(bottomRow)
     return element
 }
@@ -36,7 +20,7 @@ export function generateStep(stepNumber: number, text: string): HTMLElement {
 export const HAS_CANCELLED_TOUR_KEY = 'has-cancelled-onboarding-tour'
 export const HAS_SEEN_TOUR_KEY = 'has-cancelled-onboarding-tour'
 
-export function generateBottomRow(stepNumber: number): HTMLElement {
+export function generateBottomRow(tour: Shepherd.Tour, stepNumber: number): HTMLElement {
     const stepNumberLabel = document.createElement('span')
     stepNumberLabel.className = 'font-weight-light font-italic'
     stepNumberLabel.textContent = `Step ${stepNumber} of 5`
@@ -45,7 +29,7 @@ export function generateBottomRow(stepNumber: number): HTMLElement {
     closeTourButton.className = 'btn btn-link p-0'
     closeTourButton.textContent = 'Close tour'
     closeTourButton.addEventListener('click', () => {
-        searchOnboardingTour.cancel()
+        tour.cancel()
         localStorage.setItem(HAS_CANCELLED_TOUR_KEY, 'true')
     })
 
@@ -57,6 +41,7 @@ export function generateBottomRow(stepNumber: number): HTMLElement {
 }
 
 export function createStep1Tooltip(
+    tour: Shepherd.Tour,
     languageButtonHandler: () => void,
     repositoryButtonHandler: () => void
 ): HTMLElement {
@@ -78,7 +63,6 @@ export function createStep1Tooltip(
     languageListItem.append(languageButton)
     languageButton.addEventListener('click', () => {
         languageButtonHandler()
-        searchOnboardingTour.show('step-2-lang')
     })
     const repositoryListItem = document.createElement('li')
     repositoryListItem.className = 'list-group-item p-0 border-0 mb-2'
@@ -88,7 +72,6 @@ export function createStep1Tooltip(
     repositoryButton.textContent = 'Search a repository'
     repositoryButton.addEventListener('click', () => {
         repositoryButtonHandler()
-        searchOnboardingTour.show('step-2-repo')
     })
     repositoryListItem.append(repositoryButton)
     element.append(title)
@@ -96,12 +79,12 @@ export function createStep1Tooltip(
     list.append(languageListItem)
     list.append(repositoryListItem)
     element.append(list)
-    const bottomRow = generateBottomRow(1)
+    const bottomRow = generateBottomRow(tour, 1)
     element.append(bottomRow)
     return element
 }
 
-export function createAddCodeStep(): HTMLElement {
+export function createAddCodeStep(tour: Shepherd.Tour): HTMLElement {
     const element = document.createElement('div')
     const title = document.createElement('h4')
     title.className = 'font-weight-bold'
@@ -112,8 +95,7 @@ export function createAddCodeStep(): HTMLElement {
 
     description.textContent = 'Type the name of a function, variable or other code.'
     element.append(description)
-    // TODO farhan -- handler
-    generateBottomRow(3)
+    generateBottomRow(tour, 3)
     return element
 }
 
@@ -151,11 +133,12 @@ export const languageFilterToSearchExamples: { [key: string]: string } = {
  * @param languageQuery the current query including a `lang:` filter. Used for language queries so we know what examples to suggest.
  */
 export function createAddCodeStepWithLanguageExample(
+    tour: Shepherd.Tour,
     languageQuery: string,
     exampleCallback: (query: string) => void
 ): HTMLElement {
     const element = document.createElement('div')
-    const baseElement = createAddCodeStep()
+    const baseElement = createAddCodeStep(tour)
     const description = baseElement.querySelector('.add-code-step-description')
     if (description) {
         description.textContent = 'Type the name of a function, variable or other code. Or try an example:'
@@ -181,15 +164,14 @@ export function createAddCodeStepWithLanguageExample(
     exampleButton.addEventListener('click', () => {
         const fullQuery = [languageQuery, example].join(' ')
         exampleCallback(fullQuery)
-        searchOnboardingTour.show('step-4')
+        tour.show('step-4')
     })
     listItem.append(exampleButton)
     list.append(listItem)
     element.append(list)
-    const bottomRow = generateBottomRow(3)
+    const bottomRow = generateBottomRow(tour, 3)
     element.append(bottomRow)
-    // TODO farhan -- handler
-    generateBottomRow(3)
+    generateBottomRow(tour, 3)
     return element
 }
 
@@ -217,7 +199,7 @@ export interface advanceStepCallback {
 /**
  * Defines a callback to advance a step.
  */
-type advanceStandardStep = advanceStepCallback & { handler: () => void }
+type advanceStandardStep = advanceStepCallback & { handler: (tour: Shepherd.Tour) => void }
 
 /**
  * A special case type to define a callback for a the "add code to your query" step on the language path.
@@ -225,7 +207,7 @@ type advanceStandardStep = advanceStepCallback & { handler: () => void }
  * content for the next step.
  */
 type advanceLanguageInputStep = advanceStepCallback & {
-    handler: (query: string, setQueryHandler: (query: string) => void) => void
+    handler: (tour: Shepherd.Tour, query: string, setQueryHandler: (query: string) => void) => void
 }
 
 export type callbackToAdvanceTourStep = advanceStandardStep | advanceLanguageInputStep
@@ -236,21 +218,21 @@ export type callbackToAdvanceTourStep = advanceStandardStep | advanceLanguageInp
 export const stepCallbacks: callbackToAdvanceTourStep[] = [
     {
         stepToAdvance: 'step-2-repo',
-        handler: (): void => {
-            if (searchOnboardingTour.getById('step-2-repo').isOpen()) {
-                searchOnboardingTour.show('step-3')
-                searchOnboardingTour.getById('step-3').updateStepOptions({ text: createAddCodeStep() })
+        handler: (tour: Shepherd.Tour): void => {
+            if (tour.getById('step-2-repo').isOpen()) {
+                tour.show('step-3')
+                tour.getById('step-3').updateStepOptions({ text: createAddCodeStep(tour) })
             }
         },
         queryConditions: (query: string): boolean => query !== 'repo:',
     },
     {
         stepToAdvance: 'step-2-lang',
-        handler: (query: string, setQueryHandler: (query: string) => void): void => {
-            if (searchOnboardingTour.getById('step-2-lang').isOpen()) {
-                searchOnboardingTour.show('step-3')
-                searchOnboardingTour.getById('step-3').updateStepOptions({
-                    text: createAddCodeStepWithLanguageExample(query ?? '', (newQuery: string) =>
+        handler: (tour: Shepherd.Tour, query: string, setQueryHandler: (query: string) => void): void => {
+            if (tour.getById('step-2-lang').isOpen()) {
+                tour.show('step-3')
+                tour.getById('step-3').updateStepOptions({
+                    text: createAddCodeStepWithLanguageExample(tour, query ?? '', (newQuery: string) =>
                         setQueryHandler(newQuery)
                     ),
                 })
@@ -260,9 +242,9 @@ export const stepCallbacks: callbackToAdvanceTourStep[] = [
     },
     {
         stepToAdvance: 'step-3',
-        handler: (): void => {
-            if (searchOnboardingTour.getById('step-3').isOpen()) {
-                searchOnboardingTour.show('step-4')
+        handler: (tour: Shepherd.Tour): void => {
+            if (tour.getById('step-3').isOpen()) {
+                tour.show('step-4')
             }
         },
         queryConditions: (query: string): boolean => query !== 'repo:' && query !== 'lang:',

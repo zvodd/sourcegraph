@@ -17,15 +17,17 @@
 
 set -e
 
-yes | gcloud auth configure-docker
+yes | echo gcloud auth configure-docker
 
 src="$1"
 
+shift
+
 echo "--- pulling $src"
-docker pull "$src"
+echo docker pull "$src"
 
 for dst in "$@"; do
   echo "--- pushing $dst"
-  docker tag "$src" "$dst"
-  docker push "$dst"
+  echo docker tag "$src" "$dst"
+  echo docker push "$dst"
 done

@@ -5,5 +5,13 @@ module.exports = {
     ...baseConfig.parserOptions,
     project: [__dirname + '/tsconfig.json', __dirname + '/src/**/tsconfig.json'],
   },
-  overrides: baseConfig.overrides,
+  overrides: [
+    ...baseConfig.overrides,
+    {
+      files: ['src/schema/*.d.ts'],
+      rules: {
+        'jsdoc/check-indentation': 0,
+      },
+    },
+  ],
 }

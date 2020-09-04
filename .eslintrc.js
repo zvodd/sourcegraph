@@ -75,6 +75,16 @@ const config = {
         'react/forbid-dom-props': 'off',
       },
     },
+    {
+      files: ['**/graphql-operations.ts'],
+      rules: {
+        'no-duplicate-imports': 0,
+        'import/no-duplicates': 0,
+        '@typescript-eslint/array-type': 0,
+        '@typescript-eslint/consistent-type-definitions': 0,
+        'unicorn/prevent-abbreviations': 0,
+      },
+    },
   ],
 }
 

@@ -96,6 +96,7 @@ const draftV7resolver = {
  * @returns {Promise<void>}
  */
 async function schema() {
+  const formatOptions = await resolveConfig(__dirname, { config: __dirname + '/../prettier.config.js' })
   const outputDirectory = path.join(__dirname, '..', 'web', 'src', 'schema')
   await mkdir(outputDirectory, { recursive: true })
   const schemaDirectory = path.join(__dirname, '..', 'schema')
@@ -120,7 +121,8 @@ async function schema() {
           }),
         },
       })
-      await writeFile(path.join(outputDirectory, `${file}.schema.d.ts`), types)
+      const formattedTypes = format(types, { ...formatOptions, parser: 'typescript' })
+      await writeFile(path.join(outputDirectory, `${file}.schema.d.ts`), formattedTypes)
     })
   )
 }

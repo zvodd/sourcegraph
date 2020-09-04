@@ -21,5 +21,16 @@ module.exports = {
       },
     ],
   },
-  overrides: baseConfig.overrides,
+  overrides: [
+    ...baseConfig.overrides,
+    {
+      files: ['src/graphql/schema.ts'],
+      rules: {
+        '@typescript-eslint/no-explicit-any': 0,
+        'jsdoc/check-indentation': 0,
+        'jsdoc/newline-after-description': 0,
+        'unicorn/prevent-abbreviations': 0,
+      },
+    },
+  ],
 }

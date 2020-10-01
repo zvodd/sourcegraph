@@ -141,3 +141,12 @@ export function allOf(...typeGuards: any[]): any {
  * Returns a type guard for a simple condition that does not check the type of the argument (but something about the value).
  */
 export const check = <T>(simpleCondition: (value: T) => boolean) => (value: T): value is T => simpleCondition(value)
+
+/**
+ * Extracts the union member with the given TDiscriminatorValue.
+ */
+export type UnionMember<
+    TUnion,
+    TDiscriminatorProp extends keyof TUnion,
+    TDiscriminatorValue extends TUnion[TDiscriminatorProp]
+> = TUnion extends Record<TDiscriminatorProp, TDiscriminatorValue> ? TUnion : never

@@ -2,6 +2,8 @@
 import { Observable, fromEvent, Subscription, OperatorFunction, pipe } from 'rxjs'
 import { defaultIfEmpty, map, scan } from 'rxjs/operators'
 import * as GQL from '../../../shared/src/graphql/schema'
+import { asError } from '../../../shared/src/util/errors'
+import { UnionMember } from '../../../shared/src/util/types'
 import { SearchPatternType } from '../graphql-operations'
 
 // This is an initial proof of concept implementation of search streaming.
@@ -13,6 +15,14 @@ type SearchEvent =
     | { type: 'filematches'; matches: FileMatch[] }
     | { type: 'repomatches'; matches: RepositoryMatch[] }
     | { type: 'filters'; filters: Filter[] }
+
+const SEARCH_EVENT_DATA_PROPS: {
+    [K in SearchEvent['type']]: Exclude<keyof UnionMember<SearchEvent, 'type', K>, 'type'>
+} = {
+    filematches: 'matches',
+    repomatches: 'matches',
+    filters: 'filters',
+}
 
 interface FileMatch extends RepositoryMatch {
     name: string
@@ -164,17 +174,25 @@ export const switchToGQLISearchResults: OperatorFunction<SearchEvent, GQL.ISearc
     defaultIfEmpty(emptyGQLSearchResults)
 )
 
-const observeMessages = <T extends {}>(eventSource: EventSource, eventName: SearchEvent['type']): Observable<T> =>
-    fromEvent(eventSource, eventName).pipe(
+const observeMessages = <
+    TEventType extends SearchEvent['type'],
+    TEvent extends UnionMember<SearchEvent, 'type', TEventType>
+>(
+    eventSource: EventSource,
+    type: TEventType
+): Observable<TEvent> =>
+    fromEvent(eventSource, type).pipe(
         map((event: Event) => {
             if (!(event instanceof MessageEvent)) {
-                throw new TypeError(`internal error: expected MessageEvent in streaming search ${eventName}`)
+                throw new TypeError(`internal error: expected MessageEvent in streaming search ${type}`)
             }
             try {
-                const parsedData = JSON.parse(event.data) as T
-                return parsedData
-            } catch {
-                throw new Error(`Could not parse ${eventName} message data in streaming search`)
+                return {
+                    type,
+                    [SEARCH_EVENT_DATA_PROPS[type]]: JSON.parse(event.data),
+                } as TEvent
+            } catch (error) {
+                throw new Error(`Could not parse ${type} message data in streaming search: ${asError(error).message}`)
             }
         })
     )
@@ -204,21 +222,9 @@ export function search(
 
         const eventSource = new EventSource('/search/stream?' + parameterEncoded)
         const subscriptions = new Subscription()
-        subscriptions.add(
-            observeMessages<FileMatch[]>(eventSource, 'filematches')
-                .pipe(map(matches => ({ type: 'filematches' as const, matches })))
-                .subscribe(observer)
-        )
-        subscriptions.add(
-            observeMessages<RepositoryMatch[]>(eventSource, 'repomatches')
-                .pipe(map(matches => ({ type: 'repomatches' as const, matches })))
-                .subscribe(observer)
-        )
-        subscriptions.add(
-            observeMessages<Filter[]>(eventSource, 'filters')
-                .pipe(map(filters => ({ type: 'filters' as const, filters })))
-                .subscribe(observer)
-        )
+        for (const eventType of Object.keys(SEARCH_EVENT_DATA_PROPS) as SearchEvent['type'][]) {
+            subscriptions.add(observeMessages(eventSource, eventType).subscribe(observer))
+        }
         subscriptions.add(
             fromEvent(eventSource, 'done').subscribe(() => {
                 observer.complete()

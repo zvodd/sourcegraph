@@ -197,7 +197,7 @@ export function searchStream(
     patternType: SearchPatternType,
     versionContext: string | undefined,
     extensionHostPromise: Promise<Remote<FlatExtHostAPI>>
-): Observable<GQL.ISearchResults | ErrorLike> {
+): Observable<GQL.ISearchResults> {
     const transformedQuery = from(extensionHostPromise).pipe(
         switchMap(extensionHost => wrapRemoteObservable(extensionHost.transformSearchQuery(query)))
     )

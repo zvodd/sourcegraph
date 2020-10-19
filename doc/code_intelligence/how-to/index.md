@@ -1,5 +1,9 @@
 # How-to guides
 
+## Get started
+
+- [LSIF quickstart guide](lsif_quickstart.md)
+
 ## Automate uploading LSIF data
 
 - [Add LSIF to many repositories](adding_lsif_to_many_repos.md)

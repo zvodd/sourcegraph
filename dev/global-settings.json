@@ -1,4 +1,5 @@
 {
+  "codeIntel.lsif": true,
   // This is set from an environment variable
   "experimentalFeatures": {
     "showRepogroupHomepage": true,

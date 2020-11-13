@@ -231,6 +231,8 @@ type CampaignsCredentialResolver interface {
 type ChangesetCountsArgs struct {
 	From *DateTime
 	To   *DateTime
+	// Resolution is the width of time slices used for computation in minutes.
+	Resolution *int32
 }
 
 type ListChangesetsArgs struct {

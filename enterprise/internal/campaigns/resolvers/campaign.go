@@ -207,7 +207,11 @@ func (r *campaignResolver) ChangesetCountsOverTime(
 		return resolvers, err
 	}
 
-	counts, err := ee.CalcCounts(start, end, cs, es...)
+	resolution := 60
+	if args.Resolution != nil {
+		resolution = int(*args.Resolution)
+	}
+	counts, err := ee.CalcCounts(start, end, resolution, cs, es...)
 	if err != nil {
 		return resolvers, err
 	}

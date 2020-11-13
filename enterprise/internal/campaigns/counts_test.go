@@ -1398,7 +1398,7 @@ func TestCalcCounts(t *testing.T) {
 				tc.end = now
 			}
 
-			have, err := CalcCounts(tc.start, tc.end, tc.changesets, tc.events...)
+			have, err := CalcCounts(tc.start, tc.end, 24*60, tc.changesets, tc.events...)
 			if err != nil {
 				t.Fatal(err)
 			}

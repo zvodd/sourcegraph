@@ -1350,6 +1350,7 @@ type Campaign implements Node {
         current time.
         """
         to: DateTime
+        resolution: Int
     ): [ChangesetCounts!]!
 
     """

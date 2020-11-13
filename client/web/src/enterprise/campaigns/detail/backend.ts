@@ -389,7 +389,7 @@ export const queryChangesetCountsOverTime = ({
                 node(id: $campaign) {
                     __typename
                     ... on Campaign {
-                        changesetCountsOverTime {
+                        changesetCountsOverTime(resolution: 5, from: "2018-05-01T16:58:24.581Z") {
                             ...ChangesetCountsOverTimeFields
                         }
                     }

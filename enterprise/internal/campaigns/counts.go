@@ -41,8 +41,8 @@ func (cc *ChangesetCounts) String() string {
 // The number of ChangesetCounts returned is the number of 1 day intervals
 // between start and end, with each ChangesetCounts representing a point in
 // time at the boundary of each 24h interval.
-func CalcCounts(start, end time.Time, cs []*campaigns.Changeset, es ...*campaigns.ChangesetEvent) ([]*ChangesetCounts, error) {
-	ts := generateTimestamps(start, end)
+func CalcCounts(start, end time.Time, resolution int, cs []*campaigns.Changeset, es ...*campaigns.ChangesetEvent) ([]*ChangesetCounts, error) {
+	ts := generateTimestamps(start, end, resolution)
 	counts := make([]*ChangesetCounts, len(ts))
 	for i, t := range ts {
 		counts[i] = &ChangesetCounts{Time: t}
@@ -108,11 +108,11 @@ func CalcCounts(start, end time.Time, cs []*campaigns.Changeset, es ...*campaign
 	return counts, nil
 }
 
-func generateTimestamps(start, end time.Time) []time.Time {
+func generateTimestamps(start, end time.Time, resolution int) []time.Time {
 	// Walk backwards from `end` to >= `start` in 1 day intervals
 	// Backwards so we always end exactly on `end`
 	ts := []time.Time{}
-	for t := end; !t.Before(start); t = t.AddDate(0, 0, -1) {
+	for t := end; !t.Before(start); t = t.Add(time.Duration(resolution) * time.Minute) {
 		ts = append(ts, t)
 	}
 

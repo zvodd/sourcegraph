@@ -720,14 +720,12 @@ Check constraints:
       Column      |  Type   | Modifiers 
 ------------------+---------+-----------
  repository_id    | integer | not null
- commit           | text    | 
  upload_id        | integer | not null
  distance         | integer | not null
  ancestor_visible | boolean | not null
  overwritten      | boolean | not null
  commit_bytea     | bytea   | not null
 Indexes:
-    "lsif_nearest_uploads_repository_id_commit" btree (repository_id, commit)
     "lsif_nearest_uploads_repository_id_commit_bytea" btree (repository_id, commit_bytea)
 
 ```
@@ -1255,19 +1253,21 @@ Foreign-key constraints:
 
 # Table "public.user_external_accounts"
 ```
-    Column    |           Type           |                              Modifiers                              
---------------+--------------------------+---------------------------------------------------------------------
- id           | integer                  | not null default nextval('user_external_accounts_id_seq'::regclass)
- user_id      | integer                  | not null
- service_type | text                     | not null
- service_id   | text                     | not null
- account_id   | text                     | not null
- auth_data    | text                     | 
- account_data | text                     | 
- created_at   | timestamp with time zone | not null default now()
- updated_at   | timestamp with time zone | not null default now()
- deleted_at   | timestamp with time zone | 
- client_id    | text                     | not null
+    Column     |           Type           |                              Modifiers                              
+---------------+--------------------------+---------------------------------------------------------------------
+ id            | integer                  | not null default nextval('user_external_accounts_id_seq'::regclass)
+ user_id       | integer                  | not null
+ service_type  | text                     | not null
+ service_id    | text                     | not null
+ account_id    | text                     | not null
+ auth_data     | text                     | 
+ account_data  | text                     | 
+ created_at    | timestamp with time zone | not null default now()
+ updated_at    | timestamp with time zone | not null default now()
+ deleted_at    | timestamp with time zone | 
+ client_id     | text                     | not null
+ expired_at    | timestamp with time zone | 
+ last_valid_at | timestamp with time zone | 
 Indexes:
     "user_external_accounts_pkey" PRIMARY KEY, btree (id)
     "user_external_accounts_account" UNIQUE, btree (service_type, service_id, client_id, account_id) WHERE deleted_at IS NULL

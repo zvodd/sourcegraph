@@ -393,6 +393,40 @@ To learn more about Sourcegraph's alerting, see [our alerting documentation](htt
 ```
 
 <br />
+## frontend: codeintel_resolvers_99th_percentile_duration
+
+<p class="subtitle">code-intel: 99th percentile successful resolvers operation duration over 5m</p>**Descriptions:**
+
+- _frontend: 20s+ 99th percentile successful resolvers operation duration over 5m_
+
+**Possible solutions:**
+
+- **Silence this alert:** If you are aware of this alert and want to silence notifications for it, add the following to your site configuration and set a reminder to re-evaluate the alert:
+
+```json
+"observability.silenceAlerts": [
+  "warning_frontend_codeintel_resolvers_99th_percentile_duration"
+]
+```
+
+<br />
+## frontend: codeintel_resolvers_errors
+
+<p class="subtitle">code-intel: resolvers errors every 5m</p>**Descriptions:**
+
+- _frontend: 20+ resolvers errors every 5m_
+
+**Possible solutions:**
+
+- **Silence this alert:** If you are aware of this alert and want to silence notifications for it, add the following to your site configuration and set a reminder to re-evaluate the alert:
+
+```json
+"observability.silenceAlerts": [
+  "warning_frontend_codeintel_resolvers_errors"
+]
+```
+
+<br />
 ## frontend: codeintel_api_99th_percentile_duration
 
 <p class="subtitle">code-intel: 99th percentile successful api operation duration over 5m</p>**Descriptions:**
@@ -613,57 +647,6 @@ To learn more about Sourcegraph's alerting, see [our alerting documentation](htt
 ```json
 "observability.silenceAlerts": [
   "warning_frontend_internal_api_error_responses"
-]
-```
-
-<br />
-## frontend: 99th_percentile_precise_code_intel_bundle_manager_query_duration
-
-<p class="subtitle">code-intel: 99th percentile successful precise-code-intel-bundle-manager query duration over 5m</p>**Descriptions:**
-
-- _frontend: 20s+ 99th percentile successful precise-code-intel-bundle-manager query duration over 5m_
-
-**Possible solutions:**
-
-- **Silence this alert:** If you are aware of this alert and want to silence notifications for it, add the following to your site configuration and set a reminder to re-evaluate the alert:
-
-```json
-"observability.silenceAlerts": [
-  "warning_frontend_99th_percentile_precise_code_intel_bundle_manager_query_duration"
-]
-```
-
-<br />
-## frontend: 99th_percentile_precise_code_intel_bundle_manager_transfer_duration
-
-<p class="subtitle">code-intel: 99th percentile successful precise-code-intel-bundle-manager data transfer duration over 5m</p>**Descriptions:**
-
-- _frontend: 300s+ 99th percentile successful precise-code-intel-bundle-manager data transfer duration over 5m_
-
-**Possible solutions:**
-
-- **Silence this alert:** If you are aware of this alert and want to silence notifications for it, add the following to your site configuration and set a reminder to re-evaluate the alert:
-
-```json
-"observability.silenceAlerts": [
-  "warning_frontend_99th_percentile_precise_code_intel_bundle_manager_transfer_duration"
-]
-```
-
-<br />
-## frontend: precise_code_intel_bundle_manager_error_responses
-
-<p class="subtitle">code-intel: precise-code-intel-bundle-manager error responses every 5m</p>**Descriptions:**
-
-- _frontend: 5%+ precise-code-intel-bundle-manager error responses every 5m for 15m0s_
-
-**Possible solutions:**
-
-- **Silence this alert:** If you are aware of this alert and want to silence notifications for it, add the following to your site configuration and set a reminder to re-evaluate the alert:
-
-```json
-"observability.silenceAlerts": [
-  "warning_frontend_precise_code_intel_bundle_manager_error_responses"
 ]
 ```
 
@@ -2214,24 +2197,6 @@ To learn more about Sourcegraph's alerting, see [our alerting documentation](htt
 ```
 
 <br />
-## repo-updater: syncer_sync_last_time
-
-<p class="subtitle">cloud: time since last sync</p>**Descriptions:**
-
-- _repo-updater: 3600s+ time since last sync for 5m0s_
-
-**Possible solutions:**
-
-- Make sure there are external services added with valid tokens
-- **Silence this alert:** If you are aware of this alert and want to silence notifications for it, add the following to your site configuration and set a reminder to re-evaluate the alert:
-
-```json
-"observability.silenceAlerts": [
-  "warning_repo-updater_syncer_sync_last_time"
-]
-```
-
-<br />
 ## repo-updater: src_repoupdater_max_sync_backoff
 
 <p class="subtitle">cloud: time since oldest sync</p>**Descriptions:**
@@ -2560,24 +2525,6 @@ with your code hosts connections or networking issues affecting communication wi
 ```json
 "observability.silenceAlerts": [
   "warning_repo-updater_perms_syncer_queue_size"
-]
-```
-
-<br />
-## repo-updater: authz_filter_duration
-
-<p class="subtitle">cloud: 95th authorization duration</p>**Descriptions:**
-
-- _repo-updater: 1s+ 95th authorization duration for 1m0s_
-
-**Possible solutions:**
-
-- Check if database is overloaded.
-- **Silence this alert:** If you are aware of this alert and want to silence notifications for it, add the following to your site configuration and set a reminder to re-evaluate the alert:
-
-```json
-"observability.silenceAlerts": [
-  "critical_repo-updater_authz_filter_duration"
 ]
 ```
 

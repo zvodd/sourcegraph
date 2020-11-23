@@ -52,6 +52,15 @@ const index: Omit<
         },
     },
     inputCommit: '9ea5e9f0e0344f8197622df6b36faf48ccd02570',
+    inputRoot: 'web/',
+    indexer: 'lsif-tsc',
+    indexerArgs: ['-p', '.'],
+    outfile: 'index.lsif',
+    logContents: 'Indexing\nUploading\nDone.\n',
+    dockerSteps: [
+        { root: '/', image: 'node:alpine', commands: ['yarn'] },
+        { root: '/web', image: 'node:alpine', commands: ['yarn'] },
+    ],
 }
 
 add('List', () => (

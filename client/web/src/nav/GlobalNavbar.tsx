@@ -190,28 +190,12 @@ export const GlobalNavbar: React.FunctionComponent<Props> = ({
                     {logo}
                     {authRequired ? (
                         <div className="flex-1" />
-                    ) : splitSearchModes && interactiveSearchMode ? (
-                        <InteractiveModeInput
-                            {...props}
-                            navbarSearchState={navbarSearchQueryState}
-                            onNavbarQueryChange={onNavbarQueryChange}
-                            lowProfile={!isSearchRelatedPage}
-                            versionContext={versionContext}
-                            location={location}
-                            history={history}
-                            setVersionContext={setVersionContext}
-                            availableVersionContexts={availableVersionContexts}
-                            isLightTheme={isLightTheme}
-                            patternType={patternType}
-                            caseSensitive={caseSensitive}
-                            onFiltersInQueryChange={onFiltersInQueryChange}
-                        />
                     ) : (
                         <div className="global-navbar__search-box-container d-none d-sm-flex flex-row">
                             {splitSearchModes && (
                                 <SearchModeToggle {...props} interactiveSearchMode={interactiveSearchMode} />
                             )}
-                            <VersionContextDropdown
+                            {/* <VersionContextDropdown
                                 history={history}
                                 navbarSearchQuery={navbarSearchQueryState.query}
                                 caseSensitive={caseSensitive}
@@ -219,7 +203,7 @@ export const GlobalNavbar: React.FunctionComponent<Props> = ({
                                 versionContext={versionContext}
                                 setVersionContext={setVersionContext}
                                 availableVersionContexts={availableVersionContexts}
-                            />
+                            /> */}
                             <SearchNavbarItem
                                 {...props}
                                 navbarSearchState={navbarSearchQueryState}

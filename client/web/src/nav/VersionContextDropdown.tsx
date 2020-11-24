@@ -217,7 +217,7 @@ export const VersionContextDropdown: React.FunctionComponent<VersionContextDropd
     )
 }
 
-const VersionContextInfoRow: React.FunctionComponent<{
+export const VersionContextInfoRow: React.FunctionComponent<{
     name: string
     description: string
     isActive: boolean

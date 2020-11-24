@@ -1,0 +1,34 @@
+.search-contexts-dropdown {
+    width: max-content;
+
+    &__button {
+        color: #1c7cd6;
+        font-size: 12px;
+        border-right: 1px solid #e4e9f1;
+
+        &:hover {
+            background: #f2f4f8;
+            border-radius: 12px;
+            border-right: none;
+        }
+    }
+
+    &__popover {
+        border-radius: 4px;
+    }
+    &__list {
+        padding-left: 0;
+
+        [data-reach-listbox-option][data-current] {
+            /* styles for the option matching the current value of the input */
+            font-weight: normal;
+            background-color: #f2f4f8;
+        }
+
+        [data-reach-listbox-option][aria-selected='true'] {
+            /* styles for the option matching the user's navigation selection */
+            color: inherit;
+            background-color: #f2f4f8;
+        }
+    }
+}

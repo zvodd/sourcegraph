@@ -82,6 +82,9 @@ export const SearchContextsDropdown: React.FunctionComponent = () => {
     const id = useMemo(() => uniqueId('command-list-popover-button-'), [])
     const [autofocus, setAutofocus] = useState(true)
 
+    const query = filterInput.trim()
+    // const items = filterAndRankItems(allItems, this.state.input, this.state.recentActions)
+
     return (
         // <>
         //     <div>
@@ -178,7 +181,7 @@ export const SearchContextsDropdown: React.FunctionComponent = () => {
                     isOpen={isOpen}
                     toggle={toggleIsOpen}
                     popperClassName="popover"
-                    innerClassName={classNames('popover-inner', 'border rounded overflow-hidden')}
+                    innerClassName={classNames('overflow-hidden')}
                     placement="bottom-end"
                     target={id}
                     trigger="legacy"
@@ -186,7 +189,7 @@ export const SearchContextsDropdown: React.FunctionComponent = () => {
                     fade={false}
                     hideArrow={true}
                 >
-                    <div className="search-contexts-dropdown search-contexts-dropdown__popover version-context-dropdown__popover">
+                    <div className="search-contexts-dropdown__popover version-context-dropdown__popover">
                         <header>
                             {/* eslint-disable-next-line react/forbid-elements */}
                             {/* <form className={this.props.formClassName} onSubmit={this.onSubmit}> */}
@@ -197,7 +200,7 @@ export const SearchContextsDropdown: React.FunctionComponent = () => {
                                 id="command-list-input"
                                 ref={input => autofocus && input?.focus({ preventScroll: true })}
                                 type="text"
-                                className="form-control px-2 py-1 rounded-0"
+                                className="form-control px-2 py-1 rounded-0 border-0"
                                 value={filterInput}
                                 placeholder="Run Sourcegraph action..."
                                 spellCheck={false}
@@ -219,8 +222,11 @@ export const SearchContextsDropdown: React.FunctionComponent = () => {
                                             // )}
 
                                             className={classNames(
-                                                'search-contexts-dropdown__option list-group-item list-group-item-action px-2',
-                                                { 'active border-primary': wrappedSelectedIndex === index }
+                                                'search-contexts-dropdown__option list-group-item list-group-item-action px-2 border-0',
+                                                {
+                                                    'search-contexts-dropdown__option--active':
+                                                        wrappedSelectedIndex === index,
+                                                }
                                             )}
                                             key={item.name}
                                         >
@@ -279,9 +285,11 @@ export const SearchContextInfoRow: React.FunctionComponent<{
         </span>
         <span
             className={classNames(
-                { 'search-contexts-dropdown__option-default-tag': isDefault },
-                { 'search-contexts-dropdown__option-default-tag--active': isActive },
-                'd-flex align-items-center px-1 justify-content-center'
+                { 'd-none': !isDefault },
+                {
+                    'd-flex align-items-center px-1 justify-content-center search-contexts-dropdown__option-default-tag': isDefault,
+                },
+                { 'search-contexts-dropdown__option-default-tag--active': isActive }
             )}
         >
             {isDefault && 'Default'}
@@ -308,3 +316,47 @@ export const SearchContextInfoRow: React.FunctionComponent<{
 //     onDidExecute={this.onActionDidExecute}
 // /> */
 }
+
+// export function filterAndRankItems(
+//     items: Pick<ActionItemAction, 'action'>[],
+//     query: string,
+//     recentActions: string[] | null
+// ): ActionItemAction[] {
+//     if (!query) {
+//         if (recentActions === null) {
+//             return items
+//         }
+//         // Show recent actions first.
+//         return sortBy(
+//             items,
+//             (item: Pick<ActionItemAction, 'action'>): number | null => {
+//                 const index = recentActions.indexOf(item.action.id)
+//                 return index === -1 ? null : index
+//             },
+//             ({ action }) => action.id
+//         )
+//     }
+
+//     // Memoize labels and scores.
+//     const labels: string[] = new Array(items.length)
+//     const scores: number[] = new Array(items.length)
+//     const scoredItems = items
+//         .filter((item, index) => {
+//             let label = labels[index]
+//             if (label === undefined) {
+//                 label = `${item.action.category ? `${item.action.category}: ` : ''}${
+//                     item.action.title || item.action.command || ''
+//                 }`
+//                 labels[index] = label
+//             }
+//             if (scores[index] === undefined) {
+//                 scores[index] = stringScore(label, query, 0)
+//             }
+//             return scores[index] > 0
+//         })
+//         .map((item, index) => {
+//             const recentIndex = recentActions?.indexOf(item.action.id)
+//             return { item, score: scores[index], recentIndex: recentIndex === -1 ? null : recentIndex }
+//         })
+//     return sortBy(scoredItems, 'recentIndex', 'score', ({ item }) => item.action.id).map(({ item }) => item)
+// }

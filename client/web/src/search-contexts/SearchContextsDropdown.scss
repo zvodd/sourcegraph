@@ -13,11 +13,17 @@
         }
     }
 
+    [data-reach-listbox-button][aria-expanded='true'] {
+        background-color: #c0cadd;
+        border-radius: 12px;
+    }
+
     &__popover {
         border-radius: 4px;
     }
     &__list {
         padding-left: 0;
+        border-bottom: 1px solid #e4e9f1;
 
         [data-reach-listbox-option][data-current] {
             /* styles for the option matching the current value of the input */
@@ -30,5 +36,50 @@
             color: inherit;
             background-color: #f2f4f8;
         }
+    }
+
+    &__option {
+        display: grid;
+        grid-template-columns: 3fr 5fr 1fr;
+        padding-left: 12px;
+        padding-right: 12px;
+        cursor: pointer;
+
+        &-name {
+            font-size: 16px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            color: var(--body-color);
+        }
+
+        &-description {
+            font-size: 12px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        &-default-tag {
+            font-size: 12px;
+            background: #f2f4f8;
+            color: #6d727c;
+            // overflow: hidden;
+            // text-overflow: ellipsis;
+            &--active {
+                background: #ffffff;
+            }
+            &:hover {
+                background: #ffffff;
+            }
+        }
+    }
+
+    &__link-row {
+        padding: 4px 12px;
+        color: #1c7cd6;
+    }
+
+    [data-reach-listbox-popover] {
+        padding-top: 0;
+        padding-bottom: 0;
     }
 }

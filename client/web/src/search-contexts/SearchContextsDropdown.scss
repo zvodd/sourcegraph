@@ -2,28 +2,75 @@
     width: max-content;
 
     &__button {
-        color: #1c7cd6;
+        color: --$body-color;
         font-size: 12px;
-        border-right: 1px solid #e4e9f1;
+        font-family: menlo;
+        line-height: 1;
+        border: 0;
+        border-radius: 12px;
+        padding-left: 8px;
+        padding-right: 8px;
+        white-space: nowrap;
+        transition: none;
+
+        &:focus {
+            box-shadow: inset 0 0 0 2px rgba(28, 126, 214, 0.8);
+
+            &:after {
+                opacity: 0;
+            }
+        }
+
+        &:after {
+           content: '';
+           display: block;
+           width: 1px;
+           height: 18px;
+           background-color: #E4E9F1;
+           position: absolute;
+           right: 0;
+           top: 7px;
+        }
 
         &:hover {
             background: #f2f4f8;
-            border-radius: 12px;
-            border-right: none;
+
+            &:after {
+                opacity: 0;
+            }
+        }
+
+        .context-label {
+            color: #566E9F;
+        }
+
+        &--active {
+            background: #C0CADD;
+
+            &:hover {
+                background: #C0CADD;
+            }
+
+            &:after {
+                opacity: 0;
+            }
         }
     }
 
     [data-reach-listbox-button][aria-expanded='true'] {
         background-color: #c0cadd;
-        border-radius: 12px;
     }
 
     &__popover {
         border-radius: 4px;
+        box-shadow: 0px 0px 12px 0px rgba(0,27,76,0.09);
+        overflow: visible;
+        background-color: --$body-bg;
     }
 
     &__list {
         padding-left: 0;
+        padding-bottom: 4px;
         border-bottom: 1px solid #e4e9f1;
 
         [data-reach-listbox-option][data-current] {
@@ -42,12 +89,17 @@
     &__option {
         display: grid;
         grid-template-columns: 3fr 5fr 1fr;
-        padding: 4px 16px;
+        padding: 4px 8px 4px 16px;
         cursor: pointer;
         border: none;
 
+        &:hover {
+            text-decoration: none!important;
+        }
+
         &-name {
-            font-size: 16px;
+            font-size: 14px;
+            line-height: 1.5;
             overflow: hidden;
             text-overflow: ellipsis;
             color: var(--body-color);
@@ -55,57 +107,87 @@
 
         &-description {
             font-size: 12px;
+            line-height: 1;
             overflow: hidden;
             text-overflow: ellipsis;
         }
 
         &--active {
             background-color: #f2f4f8;
+            text-decoration: none!important;
         }
 
         &-default-tag {
-            font-size: 12px;
-            background: #f2f4f8;
-            color: #6d727c;
             // overflow: hidden;
             // text-overflow: ellipsis;
+            .tag {
+                background: #f2f4f8;
+                color: #6d727c;
+                font-size: 10.5px;
+                line-height: 1;
+                border-radius: 2px;
+                padding: 2px 6px;
+            }
             &--active {
-                background: #ffffff;
+                .tag {
+                    background: #ffffff;
+                }
             }
             &:hover {
-                background: #ffffff;
+                .tag {
+                    background: #ffffff;
+                }
+
             }
         }
     }
 
     &__link-row {
-        padding: 8px 16px;
+        padding: 12px 16px;
         color: #1c7cd6;
+        font-size: 12px;
+        line-height: 1;
     }
 
     &__input-row {
         padding: 0 16px 0 11px;
-        margin-top: 4px;
-        margin-bottom: 6px;
+        padding: 4px 16px 4px 11px;
+        margin-bottom: 4px;
         border-bottom: 1px solid #cad2e2;
     }
 
     &__filter-input {
         outline: none !important;
-        &:focus {
+        box-shadow: none!important;
+        font-size: 12px;
+
+        &::placeholder {
+            color: #AppWorkspace6D727C!important;
+        }
+
+        &:focus, &:active {
             outline: none !important;
         }
         input {
-            &:focus {
+            &:focus, &:active {
                 outline: none !important;
             }
             outline: none !important;
         }
     }
 
+    &__no-results {
+        padding: 4px 16px;
+    }
+
     [data-reach-listbox-popover] {
         padding-top: 0;
         padding-bottom: 0;
+        margin-left: 80px;
+    }
+
+    &__icon-container {
+        margin-left: -2px;
     }
 
     &__chevron {
@@ -114,9 +196,10 @@
     }
 
     &__container {
-        padding: 4px;
+        padding: 4px 0 4px 4px;
         border: 1px solid var(--input-border-color);
         background-color: var(--input-bg);
         border-right: none;
+        position: relative;
     }
 }

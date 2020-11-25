@@ -114,20 +114,23 @@ export const SearchContextsDropdown: React.FunctionComponent = () => {
         <div className="search-contexts-dropdown__container">
             <div
                 role="button"
-                className="search-contexts-dropdown__button btn"
+                className={classNames({
+                    'search-contexts-dropdown__button btn testtt': true,
+                    'search-contexts-dropdown__button--active': isOpen
+                })}
                 // isOpen ? buttonOpenClassName : ''
                 id={id}
                 onClick={toggleIsOpen}
                 // onSelect={toggleIsOpen}
                 tabIndex={0}
             >
-                {currentValue}
+                <span className="context-label">context:</span>{currentValue}
                 <TooltipPopoverWrapper
                     isOpen={isOpen}
                     toggle={toggleIsOpen}
-                    popperClassName="popover"
-                    innerClassName={classNames('overflow-hidden')}
-                    placement="bottom-end"
+                    popperClassName="popover popovertest"
+                    //innerClassName={classNames('overflow-hidden')}
+                    placement="bottom-start"
                     target={id}
                     trigger="legacy"
                     delay={0}
@@ -142,7 +145,7 @@ export const SearchContextsDropdown: React.FunctionComponent = () => {
                                 Command
                             </label>
                             <div className="d-flex align-items-center search-contexts-dropdown__input-row">
-                                <div>
+                                <div className="search-contexts-dropdown__icon-container">
                                     <ChevronRightIcon className="icon-inline search-contexts-dropdown__chevron" />
                                 </div>
                                 <input
@@ -151,7 +154,7 @@ export const SearchContextsDropdown: React.FunctionComponent = () => {
                                     type="text"
                                     className="search-contexts-dropdown__filter-input form-control px-0 py-0 rounded-0 border-0"
                                     value={filterInput}
-                                    placeholder="Find a search context"
+                                    placeholder="Find a context..."
                                     spellCheck={false}
                                     autoCorrect="off"
                                     autoComplete="off"
@@ -197,7 +200,7 @@ export const SearchContextsDropdown: React.FunctionComponent = () => {
                                         </ButtonLink>
                                     ))
                                 ) : filterInput.length > 0 ? (
-                                    <li>No matching contexts</li>
+                                    <li className="search-contexts-dropdown__no-results">No matching contexts</li>
                                 ) : (
                                     <div>Empty</div>
                                 )}
@@ -248,7 +251,7 @@ export const SearchContextInfoRow: React.FunctionComponent<{
                 { 'search-contexts-dropdown__option-default-tag--active': isActive }
             )}
         >
-            {isDefault && 'Default'}
+            {isDefault && <span className='tag'>Default</span>}
         </span>
     </>
 )

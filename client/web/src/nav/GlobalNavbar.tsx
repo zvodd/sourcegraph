@@ -32,6 +32,7 @@ import { TelemetryProps } from '../../../shared/src/telemetry/telemetryService'
 import { BrandLogo } from '../components/branding/BrandLogo'
 import { LinkOrSpan } from '../../../shared/src/components/LinkOrSpan'
 import { ExtensionAlertAnimationProps } from './UserNavItem'
+import { SearchContextsDropdown } from '../search-contexts/SearchContextsDropdown'
 
 interface Props
     extends SettingsCascadeProps,
@@ -204,6 +205,7 @@ export const GlobalNavbar: React.FunctionComponent<Props> = ({
                                 setVersionContext={setVersionContext}
                                 availableVersionContexts={availableVersionContexts}
                             /> */}
+                            <SearchContextsDropdown />
                             <SearchNavbarItem
                                 {...props}
                                 navbarSearchState={navbarSearchQueryState}

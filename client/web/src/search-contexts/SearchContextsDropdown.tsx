@@ -13,7 +13,10 @@ import { EmptyCommandList } from '../../../shared/src/commandPalette/EmptyComman
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore
 import TooltipPopoverWrapper from 'reactstrap/lib/TooltipPopoverWrapper'
-import { uniqueId } from 'lodash'
+import { sortBy, uniqueId } from 'lodash'
+import stringScore from 'string-score'
+import ChevronRightIcon from 'mdi-react/ChevronRightIcon'
+import { ButtonLink } from '../../../shared/src/components/LinkOrButton'
 
 interface Context {
     name: string
@@ -21,11 +24,21 @@ interface Context {
     isDefault?: boolean
 }
 export const SearchContextsDropdown: React.FunctionComponent = () => {
-    const contexts: Context[] = [
-        { name: 'my-repos', description: 'Your repositories on Sourcegraph', isDefault: true },
-        { name: 'global', description: 'All repositories on Sourcegraph' },
-    ]
-    const [currentValue, setCurrentValue] = useState<Context['name'] | undefined>('hello world')
+    const contexts: Context[] = useMemo(
+        () => [
+            { name: 'my-repos', description: 'Your repositories on Sourcegraph', isDefault: true },
+            { name: 'global', description: 'All repositories on Sourcegraph' },
+            { name: 'Nutnx-0.0.1', description: 'Release used by Customer A' },
+            { name: 'Nutnx-0.0.2', description: 'Release used by Customer X' },
+            { name: 'Nutnx-0.0.3', description: 'Release used by Customer Z' },
+            { name: 'Nutnx-0.0.4', description: 'Dev version for poc candidate 1' },
+            { name: 'Nutnx-0.0.5', description: 'Dev version for poc candidate 2' },
+        ],
+        []
+    )
+    const [currentValue, setCurrentValue] = useState<Context['name'] | undefined>(
+        contexts.filter(context => context.isDefault)![0].name
+    )
     const [selectedIndex, setSelectedIndex] = useState(0)
 
     const disableValue = useCallback((): void => {
@@ -47,134 +60,66 @@ export const SearchContextsDropdown: React.FunctionComponent = () => {
         [setSelectedIndex]
     )
 
-    const onInputKeyDown: React.KeyboardEventHandler<HTMLInputElement> = useCallback(
-        event => {
-            console.log('onkeydown')
-            switch (event.key) {
-                case Key.ArrowDown: {
-                    // event.preventDefault()
-                    setIndex(1)
-                    break
-                }
-                case Key.ArrowUp: {
-                    // event.preventDefault()
-                    setIndex(-1)
-                    break
-                }
-                case Key.Enter: {
-                    // if (this.selectedItem) {
-                    //     this.selectedItem.runAction(event)
-                    // }
-                    break
-                }
-            }
-        },
-        [setIndex]
-    )
-    const wrappedSelectedIndex = useMemo(
-        () => ((selectedIndex % contexts.length) + contexts.length) % contexts.length,
-        [selectedIndex, contexts.length]
-    )
-
     const [isOpen, setIsOpen] = useState(false)
-    const close = useCallback(() => setIsOpen(false), [])
+    // const close = useCallback(() => {
+    //     console.log('close')
+    //     setIsOpen(false)
+    // }, [setIsOpen])
     const toggleIsOpen = useCallback(() => setIsOpen(!isOpen), [isOpen])
     const id = useMemo(() => uniqueId('command-list-popover-button-'), [])
     const [autofocus, setAutofocus] = useState(true)
 
-    const query = filterInput.trim()
-    // const items = filterAndRankItems(allItems, this.state.input, this.state.recentActions)
+    const query = useMemo(() => filterInput.trim(), [filterInput])
+    const filteredAndRankedContexts = useMemo(() => filterItems(contexts, query), [contexts, query])
+    const wrappedSelectedIndex = useMemo(
+        () =>
+            ((selectedIndex % filteredAndRankedContexts.length) + filteredAndRankedContexts.length) %
+            filteredAndRankedContexts.length,
+        [selectedIndex, filteredAndRankedContexts.length]
+    )
 
+    const onInputKeyDown: React.KeyboardEventHandler<HTMLInputElement> = useCallback(
+        event => {
+            switch (event.key) {
+                case Key.ArrowDown: {
+                    event.preventDefault()
+                    setIndex(1)
+                    break
+                }
+                case Key.ArrowUp: {
+                    event.preventDefault()
+                    setIndex(-1)
+                    break
+                }
+                case Key.Enter: {
+                    console.log(filteredAndRankedContexts[selectedIndex].name)
+                    setCurrentValue(filteredAndRankedContexts[selectedIndex].name)
+                    break
+                }
+            }
+        },
+        [setIndex, filteredAndRankedContexts, selectedIndex]
+    )
+
+    const onClickedItem = useCallback(
+        (name: string) => (event: React.MouseEvent<HTMLElement, MouseEvent> | React.KeyboardEvent<HTMLElement>) => {
+            toggleIsOpen()
+            // setIsOpen(false)
+            console.log(name)
+            setCurrentValue(name)
+        },
+        [setCurrentValue, toggleIsOpen]
+    )
     return (
-        // <>
-        //     <div>
-        //         <div className="search-contexts-dropdown text-nowrap">
-        //             <ListboxInput value={wrappedSelectedIndex} onChange={setIndex}>
-        //                 {({ isExpanded }) => (
-        //                     <>
-        //                         <ListboxButton
-        //                             className="search-contexts-dropdown__button btn btn-transparent"
-        //                             arrow={false}
-        //                         >
-        //                             {!currentValue || currentValue === 'default' ? (
-        //                                 <span className={classNames('ml-2 mr-1')}>Select context</span>
-        //                             ) : (
-        //                                 <span className="ml-2 mr-1">{currentValue}</span>
-        //                             )}
-        //                         </ListboxButton>
-        //                         <ListboxPopover
-        //                             className={classNames(
-        //                                 'search-contexts-dropdown__popover version-context-dropdown__popover dropdown-menu',
-        //                                 {
-        //                                     show: isExpanded,
-        //                                 }
-        //                             )}
-        //                             portal={true}
-        //                         >
-        //                             <ListboxList className="search-contexts-dropdown__list">
-        //                                 <ListboxGroupLabel disabled={true} value="title">
-        //                                     <input
-        //                                         id="command-list-input"
-        //                                         ref={input => input?.focus({ preventScroll: true })}
-        //                                         type="text"
-        //                                         className="form-control px-2 py-1 rounded-0"
-        //                                         value={filterInput}
-        //                                         placeholder="Find a search context"
-        //                                         spellCheck={false}
-        //                                         autoCorrect="off"
-        //                                         autoComplete="off"
-        //                                         onChange={onFilterInputchange}
-        //                                         onKeyDown={onInputKeyDown}
-        //                                         tabIndex={-1}
-        //                                     />
-        //                                 </ListboxGroupLabel>
-        //                                 {contexts
-        //                                     // Render the current version context at the top, then other available version
-        //                                     // contexts in alphabetical order.
-        //                                     ?.sort((a, b) => {
-        //                                         if (a.name === currentValue) {
-        //                                             return -1
-        //                                         }
-        //                                         if (b.name === currentValue) {
-        //                                             return 1
-        //                                         }
-        //                                         return a.name > b.name ? 1 : -1
-        //                                     })
-        //                                     .map((versionContext, index) => (
-        //                                         <ListboxOption
-        //                                             key={versionContext.name}
-        //                                             value={index.toString()}
-        //                                             label={versionContext.name}
-        //                                             className="search-contexts-dropdown__option"
-        //                                         >
-        //                                             <SearchContextInfoRow
-        //                                                 name={versionContext.name}
-        //                                                 description={versionContext.description || ''}
-        //                                                 isDefault={versionContext.isDefault}
-        //                                                 isActive={wrappedSelectedIndex === index}
-        //                                                 onDisableValue={disableValue}
-        //                                             />
-        //                                         </ListboxOption>
-        //                                     ))}
-        //                             </ListboxList>
-        //                             <div className="search-contexts-dropdown__link-row d-flex justify-content-between">
-        //                                 <a>Reset to default</a>
-        //                                 <a>Manage search contexts</a>
-        //                             </div>
-        //                         </ListboxPopover>
-        //                     </>
-        //                 )}
-        //             </ListboxInput>
-        //         </div>
-        //     </div>
-        // </>
-        <>
-            <span
+        <div className="search-contexts-dropdown__container">
+            <div
                 role="button"
                 className="search-contexts-dropdown__button btn"
                 // isOpen ? buttonOpenClassName : ''
                 id={id}
                 onClick={toggleIsOpen}
+                // onSelect={toggleIsOpen}
+                tabIndex={0}
             >
                 {currentValue}
                 <TooltipPopoverWrapper
@@ -196,66 +141,76 @@ export const SearchContextsDropdown: React.FunctionComponent = () => {
                             <label className="sr-only" htmlFor="command-list-input">
                                 Command
                             </label>
-                            <input
-                                id="command-list-input"
-                                ref={input => autofocus && input?.focus({ preventScroll: true })}
-                                type="text"
-                                className="form-control px-2 py-1 rounded-0 border-0"
-                                value={filterInput}
-                                placeholder="Run Sourcegraph action..."
-                                spellCheck={false}
-                                autoCorrect="off"
-                                autoComplete="off"
-                                onChange={onFilterInputchange}
-                                onKeyDown={onInputKeyDown}
-                            />
+                            <div className="d-flex align-items-center search-contexts-dropdown__input-row">
+                                <div>
+                                    <ChevronRightIcon className="icon-inline search-contexts-dropdown__chevron" />
+                                </div>
+                                <input
+                                    id="command-list-input"
+                                    ref={input => autofocus && input?.focus({ preventScroll: true })}
+                                    type="text"
+                                    className="search-contexts-dropdown__filter-input form-control px-0 py-0 rounded-0 border-0"
+                                    value={filterInput}
+                                    placeholder="Find a search context"
+                                    spellCheck={false}
+                                    autoCorrect="off"
+                                    autoComplete="off"
+                                    onChange={onFilterInputchange}
+                                    onKeyDown={onInputKeyDown}
+                                />
+                            </div>
                             {/* </form> */}
                         </header>
-                        <div className="search-contexts-dropdown__list">
-                            <ul className="list-group list-group-flush list-unstyled">
-                                {contexts.length > 0 ? (
-                                    contexts.map((item, index) => (
-                                        <li
-                                            // className={classNames(
-                                            //     this.props.listItemClassName,
-                                            //     index === selectedIndex && this.props.selectedListItemClassName
-                                            // )}
-
-                                            className={classNames(
-                                                'search-contexts-dropdown__option list-group-item list-group-item-action px-2 border-0',
-                                                {
-                                                    'search-contexts-dropdown__option--active':
-                                                        wrappedSelectedIndex === index,
-                                                }
-                                            )}
+                        <div>
+                            <ul className="search-contexts-dropdown__list list-group list-group-flush list-unstyled">
+                                {filteredAndRankedContexts.length > 0 ? (
+                                    filteredAndRankedContexts.map((item, index) => (
+                                        <ButtonLink
                                             key={item.name}
+                                            onSelect={onClickedItem(item.name)}
+                                            className={classNames({
+                                                'search-contexts-dropdown__option--active':
+                                                    wrappedSelectedIndex === index,
+                                            })}
                                         >
-                                            <SearchContextInfoRow
-                                                name={item.name}
-                                                description={item.description || ''}
-                                                isDefault={item.isDefault}
-                                                isActive={wrappedSelectedIndex === index}
-                                                onDisableValue={disableValue}
-                                                // className="search-contexts-dropdown__option"
-                                            />
-                                        </li>
+                                            <li
+                                                // className={classNames(
+                                                //     this.props.listItemClassName,
+                                                //     index === selectedIndex && this.props.selectedListItemClassName
+                                                // )}
+
+                                                className={classNames(
+                                                    'search-contexts-dropdown__option list-group-item-action border-0'
+                                                )}
+                                                key={item.name}
+                                                value={item.name}
+                                            >
+                                                <SearchContextInfoRow
+                                                    name={item.name}
+                                                    description={item.description || ''}
+                                                    isDefault={item.isDefault}
+                                                    isActive={wrappedSelectedIndex === index}
+                                                    onDisableValue={disableValue}
+                                                    // className="search-contexts-dropdown__option"
+                                                />
+                                            </li>
+                                        </ButtonLink>
                                     ))
                                 ) : filterInput.length > 0 ? (
-                                    // <li className={this.props.noResultsClassName}>No matching commands</li>
-                                    <li>No matching commands</li>
+                                    <li>No matching contexts</li>
                                 ) : (
-                                    // <EmptyCommandList
-                                    //     settingsCascade={this.state.settingsCascade}
-                                    //     sourcegraphURL={this.props.platformContext.sourcegraphURL}
-                                    // />
                                     <div>Empty</div>
                                 )}
                             </ul>
+                            <div className="search-contexts-dropdown__link-row d-flex justify-content-between">
+                                <a>Reset to default</a>
+                                <a>Manage search contexts</a>
+                            </div>
                         </div>
                     </div>
                 </TooltipPopoverWrapper>
-            </span>
-        </>
+            </div>
+        </div>
     )
 }
 
@@ -275,10 +230,11 @@ export const SearchContextInfoRow: React.FunctionComponent<{
                     onClick={onDisableValue}
                     aria-label="Disable version context"
                 >
-                    test
+                    x
                 </button>
             )}
         </div> */}
+
         <span className="search-contexts-dropdown__option-name d-flex align-items-center">{name}</span>
         <span className="search-contexts-dropdown__option-description text-muted d-flex align-items-center">
             {description}
@@ -296,67 +252,31 @@ export const SearchContextInfoRow: React.FunctionComponent<{
         </span>
     </>
 )
-{
-    /* // <ActionItem
-//     {...this.props}
-//     className={classNames(
-//         this.props.actionItemClassName,
-//         index === selectedIndex && this.props.selectedActionItemClassName
-//     )}
-//     {...item}
-//     ref={index === selectedIndex ? this.setSelectedItem : undefined}
-//     title={
-//         <HighlightedMatches
-//             text={[item.action.category, item.action.title || item.action.command]
-//                 .filter(Boolean)
-//                 .join(': ')}
-//             pattern={query}
-//         />
-//     }
-//     onDidExecute={this.onActionDidExecute}
-// /> */
+
+export function filterItems(items: Context[], query: string): Context[] {
+    if (!query) {
+        // Already alphabetically sorted
+        return items
+    }
+
+    // Memoize labels and scores.
+    const labels: string[] = new Array(items.length)
+    const scores: number[] = new Array(items.length)
+    const scoredItems = items
+        .filter((item, index) => {
+            let label = labels[index]
+            if (label === undefined) {
+                label = item.name
+                labels[index] = label
+            }
+            if (scores[index] === undefined) {
+                scores[index] = stringScore(label, query, 0)
+            }
+            return scores[index] > 0
+        })
+        .map((item, index) =>
+            // const recentIndex = recentActions?.indexOf(item.action.id)
+            ({ item, score: scores[index] })
+        )
+    return sortBy(scoredItems, 'recentIndex', 'score', ({ item }) => item.name).map(({ item }) => item)
 }
-
-// export function filterAndRankItems(
-//     items: Pick<ActionItemAction, 'action'>[],
-//     query: string,
-//     recentActions: string[] | null
-// ): ActionItemAction[] {
-//     if (!query) {
-//         if (recentActions === null) {
-//             return items
-//         }
-//         // Show recent actions first.
-//         return sortBy(
-//             items,
-//             (item: Pick<ActionItemAction, 'action'>): number | null => {
-//                 const index = recentActions.indexOf(item.action.id)
-//                 return index === -1 ? null : index
-//             },
-//             ({ action }) => action.id
-//         )
-//     }
-
-//     // Memoize labels and scores.
-//     const labels: string[] = new Array(items.length)
-//     const scores: number[] = new Array(items.length)
-//     const scoredItems = items
-//         .filter((item, index) => {
-//             let label = labels[index]
-//             if (label === undefined) {
-//                 label = `${item.action.category ? `${item.action.category}: ` : ''}${
-//                     item.action.title || item.action.command || ''
-//                 }`
-//                 labels[index] = label
-//             }
-//             if (scores[index] === undefined) {
-//                 scores[index] = stringScore(label, query, 0)
-//             }
-//             return scores[index] > 0
-//         })
-//         .map((item, index) => {
-//             const recentIndex = recentActions?.indexOf(item.action.id)
-//             return { item, score: scores[index], recentIndex: recentIndex === -1 ? null : recentIndex }
-//         })
-//     return sortBy(scoredItems, 'recentIndex', 'score', ({ item }) => item.action.id).map(({ item }) => item)
-// }

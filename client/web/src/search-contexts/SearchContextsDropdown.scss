@@ -42,8 +42,7 @@
     &__option {
         display: grid;
         grid-template-columns: 3fr 5fr 1fr;
-        padding-left: 12px;
-        padding-right: 12px;
+        padding: 4px 16px;
         cursor: pointer;
         border: none;
 
@@ -80,12 +79,44 @@
     }
 
     &__link-row {
-        padding: 4px 12px;
+        padding: 8px 16px;
         color: #1c7cd6;
+    }
+
+    &__input-row {
+        padding: 0 16px 0 11px;
+        margin-top: 4px;
+        margin-bottom: 6px;
+        border-bottom: 1px solid #cad2e2;
+    }
+
+    &__filter-input {
+        outline: none !important;
+        &:focus {
+            outline: none !important;
+        }
+        input {
+            &:focus {
+                outline: none !important;
+            }
+            outline: none !important;
+        }
     }
 
     [data-reach-listbox-popover] {
         padding-top: 0;
         padding-bottom: 0;
+    }
+
+    &__chevron {
+        color: #b200f8;
+        fill: #b200f8 !important;
+    }
+
+    &__container {
+        padding: 4px;
+        border: 1px solid var(--input-border-color);
+        background-color: var(--input-bg);
+        border-right: none;
     }
 }

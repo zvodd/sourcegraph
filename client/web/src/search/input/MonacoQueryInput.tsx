@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useCallback } from 'react'
 import * as H from 'history'
 import * as Monaco from 'monaco-editor'
 import { isEqual, isPlainObject } from 'lodash'
@@ -7,14 +7,14 @@ import { QueryState } from '../helpers'
 import { getProviders } from '../../../../shared/src/search/parser/providers'
 import { Subscription, Observable, Subject, Unsubscribable, ReplaySubject, concat } from 'rxjs'
 import { fetchSuggestions } from '../backend'
-import { map, distinctUntilChanged, filter, switchMap, withLatestFrom, debounceTime } from 'rxjs/operators'
+import { map, distinctUntilChanged, filter, switchMap, withLatestFrom, debounceTime, tap } from 'rxjs/operators'
 import { Omit } from 'utility-types'
 import { ThemeProps } from '../../../../shared/src/theme'
 import { CaseSensitivityProps, PatternTypeProps, CopyQueryButtonProps } from '..'
 import { Toggles, TogglesProps } from './toggles/Toggles'
 import { hasProperty, isDefined } from '../../../../shared/src/util/types'
 import { KeyboardShortcut } from '../../../../shared/src/keyboardShortcuts'
-import { KEYBOARD_SHORTCUT_FOCUS_SEARCHBAR } from '../../keyboardShortcuts/keyboardShortcuts'
+import { KEYBOARD_SHORTCUT_COPY, KEYBOARD_SHORTCUT_FOCUS_SEARCHBAR } from '../../keyboardShortcuts/keyboardShortcuts'
 import { observeResize } from '../../util/dom'
 import Shepherd from 'shepherd.js'
 import {
@@ -25,6 +25,8 @@ import {
     runAdvanceLangOrRepoStep,
 } from './SearchOnboardingTour'
 import { SearchPatternType } from '../../graphql-operations'
+import { Shortcut } from '@slimsag/react-shortcuts'
+import copy from 'copy-to-clipboard'
 
 export interface MonacoQueryInputProps
     extends Omit<TogglesProps, 'navbarSearchQuery' | 'filtersInQuery'>,
@@ -171,7 +173,7 @@ export class MonacoQueryInput extends React.PureComponent<MonacoQueryInputProps>
     private editorRefs = new Subject<Monaco.editor.IStandaloneCodeEditor | null>()
     private subscriptions = new Subscription()
     private suggestionTriggers = new Subject<void>()
-
+    private copyEvent = new Subject<React.ClipboardEvent<HTMLInputElement>>()
     private tourIsOnQueryTermStep = this.componentUpdates.pipe(
         filter(({ tour }) => isCurrentTourStep('add-query-term', tour) || false)
     )
@@ -249,6 +251,7 @@ export class MonacoQueryInput extends React.PureComponent<MonacoQueryInputProps>
             cursorStyle: 'line',
             cursorWidth: 1,
         }
+
         return (
             <>
                 <div ref={this.containerRefs.next.bind(this.containerRefs)} className="monaco-query-input-container">
@@ -260,6 +263,7 @@ export class MonacoQueryInput extends React.PureComponent<MonacoQueryInputProps>
                     >
                         <MonacoEditor
                             id="monaco-query-input"
+                            // eslint-disable-next-line react/jsx-no-bind
                             language={SOURCEGRAPH_SEARCH}
                             value={this.props.queryState.query}
                             height={16}
@@ -269,6 +273,7 @@ export class MonacoQueryInput extends React.PureComponent<MonacoQueryInputProps>
                             options={options}
                             border={false}
                             keyboardShortcutForFocus={KEYBOARD_SHORTCUT_FOCUS_SEARCHBAR}
+                            keyboardShortcutForCopy={KEYBOARD_SHORTCUT_COPY}
                             className="test-query-input"
                         />
                     </div>
@@ -289,6 +294,10 @@ export class MonacoQueryInput extends React.PureComponent<MonacoQueryInputProps>
 
     private onSubmit = (): void => {
         this.props.onSubmit()
+    }
+
+    private onCopy = (): void => {
+        console.log('onCopy')
     }
 
     private editorWillMount = (monaco: typeof Monaco): void => {
@@ -349,6 +358,17 @@ export class MonacoQueryInput extends React.PureComponent<MonacoQueryInputProps>
                 })
         )
 
+        // this.subscriptions.add(
+        //     this.copyEvent
+        //         .pipe(
+        //             tap(() => {
+        //                 console.log('copying')
+        //             })
+        //         )
+        //         .subscribe(() => {
+        //             this.onCopy()
+        //         })
+        // )
         const tour = this.props.tour
 
         if (tour) {
@@ -442,8 +462,31 @@ export class MonacoQueryInput extends React.PureComponent<MonacoQueryInputProps>
                     label: 'submitOnEnter',
                     keybindings: [Monaco.KeyCode.Enter],
                     run: () => {
+                        console.log('submit')
                         this.onSubmit()
                         editor.trigger('submitOnEnter', 'hideSuggestWidget', [])
+                    },
+                })
+            )
+        )
+
+        this.subscriptions.add(
+            toUnsubscribable(
+                editor.addAction({
+                    id: 'copyingAction',
+                    label: 'copyingAction',
+                    keybindings: [Monaco.KeyMod.CtrlCmd | Monaco.KeyCode.KEY_C],
+                    run: editor => {
+                        const value = editor.getValue()
+                        const selection = editor.getSelection()
+                        if (selection) {
+                            const final = value.slice(
+                                selection.startColumn - 1 >= 0 ? selection.startColumn - 1 : 0,
+                                selection.endColumn + 1
+                            )
+                            copy(final.toString())
+                        }
+                        console.log('copying')
                     },
                 })
             )

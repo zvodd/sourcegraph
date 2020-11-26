@@ -120,6 +120,7 @@ interface Props extends ThemeProps {
 
     /** Keyboard shortcut to focus the Monaco editor. */
     keyboardShortcutForFocus?: KeyboardShortcut
+    keyboardShortcutForCopy?: KeyboardShortcut
 }
 
 interface State {}
@@ -178,7 +179,9 @@ export class MonacoEditor extends React.PureComponent<Props, State> {
             }
         }
     }
-
+    private onCopy = (): void => {
+        console.log('onCopy')
+    }
     public render(): JSX.Element | null {
         return (
             <>
@@ -191,6 +194,9 @@ export class MonacoEditor extends React.PureComponent<Props, State> {
                 />
                 {this.props.keyboardShortcutForFocus?.keybindings.map((keybinding, index) => (
                     <Shortcut key={index} {...keybinding} onMatch={this.focusInput} />
+                ))}
+                {this.props.keyboardShortcutForCopy?.keybindings.map((keybinding, index) => (
+                    <Shortcut key={index} {...keybinding} onMatch={this.onCopy} />
                 ))}
             </>
         )

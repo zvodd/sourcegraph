@@ -96,12 +96,16 @@ export const SearchContextsDropdown: React.FunctionComponent = () => {
     const onClickedItem = useCallback(
         (name: string) => (event: React.MouseEvent<HTMLElement, MouseEvent> | React.KeyboardEvent<HTMLElement>) => {
             toggleIsOpen()
-            // setIsOpen(false)
             console.log(name)
             setCurrentValue(name)
         },
         [setCurrentValue, toggleIsOpen]
     )
+
+    const onCopy = useCallback(() => {
+        console.log('onCopy')
+    }, [])
+
     return (
         <div className="search-contexts-dropdown__container">
             <div
@@ -143,6 +147,9 @@ export const SearchContextsDropdown: React.FunctionComponent = () => {
                                 </div>
                                 <input
                                     id="command-list-input"
+                                    // onSelect={}
+                                    onCopy={onCopy}
+                                    onSelect={onCopy}
                                     ref={input => autofocus && input?.focus({ preventScroll: true })}
                                     type="text"
                                     className="search-contexts-dropdown__filter-input form-control px-0 py-0 rounded-0 border-0"
@@ -170,11 +177,6 @@ export const SearchContextsDropdown: React.FunctionComponent = () => {
                                             })}
                                         >
                                             <li
-                                                // className={classNames(
-                                                //     this.props.listItemClassName,
-                                                //     index === selectedIndex && this.props.selectedListItemClassName
-                                                // )}
-
                                                 className={classNames(
                                                     'search-contexts-dropdown__option list-group-item-action border-0'
                                                 )}

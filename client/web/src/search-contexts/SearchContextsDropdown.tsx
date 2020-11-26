@@ -1,15 +1,6 @@
-import {
-    ListboxButton,
-    ListboxGroupLabel,
-    ListboxInput,
-    ListboxList,
-    ListboxOption,
-    ListboxPopover,
-} from '@reach/listbox'
 import classNames from 'classnames'
-import React, { useCallback, useEffect, useMemo, useState } from 'react'
+import React, { useCallback, useMemo, useState } from 'react'
 import { Key } from 'ts-key-enum'
-import { EmptyCommandList } from '../../../shared/src/commandPalette/EmptyCommandList'
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore
 import TooltipPopoverWrapper from 'reactstrap/lib/TooltipPopoverWrapper'
@@ -94,6 +85,7 @@ export const SearchContextsDropdown: React.FunctionComponent = () => {
                 case Key.Enter: {
                     console.log(filteredAndRankedContexts[selectedIndex].name)
                     setCurrentValue(filteredAndRankedContexts[selectedIndex].name)
+                    setIsOpen(false)
                     break
                 }
             }
@@ -116,7 +108,7 @@ export const SearchContextsDropdown: React.FunctionComponent = () => {
                 role="button"
                 className={classNames({
                     'search-contexts-dropdown__button btn testtt': true,
-                    'search-contexts-dropdown__button--active': isOpen
+                    'search-contexts-dropdown__button--active': isOpen,
                 })}
                 // isOpen ? buttonOpenClassName : ''
                 id={id}
@@ -124,12 +116,13 @@ export const SearchContextsDropdown: React.FunctionComponent = () => {
                 // onSelect={toggleIsOpen}
                 tabIndex={0}
             >
-                <span className="context-label">context:</span>{currentValue}
+                <span className="context-label">context:</span>
+                {currentValue}
                 <TooltipPopoverWrapper
                     isOpen={isOpen}
                     toggle={toggleIsOpen}
                     popperClassName="popover popovertest"
-                    //innerClassName={classNames('overflow-hidden')}
+                    // innerClassName={classNames('overflow-hidden')}
                     placement="bottom-start"
                     target={id}
                     trigger="legacy"
@@ -251,7 +244,7 @@ export const SearchContextInfoRow: React.FunctionComponent<{
                 { 'search-contexts-dropdown__option-default-tag--active': isActive }
             )}
         >
-            {isDefault && <span className='tag'>Default</span>}
+            {isDefault && <span className="tag">Default</span>}
         </span>
     </>
 )

@@ -120,7 +120,6 @@ interface Props extends ThemeProps {
 
     /** Keyboard shortcut to focus the Monaco editor. */
     keyboardShortcutForFocus?: KeyboardShortcut
-    keyboardShortcutForCopy?: KeyboardShortcut
 }
 
 interface State {}

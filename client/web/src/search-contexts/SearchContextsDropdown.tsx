@@ -60,10 +60,7 @@ export const SearchContextsDropdown: React.FunctionComponent<Props> = props => {
     )
 
     const [isOpen, setIsOpen] = useState(false)
-    // const close = useCallback(() => {
-    //     console.log('close')
-    //     setIsOpen(false)
-    // }, [setIsOpen])
+
     const toggleIsOpen = useCallback(() => setIsOpen(!isOpen), [isOpen])
     const id = useMemo(() => uniqueId('command-list-popover-button-'), [])
     const [autofocus, setAutofocus] = useState(true)
@@ -111,10 +108,6 @@ export const SearchContextsDropdown: React.FunctionComponent<Props> = props => {
         [setCurrentValue, toggleIsOpen, onChangeContext]
     )
 
-    const onCopy = useCallback(() => {
-        console.log('onCopy')
-    }, [])
-
     return (
         <div className="search-contexts-dropdown__container">
             <div
@@ -123,10 +116,8 @@ export const SearchContextsDropdown: React.FunctionComponent<Props> = props => {
                     'search-contexts-dropdown__button btn testtt': true,
                     'search-contexts-dropdown__button--active': isOpen,
                 })}
-                // isOpen ? buttonOpenClassName : ''
                 id={id}
                 onClick={toggleIsOpen}
-                // onSelect={toggleIsOpen}
                 tabIndex={0}
             >
                 <span className="context-label">context:</span>
@@ -135,7 +126,6 @@ export const SearchContextsDropdown: React.FunctionComponent<Props> = props => {
                     isOpen={isOpen}
                     toggle={toggleIsOpen}
                     popperClassName="popover popovertest"
-                    // innerClassName={classNames('overflow-hidden')}
                     placement="bottom-start"
                     target={id}
                     trigger="legacy"
@@ -145,8 +135,6 @@ export const SearchContextsDropdown: React.FunctionComponent<Props> = props => {
                 >
                     <div className="search-contexts-dropdown__popover version-context-dropdown__popover">
                         <header>
-                            {/* eslint-disable-next-line react/forbid-elements */}
-                            {/* <form className={this.props.formClassName} onSubmit={this.onSubmit}> */}
                             <label className="sr-only" htmlFor="command-list-input">
                                 Command
                             </label>
@@ -156,9 +144,6 @@ export const SearchContextsDropdown: React.FunctionComponent<Props> = props => {
                                 </div>
                                 <input
                                     id="command-list-input"
-                                    // onSelect={}
-                                    onCopy={onCopy}
-                                    onSelect={onCopy}
                                     ref={input => autofocus && input?.focus({ preventScroll: true })}
                                     type="text"
                                     className="search-contexts-dropdown__filter-input form-control px-0 py-0 rounded-0 border-0"
@@ -171,7 +156,6 @@ export const SearchContextsDropdown: React.FunctionComponent<Props> = props => {
                                     onKeyDown={onInputKeyDown}
                                 />
                             </div>
-                            {/* </form> */}
                         </header>
                         <div>
                             <ul className="search-contexts-dropdown__list list-group list-group-flush list-unstyled">
@@ -229,19 +213,6 @@ export const SearchContextInfoRow: React.FunctionComponent<{
     isDefault?: boolean
 }> = ({ name, description, isActive, onDisableValue, isDefault }) => (
     <>
-        {/* <div>
-            {isActive && (
-                <button
-                    type="button"
-                    className="btn btn-icon"
-                    onClick={onDisableValue}
-                    aria-label="Disable version context"
-                >
-                    x
-                </button>
-            )}
-        </div> */}
-
         <span className="search-contexts-dropdown__option-name d-flex align-items-center">{name}</span>
         <span className="search-contexts-dropdown__option-description text-muted d-flex align-items-center">
             {description}

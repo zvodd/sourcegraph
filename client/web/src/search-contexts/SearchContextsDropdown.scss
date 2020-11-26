@@ -22,14 +22,14 @@
         }
 
         &:after {
-           content: '';
-           display: block;
-           width: 1px;
-           height: 18px;
-           background-color: #E4E9F1;
-           position: absolute;
-           right: 0;
-           top: 7px;
+            content: '';
+            display: block;
+            width: 1px;
+            height: 18px;
+            background-color: #e4e9f1;
+            position: absolute;
+            right: 0;
+            top: 7px;
         }
 
         &:hover {
@@ -41,14 +41,14 @@
         }
 
         .context-label {
-            color: #566E9F;
+            color: #566e9f;
         }
 
         &--active {
-            background: #C0CADD;
+            background: #c0cadd;
 
             &:hover {
-                background: #C0CADD;
+                background: #c0cadd;
             }
 
             &:after {
@@ -63,7 +63,7 @@
 
     &__popover {
         border-radius: 4px;
-        box-shadow: 0px 0px 12px 0px rgba(0,27,76,0.09);
+        box-shadow: 0px 0px 12px 0px rgba(0, 27, 76, 0.09);
         overflow: visible;
         background-color: --$body-bg;
     }
@@ -72,18 +72,6 @@
         padding-left: 0;
         padding-bottom: 4px;
         border-bottom: 1px solid #e4e9f1;
-
-        [data-reach-listbox-option][data-current] {
-            /* styles for the option matching the current value of the input */
-            font-weight: normal;
-            background-color: #f2f4f8;
-        }
-
-        [data-reach-listbox-option][aria-selected='true'] {
-            /* styles for the option matching the user's navigation selection */
-            color: inherit;
-            background-color: #f2f4f8;
-        }
     }
 
     &__option {
@@ -94,7 +82,7 @@
         border: none;
 
         &:hover {
-            text-decoration: none!important;
+            text-decoration: none !important;
         }
 
         &-name {
@@ -114,7 +102,7 @@
 
         &--active {
             background-color: #f2f4f8;
-            text-decoration: none!important;
+            text-decoration: none !important;
         }
 
         &-default-tag {
@@ -137,7 +125,6 @@
                 .tag {
                     background: #ffffff;
                 }
-
             }
         }
     }
@@ -158,18 +145,20 @@
 
     &__filter-input {
         outline: none !important;
-        box-shadow: none!important;
+        box-shadow: none !important;
         font-size: 12px;
 
         &::placeholder {
-            color: #AppWorkspace6D727C!important;
+            color: #AppWorkspace6D727C !important;
         }
 
-        &:focus, &:active {
+        &:focus,
+        &:active {
             outline: none !important;
         }
         input {
-            &:focus, &:active {
+            &:focus,
+            &:active {
                 outline: none !important;
             }
             outline: none !important;
@@ -178,12 +167,6 @@
 
     &__no-results {
         padding: 4px 16px;
-    }
-
-    [data-reach-listbox-popover] {
-        padding-top: 0;
-        padding-bottom: 0;
-        margin-left: 80px;
     }
 
     &__icon-container {

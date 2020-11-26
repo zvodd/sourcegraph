@@ -113,7 +113,7 @@ export const SearchContextsDropdown: React.FunctionComponent<Props> = props => {
             <div
                 role="button"
                 className={classNames({
-                    'search-contexts-dropdown__button btn testtt': true,
+                    'search-contexts-dropdown__button btn': true,
                     'search-contexts-dropdown__button--active': isOpen,
                 })}
                 id={id}
@@ -125,7 +125,7 @@ export const SearchContextsDropdown: React.FunctionComponent<Props> = props => {
                 <TooltipPopoverWrapper
                     isOpen={isOpen}
                     toggle={toggleIsOpen}
-                    popperClassName="popover popovertest"
+                    popperClassName="popover popover-shift"
                     placement="bottom-start"
                     target={id}
                     trigger="legacy"
@@ -161,20 +161,20 @@ export const SearchContextsDropdown: React.FunctionComponent<Props> = props => {
                             <ul className="search-contexts-dropdown__list list-group list-group-flush list-unstyled">
                                 {filteredAndRankedContexts.length > 0 ? (
                                     filteredAndRankedContexts.map((item, index) => (
-                                        <ButtonLink
+                                        <li
+                                            className={classNames(
+                                                'search-contexts-dropdown__option list-group-item-action border-0'
+                                            )}
                                             key={item.name}
-                                            onSelect={onClickedItem(item.name)}
-                                            className={classNames({
-                                                'search-contexts-dropdown__option--active':
-                                                    wrappedSelectedIndex === index,
-                                            })}
+                                            value={item.name}
                                         >
-                                            <li
-                                                className={classNames(
-                                                    'search-contexts-dropdown__option list-group-item-action border-0'
-                                                )}
+                                            <ButtonLink
                                                 key={item.name}
-                                                value={item.name}
+                                                onSelect={onClickedItem(item.name)}
+                                                className={classNames({
+                                                    'search-contexts-dropdown__option--active':
+                                                        wrappedSelectedIndex === index,
+                                                })}
                                             >
                                                 <SearchContextInfoRow
                                                     name={item.name}
@@ -184,8 +184,8 @@ export const SearchContextsDropdown: React.FunctionComponent<Props> = props => {
                                                     onDisableValue={disableValue}
                                                     // className="search-contexts-dropdown__option"
                                                 />
-                                            </li>
-                                        </ButtonLink>
+                                            </ButtonLink>
+                                        </li>
                                     ))
                                 ) : filterInput.length > 0 ? (
                                     <li className="search-contexts-dropdown__no-results">No matching contexts</li>

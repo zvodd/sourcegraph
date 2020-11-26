@@ -7,7 +7,7 @@
         font-family: menlo;
         line-height: 1;
         border: 0;
-        border-radius: 8px;
+        border-radius: 12px;
         padding-left: 8px;
         padding-right: 8px;
         white-space: nowrap;
@@ -45,10 +45,10 @@
         }
 
         &--active {
-            background: #c0cadd;
+            background: var(--color-bg-4);
 
             &:hover {
-                background: #c0cadd;
+                background: var(--color-bg-4);
             }
 
             &:after {
@@ -75,14 +75,17 @@
     }
 
     &__option {
-        display: grid;
-        grid-template-columns: 3fr 5fr 1fr;
-        padding: 4px 8px 4px 16px;
-        cursor: pointer;
-        border: none;
 
-        &:hover {
-            text-decoration: none !important;
+        a {
+            display: grid;
+            grid-template-columns: 3fr 5fr 1fr;
+            padding: 4px 8px 4px 16px;
+            cursor: pointer;
+            border: none;
+
+            &:hover {
+                text-decoration: none !important;
+            }
         }
 
         &-name {
@@ -185,4 +188,8 @@
         border-right: none;
         position: relative;
     }
+}
+
+.popover-shift {
+    top: 2px!important;
 }

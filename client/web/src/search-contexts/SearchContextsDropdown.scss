@@ -7,7 +7,7 @@
         font-family: menlo;
         line-height: 1;
         border: 0;
-        border-radius: 12px;
+        border-radius: 8px;
         padding-left: 8px;
         padding-right: 8px;
         white-space: nowrap;
@@ -28,7 +28,7 @@
             height: 18px;
             background-color: #e4e9f1;
             position: absolute;
-            right: 0;
+            right: 2px;
             top: 7px;
         }
 
@@ -179,7 +179,7 @@
     }
 
     &__container {
-        padding: 4px 0 4px 4px;
+        padding: 4px 6px 4px 4px;
         border: 1px solid var(--input-border-color);
         background-color: var(--input-bg);
         border-right: none;

@@ -485,9 +485,12 @@ export class MonacoQueryInput extends React.PureComponent<MonacoQueryInputProps>
                                 selection.startColumn - 1 >= 0 ? selection.startColumn - 1 : 0,
                                 selection.endColumn + 1
                             )
-                            copy(final.toString() + ' context:' + this.props.searchContext)
+                            if (value === final) {
+                                copy(final.toString() + ' context:' + this.props.searchContext)
+                            } else {
+                                copy(final.toString())
+                            }
                         }
-                        console.log('copying')
                     },
                 })
             )

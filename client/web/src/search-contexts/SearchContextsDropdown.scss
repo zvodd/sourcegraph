@@ -133,10 +133,17 @@
     }
 
     &__link-row {
-        padding: 12px 16px;
+        padding: 12px 16px 14px;
         color: #1c7cd6;
         font-size: 12px;
         line-height: 1;
+
+        a {
+            &:hover {
+                cursor: pointer;
+                color: var(--link-hover-color);
+            }
+        }
     }
 
     &__input-row {

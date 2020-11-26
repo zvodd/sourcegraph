@@ -1,5 +1,5 @@
 import * as H from 'history'
-import React, { useEffect, useMemo } from 'react'
+import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import { ActivationProps } from '../../../shared/src/components/activation/Activation'
 import { ExtensionsControllerProps } from '../../../shared/src/extensions/controller'
 import { PlatformContextProps } from '../../../shared/src/platform/context'
@@ -115,7 +115,9 @@ export const GlobalNavbar: React.FunctionComponent<Props> = ({
     branding = branding ?? window.context?.branding
 
     const query = useMemo(() => parseSearchURLQuery(location.search || ''), [location.search])
+    const [searchContext, setSearchContext] = useState('')
 
+    const onContextChange = useCallback((newContext: string) => setSearchContext(newContext), [setSearchContext])
     useEffect(() => {
         // On a non-search related page or non-repo page, we clear the query in
         // the main query input and interactive mode UI to avoid misleading users
@@ -205,9 +207,10 @@ export const GlobalNavbar: React.FunctionComponent<Props> = ({
                                 setVersionContext={setVersionContext}
                                 availableVersionContexts={availableVersionContexts}
                             /> */}
-                            <SearchContextsDropdown />
+                            <SearchContextsDropdown searchContext={searchContext} onChangeContext={onContextChange} />
                             <SearchNavbarItem
                                 {...props}
+                                searchContext={searchContext}
                                 navbarSearchState={navbarSearchQueryState}
                                 onChange={onNavbarQueryChange}
                                 location={location}

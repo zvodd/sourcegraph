@@ -28,6 +28,7 @@ interface Props
     onChange: (newValue: QueryState) => void
     globbing: boolean
     enableSmartQuery: boolean
+    searchContext: string
 }
 
 /**
@@ -92,6 +93,7 @@ export const SearchNavbarItem: React.FunctionComponent<Props> = (props: Props) =
         >
             <LazyMonacoQueryInput
                 {...props}
+                searchContext={props.searchContext}
                 hasGlobalQueryBehavior={true}
                 queryState={props.navbarSearchState}
                 onSubmit={onSubmit}

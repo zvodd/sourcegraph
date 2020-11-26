@@ -42,6 +42,7 @@ export interface MonacoQueryInputProps
     autoFocus?: boolean
     showOnboardingTour: boolean
     keyboardShortcutForFocus?: KeyboardShortcut
+    searchContext: string
     /**
      * The current onboarding tour instance
      */
@@ -484,7 +485,7 @@ export class MonacoQueryInput extends React.PureComponent<MonacoQueryInputProps>
                                 selection.startColumn - 1 >= 0 ? selection.startColumn - 1 : 0,
                                 selection.endColumn + 1
                             )
-                            copy(final.toString())
+                            copy(final.toString() + ' context:' + this.props.searchContext)
                         }
                         console.log('copying')
                     },

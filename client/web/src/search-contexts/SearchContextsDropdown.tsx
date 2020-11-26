@@ -1,5 +1,5 @@
 import classNames from 'classnames'
-import React, { useCallback, useMemo, useState } from 'react'
+import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import { Key } from 'ts-key-enum'
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore
@@ -14,7 +14,11 @@ interface Context {
     description: string
     isDefault?: boolean
 }
-export const SearchContextsDropdown: React.FunctionComponent = () => {
+interface Props {
+    searchContext: string
+    onChangeContext: (context: string) => void
+}
+export const SearchContextsDropdown: React.FunctionComponent<Props> = props => {
     const contexts: Context[] = useMemo(
         () => [
             { name: 'my-repos', description: 'Your repositories on Sourcegraph', isDefault: true },
@@ -30,6 +34,10 @@ export const SearchContextsDropdown: React.FunctionComponent = () => {
     const [currentValue, setCurrentValue] = useState<Context['name'] | undefined>(
         contexts.filter(context => context.isDefault)![0].name
     )
+
+    const { onChangeContext } = props
+    useEffect(() => onChangeContext(currentValue || ''), [onChangeContext, currentValue])
+
     const [selectedIndex, setSelectedIndex] = useState(0)
 
     const disableValue = useCallback((): void => {
@@ -68,7 +76,6 @@ export const SearchContextsDropdown: React.FunctionComponent = () => {
             filteredAndRankedContexts.length,
         [selectedIndex, filteredAndRankedContexts.length]
     )
-
     const onInputKeyDown: React.KeyboardEventHandler<HTMLInputElement> = useCallback(
         event => {
             switch (event.key) {
@@ -85,12 +92,13 @@ export const SearchContextsDropdown: React.FunctionComponent = () => {
                 case Key.Enter: {
                     console.log(filteredAndRankedContexts[selectedIndex].name)
                     setCurrentValue(filteredAndRankedContexts[selectedIndex].name)
+                    onChangeContext(filteredAndRankedContexts[selectedIndex].name)
                     setIsOpen(false)
                     break
                 }
             }
         },
-        [setIndex, filteredAndRankedContexts, selectedIndex]
+        [setIndex, filteredAndRankedContexts, selectedIndex, onChangeContext]
     )
 
     const onClickedItem = useCallback(
@@ -98,8 +106,9 @@ export const SearchContextsDropdown: React.FunctionComponent = () => {
             toggleIsOpen()
             console.log(name)
             setCurrentValue(name)
+            onChangeContext(name)
         },
-        [setCurrentValue, toggleIsOpen]
+        [setCurrentValue, toggleIsOpen, onChangeContext]
     )
 
     const onCopy = useCallback(() => {

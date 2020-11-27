@@ -194,7 +194,7 @@ export const SearchContextsDropdown: React.FunctionComponent<Props> = props => {
                                 )}
                             </ul>
                             <div className="search-contexts-dropdown__link-row d-flex justify-content-between">
-                                <a>Reset to default</a>
+                                <a onClick={onClickedItem('my-repos')}>Reset to default</a>
                                 <a>Manage search contexts</a>
                             </div>
                         </div>

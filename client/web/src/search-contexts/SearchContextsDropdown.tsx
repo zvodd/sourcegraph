@@ -16,6 +16,7 @@ interface Context {
 }
 interface Props {
     searchContext: string
+    isDisabled: boolean
     onChangeContext: (context: string) => void
 }
 export const SearchContextsDropdown: React.FunctionComponent<Props> = props => {
@@ -115,10 +116,12 @@ export const SearchContextsDropdown: React.FunctionComponent<Props> = props => {
                 className={classNames({
                     'search-contexts-dropdown__button btn': true,
                     'search-contexts-dropdown__button--active': isOpen,
+                    'search-contexts-dropdown__button--disabled': props.isDisabled,
                 })}
                 id={id}
                 onClick={toggleIsOpen}
                 tabIndex={0}
+                data-tooltip={props.isDisabled ? 'Overridden by search query' : undefined}
             >
                 <span className="context-label">context:</span>
                 {currentValue}

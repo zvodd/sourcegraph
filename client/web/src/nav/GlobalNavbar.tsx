@@ -198,7 +198,11 @@ export const GlobalNavbar: React.FunctionComponent<Props> = ({
                             {splitSearchModes && (
                                 <SearchModeToggle {...props} interactiveSearchMode={interactiveSearchMode} />
                             )}
-                            <SearchContextsDropdown searchContext={searchContext} onChangeContext={onContextChange} />
+                            <SearchContextsDropdown
+                                isDisabled={navbarSearchQueryState.query.includes('context:')}
+                                searchContext={searchContext}
+                                onChangeContext={onContextChange}
+                            />
                             <SearchNavbarItem
                                 {...props}
                                 searchContext={searchContext}

@@ -55,6 +55,10 @@
                 opacity: 0;
             }
         }
+
+        &--disabled {
+            cursor: not-allowed;
+        }
     }
 
     [data-reach-listbox-button][aria-expanded='true'] {
@@ -75,7 +79,6 @@
     }
 
     &__option {
-
         a {
             display: grid;
             grid-template-columns: 3fr 5fr 1fr;
@@ -198,5 +201,5 @@
 }
 
 .popover-shift {
-    top: 2px!important;
+    top: 2px !important;
 }

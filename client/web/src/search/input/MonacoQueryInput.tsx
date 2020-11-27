@@ -453,30 +453,31 @@ export class MonacoQueryInput extends React.PureComponent<MonacoQueryInputProps>
             )
         )
 
-        this.subscriptions.add(
-            toUnsubscribable(
-                editor.addAction({
-                    id: 'copyingAction',
-                    label: 'copyingAction',
-                    keybindings: [Monaco.KeyMod.CtrlCmd | Monaco.KeyCode.KEY_C],
-                    run: editor => {
-                        const value = editor.getValue()
-                        const selection = editor.getSelection()
-                        if (selection) {
-                            const final = value.slice(
-                                selection.startColumn - 1 >= 0 ? selection.startColumn - 1 : 0,
-                                selection.endColumn + 1
-                            )
-                            if (value === final) {
-                                copy(final.toString() + ' context:' + this.props.searchContext)
-                            } else {
-                                copy(final.toString())
-                            }
-                        }
-                    },
-                })
-            )
-        )
+        // Trapping cmd+c to copy entire query
+        // this.subscriptions.add(
+        //     toUnsubscribable(
+        //         editor.addAction({
+        //             id: 'copyingAction',
+        //             label: 'copyingAction',
+        //             keybindings: [Monaco.KeyMod.CtrlCmd | Monaco.KeyCode.KEY_C],
+        //             run: editor => {
+        //                 const value = editor.getValue()
+        //                 const selection = editor.getSelection()
+        //                 if (selection) {
+        //                     const final = value.slice(
+        //                         selection.startColumn - 1 >= 0 ? selection.startColumn - 1 : 0,
+        //                         selection.endColumn + 1
+        //                     )
+        //                     if (value === final) {
+        //                         copy(final.toString() + ' context:' + this.props.searchContext)
+        //                     } else {
+        //                         copy(final.toString())
+        //                     }
+        //                 }
+        //             },
+        //         })
+        //     )
+        // )
 
         // Disable default Monaco keybindings
         if (!hasKeybindingService(editor)) {

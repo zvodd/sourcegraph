@@ -23,6 +23,7 @@ export interface TogglesProps
         Partial<Pick<InteractiveSearchProps, 'filtersInQuery'>>,
         VersionContextProps {
     navbarSearchQuery: string
+    searchContext: string
     history: H.History
     location: H.Location
     hasGlobalQueryBehavior?: boolean
@@ -45,6 +46,7 @@ export const Toggles: React.FunctionComponent<TogglesProps> = (props: TogglesPro
         setCaseSensitivity,
         settingsCascade,
         className,
+        searchContext,
         copyQueryButton,
     } = props
 
@@ -110,6 +112,7 @@ export const Toggles: React.FunctionComponent<TogglesProps> = (props: TogglesPro
     }, [patternType, setPatternType, settingsCascade.final, submitOnToggle])
 
     const fullQuery = [
+        `context:${searchContext}`,
         navbarSearchQuery,
         filtersInQuery && generateFiltersQuery(filtersInQuery),
         `patternType:${patternType}`,

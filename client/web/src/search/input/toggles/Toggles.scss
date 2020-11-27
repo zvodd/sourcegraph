@@ -16,6 +16,20 @@
     }
 
     &__copy-query-button {
-        opacity: 0;
+        opacity: 100;
+        color: #1c7cd6;
+        &:hover {
+            background-color: #f2f4f8;
+        }
+        height: 24px;
+        width: 24px;
+        margin-right: 6px;
+    }
+
+    &__main-container {
+        display: flex;
+        border-right: 1px solid #e4e9f1;
+        margin-right: 12px;
+        padding-right: 14px;
     }
 }

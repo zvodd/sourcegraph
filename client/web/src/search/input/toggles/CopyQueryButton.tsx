@@ -30,13 +30,12 @@ export const CopyQueryButton: React.FunctionComponent<Props> = (props: Props) =>
     )
 
     return (
-        <button
-            type="button"
-            className={classNames('btn btn-icon icon-inline  btn-link-sm', props.className)}
-            data-tooltip={copied ? 'Copied!' : 'Copy query to clipboard'}
+        <div
+            className={classNames('btn btn-icon', props.className)}
+            data-tooltip={copied ? 'Copied!' : 'Copy complete query'}
             onClick={nextClick}
         >
-            <ContentCopyIcon className="icon-inline" />
-        </button>
+            <ContentCopyIcon size={16} />
+        </div>
     )
 }

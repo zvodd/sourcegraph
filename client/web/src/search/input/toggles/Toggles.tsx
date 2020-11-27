@@ -120,43 +120,43 @@ export const Toggles: React.FunctionComponent<TogglesProps> = (props: TogglesPro
 
     return (
         <div className={classNames('toggle-container', className)}>
-            {copyQueryButton && (
-                <CopyQueryButton
-                    fullQuery={fullQuery}
-                    className="toggle-container__toggle toggle-container__copy-query-button"
-                />
-            )}
-            <QueryInputToggle
-                {...props}
-                title="Case sensitivity"
-                isActive={caseSensitive}
-                onToggle={toggleCaseSensitivity}
-                icon={FormatLetterCaseIcon}
-                className="test-case-sensitivity-toggle"
-                activeClassName="test-case-sensitivity-toggle--active"
-                disabledCondition={patternType === SearchPatternType.structural}
-                disabledMessage="Structural search is always case sensitive"
-            />
-            <QueryInputToggle
-                {...props}
-                title="Regular expression"
-                isActive={patternType === SearchPatternType.regexp}
-                onToggle={toggleRegexp}
-                icon={RegexIcon}
-                className="test-regexp-toggle"
-                activeClassName="test-regexp-toggle--active"
-            />
-            {!structuralSearchDisabled && (
+            <div className="toggle-container__main-container">
                 <QueryInputToggle
                     {...props}
-                    title="Structural search"
-                    className="test-structural-search-toggle"
-                    activeClassName="test-structural-search-toggle--active"
-                    isActive={patternType === SearchPatternType.structural}
-                    onToggle={toggleStructuralSearch}
-                    icon={CodeBracketsIcon}
+                    title="Case sensitivity"
+                    isActive={caseSensitive}
+                    onToggle={toggleCaseSensitivity}
+                    icon={FormatLetterCaseIcon}
+                    className="test-case-sensitivity-toggle"
+                    activeClassName="test-case-sensitivity-toggle--active"
+                    disabledCondition={patternType === SearchPatternType.structural}
+                    disabledMessage="Structural search is always case sensitive"
                 />
-            )}
+                <QueryInputToggle
+                    {...props}
+                    title="Regular expression"
+                    isActive={patternType === SearchPatternType.regexp}
+                    onToggle={toggleRegexp}
+                    icon={RegexIcon}
+                    className="test-regexp-toggle"
+                    activeClassName="test-regexp-toggle--active"
+                />
+                {!structuralSearchDisabled && (
+                    <QueryInputToggle
+                        {...props}
+                        title="Structural search"
+                        className="test-structural-search-toggle"
+                        activeClassName="test-structural-search-toggle--active"
+                        isActive={patternType === SearchPatternType.structural}
+                        onToggle={toggleStructuralSearch}
+                        icon={CodeBracketsIcon}
+                    />
+                )}
+            </div>
+            <CopyQueryButton
+                fullQuery={fullQuery}
+                className="toggle-container__toggle toggle-container__copy-query-button"
+            />
         </div>
     )
 }

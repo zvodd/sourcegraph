@@ -22,7 +22,7 @@ interface Props {
 export const SearchContextsDropdown: React.FunctionComponent<Props> = props => {
     const contexts: Context[] = useMemo(
         () => [
-            { name: 'my-repos', description: 'Your repositories on Sourcegraph', isDefault: true },
+            { name: '@logansmith', description: 'Your repositories on Sourcegraph', isDefault: true },
             { name: 'global', description: 'All repositories on Sourcegraph' },
             { name: 'Nutnx-0.0.1', description: 'Release used by Customer A' },
             { name: 'Nutnx-0.0.2', description: 'Release used by Customer X' },

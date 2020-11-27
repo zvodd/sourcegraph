@@ -57,7 +57,21 @@
         }
 
         &--disabled {
-            cursor: not-allowed;
+            background-color: #ECECEC;
+            color: #939AAB;
+
+            .context-label {
+                color: #939AAB;
+            }
+
+            &:hover {
+                background-color: #ECECEC;
+                color: #939AAB;
+            }
+
+            &:after {
+                opacity: 0;
+            }
         }
     }
 

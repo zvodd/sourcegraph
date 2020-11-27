@@ -164,7 +164,6 @@
     }
 
     &__input-row {
-        padding: 0 16px 0 11px;
         padding: 4px 16px 4px 11px;
         margin-bottom: 4px;
         border-bottom: 1px solid #cad2e2;
@@ -173,7 +172,7 @@
     &__filter-input {
         outline: none !important;
         box-shadow: none !important;
-        font-size: 12px;
+        font-size: 13px;
 
         &::placeholder {
             color: #AppWorkspace6D727C !important;

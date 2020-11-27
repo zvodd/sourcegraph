@@ -119,7 +119,7 @@ export const SearchContextsDropdown: React.FunctionComponent<Props> = props => {
                     'search-contexts-dropdown__button--disabled': props.isDisabled,
                 })}
                 id={id}
-                onClick={toggleIsOpen}
+                onClick={props.isDisabled ? undefined : toggleIsOpen}
                 tabIndex={0}
                 data-tooltip={props.isDisabled ? 'Overridden by search query' : undefined}
             >
@@ -127,7 +127,7 @@ export const SearchContextsDropdown: React.FunctionComponent<Props> = props => {
                 {currentValue}
                 <TooltipPopoverWrapper
                     isOpen={isOpen}
-                    toggle={toggleIsOpen}
+                    toggle={props.isDisabled ? undefined : toggleIsOpen}
                     popperClassName="popover popover-shift"
                     placement="bottom-start"
                     target={id}

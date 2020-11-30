@@ -59,7 +59,7 @@
         &--disabled {
             background-color: #ECECEC;
             color: #939AAB;
-            text-decoration: line-through;
+            //text-decoration: line-through;
 
             .context-label {
                 color: #939AAB;
@@ -68,7 +68,7 @@
             &:hover {
                 background-color: #ECECEC;
                 color: #939AAB;
-                text-decoration: line-through;
+                //text-decoration: line-through;
             }
 
             &:after {

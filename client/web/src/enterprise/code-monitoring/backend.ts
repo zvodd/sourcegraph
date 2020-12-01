@@ -5,6 +5,8 @@ import { requestGraphQL } from '../../backend/graphql'
 import {
     CreateCodeMonitorResult,
     CreateCodeMonitorVariables,
+    FetchCodeMonitorResult,
+    FetchCodeMonitorVariables,
     ListCodeMonitors,
     ListUserCodeMonitorsResult,
     ListUserCodeMonitorsVariables,
@@ -135,5 +137,47 @@ export const toggleCodeMonitorEnabled = (
     }).pipe(
         map(dataOrThrowErrors),
         map(data => data.toggleCodeMonitor)
+    )
+}
+
+export const fetchCodeMonitor = (id: string): Observable<FetchCodeMonitorResult> => {
+    const query = gql`
+        query FetchCodeMonitor($id: ID!) {
+            node(id: $id) {
+                ... on Monitor {
+                    id
+                    description
+                    owner {
+                        id
+                        namespaceName
+                    }
+                    actions {
+                        nodes {
+                            ... on MonitorEmail {
+                                id
+                                recipients {
+                                    nodes {
+                                        id
+                                        url
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    trigger {
+                        ... on MonitorQuery {
+                            query
+                        }
+                    }
+                }
+            }
+        }
+    `
+
+    return requestGraphQL<FetchCodeMonitorResult, FetchCodeMonitorVariables>(query, {
+        id,
+    }).pipe(
+        map(dataOrThrowErrors),
+        map(data => data)
     )
 }

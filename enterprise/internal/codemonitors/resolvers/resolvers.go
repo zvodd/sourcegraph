@@ -46,14 +46,11 @@ func (r *Resolver) CodeMonitorByID(ctx context.Context, id graphql.ID) (m graphq
 		return nil, err
 	}
 
-	rows, err := r.store.Query(ctx, q)
+	m, err = r.runMonitorQuery(ctx, q)
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
 
-	// Hydrate monitor with Resolver.
-	m.(*monitor).Resolver = r
 	return m, nil
 }
 

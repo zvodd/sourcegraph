@@ -51,6 +51,8 @@ func (r *Resolver) CodeMonitorByID(ctx context.Context, id graphql.ID) (m graphq
 		return nil, err
 	}
 
+	m.(*monitor).Resolver = r
+
 	return m, nil
 }
 

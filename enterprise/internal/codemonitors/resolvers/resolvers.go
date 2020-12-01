@@ -37,6 +37,26 @@ func (r *Resolver) Now() time.Time {
 	return r.store.Now()
 }
 
+func (r *Resolver) CodeMonitorByID(ctx context.Context, id graphql.ID) (m graphqlbackend.MonitorResolver, err error) {
+	var monitorID int64
+	err = relay.UnmarshalSpec(id, &monitorID)
+
+	q, err := codeMonitorByIdQuery(monitorID)
+	if err != nil {
+		return nil, err
+	}
+
+	rows, err := r.store.Query(ctx, q)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	// Hydrate monitor with Resolver.
+	m.(*monitor).Resolver = r
+	return m, nil
+}
+
 func (r *Resolver) Monitors(ctx context.Context, userID int32, args *graphqlbackend.ListMonitorsArgs) (graphqlbackend.MonitorConnectionResolver, error) {
 	q, err := monitorsQuery(userID, args)
 	if err != nil {
@@ -537,6 +557,19 @@ var monitorColumns = []*sqlf.Query{
 	sqlf.Sprintf("cm_monitors.enabled"),
 	sqlf.Sprintf("cm_monitors.namespace_user_id"),
 	sqlf.Sprintf("cm_monitors.namespace_org_id"),
+}
+
+func codeMonitorByIdQuery(id int64) (*sqlf.Query, error) {
+	const SelectMonitorById = `
+SELECT id, created_by, created_at, changed_by, changed_at, description, enabled, namespace_user_id, namespace_org_id
+FROM cm_monitors
+WHERE id = %s
+`
+	query := sqlf.Sprintf(
+		SelectMonitorById,
+		id,
+	)
+	return query, nil
 }
 
 func monitorsQuery(userID int32, args *graphqlbackend.ListMonitorsArgs) (*sqlf.Query, error) {

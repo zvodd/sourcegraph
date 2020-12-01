@@ -2783,6 +2783,8 @@ type Query {
         """
         after: String
     ): LSIFIndexConnection!
+
+    # codeMonitor: Monitor!
 }
 
 """

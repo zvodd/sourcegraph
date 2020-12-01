@@ -11,6 +11,7 @@ import (
 type CodeMonitorsResolver interface {
 	// Query
 	Monitors(ctx context.Context, userID int32, args *ListMonitorsArgs) (MonitorConnectionResolver, error)
+	CodeMonitorByID(ctx context.Context, id graphql.ID) (MonitorResolver, error)
 
 	// Mutations
 	CreateCodeMonitor(ctx context.Context, args *CreateCodeMonitorArgs) (MonitorResolver, error)
@@ -188,6 +189,10 @@ var DefaultCodeMonitorsResolver = &defaultCodeMonitorsResolver{}
 var codeMonitorsOnlyInEnterprise = errors.New("code monitors are only available in enterprise")
 
 type defaultCodeMonitorsResolver struct {
+}
+
+func (d defaultCodeMonitorsResolver) CodeMonitorByID(ctx context.Context, id graphql.ID) (MonitorResolver, error) {
+	return nil, codeMonitorsOnlyInEnterprise
 }
 
 func (d defaultCodeMonitorsResolver) Monitors(ctx context.Context, userID int32, args *ListMonitorsArgs) (MonitorConnectionResolver, error) {

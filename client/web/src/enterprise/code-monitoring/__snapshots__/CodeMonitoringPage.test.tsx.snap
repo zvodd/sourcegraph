@@ -204,6 +204,9 @@ exports[`CodeMonitoringListPage Code monitoring page with 10 results 1`] = `
                         "description": "Test code monitor",
                         "enabled": true,
                         "id": "foo0",
+                        "trigger": Object {
+                          "query": "test",
+                        },
                       },
                       Object {
                         "actions": Object {
@@ -223,6 +226,9 @@ exports[`CodeMonitoringListPage Code monitoring page with 10 results 1`] = `
                         "description": "Second test code monitor",
                         "enabled": true,
                         "id": "foo1",
+                        "trigger": Object {
+                          "query": "test",
+                        },
                       },
                       Object {
                         "actions": Object {
@@ -242,6 +248,9 @@ exports[`CodeMonitoringListPage Code monitoring page with 10 results 1`] = `
                         "description": "Third test code monitor",
                         "enabled": true,
                         "id": "foo2",
+                        "trigger": Object {
+                          "query": "test",
+                        },
                       },
                       Object {
                         "actions": Object {
@@ -261,6 +270,9 @@ exports[`CodeMonitoringListPage Code monitoring page with 10 results 1`] = `
                         "description": "Fourth test code monitor",
                         "enabled": true,
                         "id": "foo3",
+                        "trigger": Object {
+                          "query": "test",
+                        },
                       },
                       Object {
                         "actions": Object {
@@ -280,6 +292,9 @@ exports[`CodeMonitoringListPage Code monitoring page with 10 results 1`] = `
                         "description": "Fifth test code monitor",
                         "enabled": true,
                         "id": "foo4",
+                        "trigger": Object {
+                          "query": "test",
+                        },
                       },
                       Object {
                         "actions": Object {
@@ -299,6 +314,9 @@ exports[`CodeMonitoringListPage Code monitoring page with 10 results 1`] = `
                         "description": "Sixth test code monitor",
                         "enabled": true,
                         "id": "foo5",
+                        "trigger": Object {
+                          "query": "test",
+                        },
                       },
                       Object {
                         "actions": Object {
@@ -318,6 +336,9 @@ exports[`CodeMonitoringListPage Code monitoring page with 10 results 1`] = `
                         "description": "Seventh test code monitor",
                         "enabled": true,
                         "id": "foo6",
+                        "trigger": Object {
+                          "query": "test",
+                        },
                       },
                       Object {
                         "actions": Object {
@@ -337,6 +358,9 @@ exports[`CodeMonitoringListPage Code monitoring page with 10 results 1`] = `
                         "description": "Eighth test code monitor",
                         "enabled": true,
                         "id": "foo7",
+                        "trigger": Object {
+                          "query": "test",
+                        },
                       },
                       Object {
                         "actions": Object {
@@ -356,6 +380,9 @@ exports[`CodeMonitoringListPage Code monitoring page with 10 results 1`] = `
                         "description": "Ninth test code monitor",
                         "enabled": true,
                         "id": "foo9",
+                        "trigger": Object {
+                          "query": "test",
+                        },
                       },
                       Object {
                         "actions": Object {
@@ -375,6 +402,9 @@ exports[`CodeMonitoringListPage Code monitoring page with 10 results 1`] = `
                         "description": "Tenth test code monitor",
                         "enabled": true,
                         "id": "foo10",
+                        "trigger": Object {
+                          "query": "test",
+                        },
                       },
                     ],
                     "pageInfo": Object {
@@ -425,6 +455,9 @@ exports[`CodeMonitoringListPage Code monitoring page with 10 results 1`] = `
                         "description": "Test code monitor",
                         "enabled": true,
                         "id": "foo0",
+                        "trigger": Object {
+                          "query": "test",
+                        },
                       }
                     }
                   >
@@ -519,6 +552,9 @@ exports[`CodeMonitoringListPage Code monitoring page with 10 results 1`] = `
                         "description": "Second test code monitor",
                         "enabled": true,
                         "id": "foo1",
+                        "trigger": Object {
+                          "query": "test",
+                        },
                       }
                     }
                   >
@@ -613,6 +649,9 @@ exports[`CodeMonitoringListPage Code monitoring page with 10 results 1`] = `
                         "description": "Third test code monitor",
                         "enabled": true,
                         "id": "foo2",
+                        "trigger": Object {
+                          "query": "test",
+                        },
                       }
                     }
                   >
@@ -707,6 +746,9 @@ exports[`CodeMonitoringListPage Code monitoring page with 10 results 1`] = `
                         "description": "Fourth test code monitor",
                         "enabled": true,
                         "id": "foo3",
+                        "trigger": Object {
+                          "query": "test",
+                        },
                       }
                     }
                   >
@@ -801,6 +843,9 @@ exports[`CodeMonitoringListPage Code monitoring page with 10 results 1`] = `
                         "description": "Fifth test code monitor",
                         "enabled": true,
                         "id": "foo4",
+                        "trigger": Object {
+                          "query": "test",
+                        },
                       }
                     }
                   >
@@ -895,6 +940,9 @@ exports[`CodeMonitoringListPage Code monitoring page with 10 results 1`] = `
                         "description": "Sixth test code monitor",
                         "enabled": true,
                         "id": "foo5",
+                        "trigger": Object {
+                          "query": "test",
+                        },
                       }
                     }
                   >
@@ -989,6 +1037,9 @@ exports[`CodeMonitoringListPage Code monitoring page with 10 results 1`] = `
                         "description": "Seventh test code monitor",
                         "enabled": true,
                         "id": "foo6",
+                        "trigger": Object {
+                          "query": "test",
+                        },
                       }
                     }
                   >
@@ -1083,6 +1134,9 @@ exports[`CodeMonitoringListPage Code monitoring page with 10 results 1`] = `
                         "description": "Eighth test code monitor",
                         "enabled": true,
                         "id": "foo7",
+                        "trigger": Object {
+                          "query": "test",
+                        },
                       }
                     }
                   >
@@ -1177,6 +1231,9 @@ exports[`CodeMonitoringListPage Code monitoring page with 10 results 1`] = `
                         "description": "Ninth test code monitor",
                         "enabled": true,
                         "id": "foo9",
+                        "trigger": Object {
+                          "query": "test",
+                        },
                       }
                     }
                   >
@@ -1271,6 +1328,9 @@ exports[`CodeMonitoringListPage Code monitoring page with 10 results 1`] = `
                         "description": "Tenth test code monitor",
                         "enabled": true,
                         "id": "foo10",
+                        "trigger": Object {
+                          "query": "test",
+                        },
                       }
                     }
                   >
@@ -1568,6 +1628,9 @@ exports[`CodeMonitoringListPage Code monitoring page with less than 10 results 1
                         "description": "Test code monitor",
                         "enabled": true,
                         "id": "foo0",
+                        "trigger": Object {
+                          "query": "test",
+                        },
                       },
                       Object {
                         "actions": Object {
@@ -1587,6 +1650,9 @@ exports[`CodeMonitoringListPage Code monitoring page with less than 10 results 1
                         "description": "Second test code monitor",
                         "enabled": true,
                         "id": "foo1",
+                        "trigger": Object {
+                          "query": "test",
+                        },
                       },
                       Object {
                         "actions": Object {
@@ -1606,6 +1672,9 @@ exports[`CodeMonitoringListPage Code monitoring page with less than 10 results 1
                         "description": "Third test code monitor",
                         "enabled": true,
                         "id": "foo2",
+                        "trigger": Object {
+                          "query": "test",
+                        },
                       },
                     ],
                     "pageInfo": Object {
@@ -1656,6 +1725,9 @@ exports[`CodeMonitoringListPage Code monitoring page with less than 10 results 1
                         "description": "Test code monitor",
                         "enabled": true,
                         "id": "foo0",
+                        "trigger": Object {
+                          "query": "test",
+                        },
                       }
                     }
                   >
@@ -1750,6 +1822,9 @@ exports[`CodeMonitoringListPage Code monitoring page with less than 10 results 1
                         "description": "Second test code monitor",
                         "enabled": true,
                         "id": "foo1",
+                        "trigger": Object {
+                          "query": "test",
+                        },
                       }
                     }
                   >
@@ -1844,6 +1919,9 @@ exports[`CodeMonitoringListPage Code monitoring page with less than 10 results 1
                         "description": "Third test code monitor",
                         "enabled": true,
                         "id": "foo2",
+                        "trigger": Object {
+                          "query": "test",
+                        },
                       }
                     }
                   >
@@ -2141,6 +2219,9 @@ exports[`CodeMonitoringListPage Code monitoring page with more than 10 results 1
                         "description": "Test code monitor",
                         "enabled": true,
                         "id": "foo0",
+                        "trigger": Object {
+                          "query": "test",
+                        },
                       },
                       Object {
                         "actions": Object {
@@ -2160,6 +2241,9 @@ exports[`CodeMonitoringListPage Code monitoring page with more than 10 results 1
                         "description": "Second test code monitor",
                         "enabled": true,
                         "id": "foo1",
+                        "trigger": Object {
+                          "query": "test",
+                        },
                       },
                       Object {
                         "actions": Object {
@@ -2179,6 +2263,9 @@ exports[`CodeMonitoringListPage Code monitoring page with more than 10 results 1
                         "description": "Third test code monitor",
                         "enabled": true,
                         "id": "foo2",
+                        "trigger": Object {
+                          "query": "test",
+                        },
                       },
                       Object {
                         "actions": Object {
@@ -2198,6 +2285,9 @@ exports[`CodeMonitoringListPage Code monitoring page with more than 10 results 1
                         "description": "Fourth test code monitor",
                         "enabled": true,
                         "id": "foo3",
+                        "trigger": Object {
+                          "query": "test",
+                        },
                       },
                       Object {
                         "actions": Object {
@@ -2217,6 +2307,9 @@ exports[`CodeMonitoringListPage Code monitoring page with more than 10 results 1
                         "description": "Fifth test code monitor",
                         "enabled": true,
                         "id": "foo4",
+                        "trigger": Object {
+                          "query": "test",
+                        },
                       },
                       Object {
                         "actions": Object {
@@ -2236,6 +2329,9 @@ exports[`CodeMonitoringListPage Code monitoring page with more than 10 results 1
                         "description": "Sixth test code monitor",
                         "enabled": true,
                         "id": "foo5",
+                        "trigger": Object {
+                          "query": "test",
+                        },
                       },
                       Object {
                         "actions": Object {
@@ -2255,6 +2351,9 @@ exports[`CodeMonitoringListPage Code monitoring page with more than 10 results 1
                         "description": "Seventh test code monitor",
                         "enabled": true,
                         "id": "foo6",
+                        "trigger": Object {
+                          "query": "test",
+                        },
                       },
                       Object {
                         "actions": Object {
@@ -2274,6 +2373,9 @@ exports[`CodeMonitoringListPage Code monitoring page with more than 10 results 1
                         "description": "Eighth test code monitor",
                         "enabled": true,
                         "id": "foo7",
+                        "trigger": Object {
+                          "query": "test",
+                        },
                       },
                       Object {
                         "actions": Object {
@@ -2293,6 +2395,9 @@ exports[`CodeMonitoringListPage Code monitoring page with more than 10 results 1
                         "description": "Ninth test code monitor",
                         "enabled": true,
                         "id": "foo9",
+                        "trigger": Object {
+                          "query": "test",
+                        },
                       },
                       Object {
                         "actions": Object {
@@ -2312,6 +2417,9 @@ exports[`CodeMonitoringListPage Code monitoring page with more than 10 results 1
                         "description": "Tenth test code monitor",
                         "enabled": true,
                         "id": "foo10",
+                        "trigger": Object {
+                          "query": "test",
+                        },
                       },
                       Object {
                         "actions": Object {
@@ -2331,6 +2439,9 @@ exports[`CodeMonitoringListPage Code monitoring page with more than 10 results 1
                         "description": "Eleventh test code monitor",
                         "enabled": true,
                         "id": "foo11",
+                        "trigger": Object {
+                          "query": "test",
+                        },
                       },
                       Object {
                         "actions": Object {
@@ -2350,6 +2461,9 @@ exports[`CodeMonitoringListPage Code monitoring page with more than 10 results 1
                         "description": "Twelfth test code monitor",
                         "enabled": true,
                         "id": "foo12",
+                        "trigger": Object {
+                          "query": "test",
+                        },
                       },
                     ],
                     "pageInfo": Object {
@@ -2400,6 +2514,9 @@ exports[`CodeMonitoringListPage Code monitoring page with more than 10 results 1
                         "description": "Test code monitor",
                         "enabled": true,
                         "id": "foo0",
+                        "trigger": Object {
+                          "query": "test",
+                        },
                       }
                     }
                   >
@@ -2494,6 +2611,9 @@ exports[`CodeMonitoringListPage Code monitoring page with more than 10 results 1
                         "description": "Second test code monitor",
                         "enabled": true,
                         "id": "foo1",
+                        "trigger": Object {
+                          "query": "test",
+                        },
                       }
                     }
                   >
@@ -2588,6 +2708,9 @@ exports[`CodeMonitoringListPage Code monitoring page with more than 10 results 1
                         "description": "Third test code monitor",
                         "enabled": true,
                         "id": "foo2",
+                        "trigger": Object {
+                          "query": "test",
+                        },
                       }
                     }
                   >
@@ -2682,6 +2805,9 @@ exports[`CodeMonitoringListPage Code monitoring page with more than 10 results 1
                         "description": "Fourth test code monitor",
                         "enabled": true,
                         "id": "foo3",
+                        "trigger": Object {
+                          "query": "test",
+                        },
                       }
                     }
                   >
@@ -2776,6 +2902,9 @@ exports[`CodeMonitoringListPage Code monitoring page with more than 10 results 1
                         "description": "Fifth test code monitor",
                         "enabled": true,
                         "id": "foo4",
+                        "trigger": Object {
+                          "query": "test",
+                        },
                       }
                     }
                   >
@@ -2870,6 +2999,9 @@ exports[`CodeMonitoringListPage Code monitoring page with more than 10 results 1
                         "description": "Sixth test code monitor",
                         "enabled": true,
                         "id": "foo5",
+                        "trigger": Object {
+                          "query": "test",
+                        },
                       }
                     }
                   >
@@ -2964,6 +3096,9 @@ exports[`CodeMonitoringListPage Code monitoring page with more than 10 results 1
                         "description": "Seventh test code monitor",
                         "enabled": true,
                         "id": "foo6",
+                        "trigger": Object {
+                          "query": "test",
+                        },
                       }
                     }
                   >
@@ -3058,6 +3193,9 @@ exports[`CodeMonitoringListPage Code monitoring page with more than 10 results 1
                         "description": "Eighth test code monitor",
                         "enabled": true,
                         "id": "foo7",
+                        "trigger": Object {
+                          "query": "test",
+                        },
                       }
                     }
                   >
@@ -3152,6 +3290,9 @@ exports[`CodeMonitoringListPage Code monitoring page with more than 10 results 1
                         "description": "Ninth test code monitor",
                         "enabled": true,
                         "id": "foo9",
+                        "trigger": Object {
+                          "query": "test",
+                        },
                       }
                     }
                   >
@@ -3246,6 +3387,9 @@ exports[`CodeMonitoringListPage Code monitoring page with more than 10 results 1
                         "description": "Tenth test code monitor",
                         "enabled": true,
                         "id": "foo10",
+                        "trigger": Object {
+                          "query": "test",
+                        },
                       }
                     }
                   >
@@ -3340,6 +3484,9 @@ exports[`CodeMonitoringListPage Code monitoring page with more than 10 results 1
                         "description": "Eleventh test code monitor",
                         "enabled": true,
                         "id": "foo11",
+                        "trigger": Object {
+                          "query": "test",
+                        },
                       }
                     }
                   >
@@ -3434,6 +3581,9 @@ exports[`CodeMonitoringListPage Code monitoring page with more than 10 results 1
                         "description": "Twelfth test code monitor",
                         "enabled": true,
                         "id": "foo12",
+                        "trigger": Object {
+                          "query": "test",
+                        },
                       }
                     }
                   >

@@ -193,19 +193,6 @@ export const fetchCodeMonitor = (id: string): Observable<FetchCodeMonitorResult>
     )
 }
 
-// const updateCodeMonitorQuery = gql`
-//     mutation UpdateCodeMonitor(
-//         $monitor: MonitorEditInput!
-//         $trigger: MonitorEditTriggerInput!
-//         $actions: [MonitorEditActionInput!]!
-//     ) {
-//         updateCodeMonitor(monitor: $monitor, trigger: $trigger, actions: $actions) {
-//             ...CodeMonitorFields
-//         }
-//     }
-//     ${CodeMonitorFragment}
-// `
-
 export const updateCodeMonitor = (
     monitorEditInput: MonitorEditInput,
     triggerEditInput: MonitorEditTriggerInput,

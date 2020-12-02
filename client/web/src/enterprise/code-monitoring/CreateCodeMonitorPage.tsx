@@ -12,7 +12,7 @@ import { MonitorEmailPriority } from '../../../../shared/src/graphql/schema'
 import { Observable } from 'rxjs'
 import { catchError, mergeMap, startWith, tap } from 'rxjs/operators'
 import { asError } from '../../../../shared/src/util/errors'
-import { CodeMonitorForm } from './CodeMonitorForm'
+import { Action, CodeMonitorFields, CodeMonitorForm } from './CodeMonitorForm'
 
 export interface CreateCodeMonitorPageProps extends BreadcrumbsProps, BreadcrumbSetters {
     location: H.Location
@@ -22,17 +22,6 @@ export interface CreateCodeMonitorPageProps extends BreadcrumbsProps, Breadcrumb
 export interface FormCompletionSteps {
     triggerCompleted: boolean
     actionCompleted: boolean
-}
-
-export interface Action {
-    recipient: string
-    enabled: boolean
-}
-export interface CodeMonitorFields {
-    description: string
-    query: string
-    enabled: boolean
-    action?: Action
 }
 
 export const CreateCodeMonitorPage: React.FunctionComponent<CreateCodeMonitorPageProps> = props => {
@@ -51,7 +40,7 @@ export const CreateCodeMonitorPage: React.FunctionComponent<CreateCodeMonitorPag
     const [codeMonitor, setCodeMonitor] = useState<CodeMonitorFields>({
         description: '',
         query: '',
-        action: undefined,
+        actions: [],
         enabled: true,
     })
 
@@ -67,8 +56,8 @@ export const CreateCodeMonitorPage: React.FunctionComponent<CreateCodeMonitorPag
         (enabled: boolean): void => setCodeMonitor(codeMonitor => ({ ...codeMonitor, enabled })),
         []
     )
-    const onActionChange = useCallback(
-        (action: Action): void => setCodeMonitor(codeMonitor => ({ ...codeMonitor, action })),
+    const onActionsChange = useCallback(
+        (actions: Action[]): void => setCodeMonitor(codeMonitor => ({ ...codeMonitor, actions })),
         []
     )
 
@@ -85,16 +74,14 @@ export const CreateCodeMonitorPage: React.FunctionComponent<CreateCodeMonitorPag
                                 enabled: codeMonitor.enabled,
                             },
                             trigger: { query: codeMonitor.query },
-                            actions: [
-                                {
-                                    email: {
-                                        enabled: codeMonitor.action.enabled,
-                                        priority: MonitorEmailPriority.NORMAL,
-                                        recipients: [props.authenticatedUser.id],
-                                        header: '',
-                                    },
+                            actions: codeMonitor.actions.map(action => ({
+                                email: {
+                                    enabled: action.enabled,
+                                    priority: MonitorEmailPriority.NORMAL,
+                                    recipients: [props.authenticatedUser.id],
+                                    header: '',
                                 },
-                            ],
+                            })),
                         }).pipe(
                             startWith(LOADING),
                             catchError(error => [asError(error)])
@@ -120,7 +107,7 @@ export const CreateCodeMonitorPage: React.FunctionComponent<CreateCodeMonitorPag
                     onNameChange={onNameChange}
                     onQueryChange={onQueryChange}
                     onEnabledChange={onEnabledChange}
-                    onActionChange={onActionChange}
+                    onActionsChange={onActionsChange}
                     codeMonitor={codeMonitor}
                     codeMonitorOrError={codeMonitorOrError}
                 />

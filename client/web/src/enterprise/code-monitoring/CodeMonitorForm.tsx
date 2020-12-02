@@ -15,18 +15,13 @@ import { Link } from '../../../../shared/src/components/Link'
 
 const LOADING = 'loading' as const
 
-interface Action {
-    recipient: string
-    enabled: boolean
-}
-
 interface CodeMonitorFormProps {
     location: H.Location
     authenticatedUser: AuthenticatedUser
     onNameChange: (name: string) => void
     onQueryChange: (query: string) => void
     onEnabledChange: (enabled: boolean) => void
-    onActionChange: (action: Action) => void
+    onActionsChange: (action: Action[]) => void
     codeMonitor: CodeMonitorFields
     codeMonitorOrError?: typeof LOADING | Partial<CodeMonitorFields> | ErrorLike
 }
@@ -36,17 +31,22 @@ export interface FormCompletionSteps {
     actionCompleted: boolean
 }
 
-interface CodeMonitorFields {
+export interface CodeMonitorFields {
     description: string
     query: string
     enabled: boolean
-    action: Action
+    actions: Action[]
+}
+
+export interface Action {
+    recipient: string
+    enabled: boolean
 }
 
 export const CodeMonitorForm: FunctionComponent<CodeMonitorFormProps> = props => {
     const [formCompletion, setFormCompletion] = useState<FormCompletionSteps>({
         triggerCompleted: props.codeMonitor.query.length > 0,
-        actionCompleted: !!props.codeMonitor.action,
+        actionCompleted: props.codeMonitor.actions.length > 0,
     })
 
     const setTriggerCompleted = useCallback(() => {
@@ -107,12 +107,12 @@ export const CodeMonitorForm: FunctionComponent<CodeMonitorFormProps> = props =>
                 })}
             >
                 <ActionArea
-                    action={props.codeMonitor.action}
+                    action={props.codeMonitor.actions}
                     setActionCompleted={setActionCompleted}
                     actionCompleted={formCompletion.actionCompleted}
                     authenticatedUser={props.authenticatedUser}
                     disabled={!formCompletion.triggerCompleted}
-                    onActionChange={props.onActionChange}
+                    onActionsChange={props.onActionsChange}
                 />
             </div>
             <div>
@@ -348,12 +348,12 @@ export const TriggerArea: FunctionComponent<TriggerAreaProps> = ({
 }
 
 interface ActionAreaProps {
-    action: Action
+    action: Action[]
     actionCompleted: boolean
     setActionCompleted: () => void
     disabled: boolean
     authenticatedUser: AuthenticatedUser
-    onActionChange: (action: Action) => void
+    onActionsChange: (action: Action[]) => void
 }
 
 export const ActionArea: FunctionComponent<ActionAreaProps> = ({
@@ -362,7 +362,7 @@ export const ActionArea: FunctionComponent<ActionAreaProps> = ({
     setActionCompleted,
     disabled,
     authenticatedUser,
-    onActionChange,
+    onActionsChange,
 }) => {
     const [showEmailNotificationForm, setShowEmailNotificationForm] = useState(false)
     const toggleEmailNotificationForm: FormEventHandler = useCallback(event => {
@@ -376,21 +376,21 @@ export const ActionArea: FunctionComponent<ActionAreaProps> = ({
             toggleEmailNotificationForm(event)
             // For now, when action is undefined, it means that we're creating a new monitor.
             // We currently want to pre-fill this with email notifications to the code monitor owner's email.
-            if (!action) {
-                onActionChange({ recipient: authenticatedUser.id, enabled: true })
+            if (action.length === 0) {
+                onActionsChange([{ recipient: authenticatedUser.id, enabled: true }])
             }
             setActionCompleted()
         },
-        [toggleEmailNotificationForm, setActionCompleted, action, onActionChange, authenticatedUser.id]
+        [toggleEmailNotificationForm, setActionCompleted, action, onActionsChange, authenticatedUser.id]
     )
 
     const [emailNotificationEnabled, setEmailNotificationEnabled] = useState(true)
     const toggleEmailNotificationEnabled: (value: boolean) => void = useCallback(
         enabled => {
             setEmailNotificationEnabled(enabled)
-            onActionChange({ recipient: authenticatedUser.email, enabled })
+            onActionsChange([{ recipient: authenticatedUser.email, enabled }])
         },
-        [authenticatedUser, onActionChange]
+        [authenticatedUser, onActionsChange]
     )
 
     return (

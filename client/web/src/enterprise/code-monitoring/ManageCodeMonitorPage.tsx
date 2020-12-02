@@ -6,14 +6,13 @@ import { BreadcrumbSetters, BreadcrumbsProps } from '../../components/Breadcrumb
 import { fetchCodeMonitor, updateCodeMonitor } from './backend'
 import { RouteComponentProps } from 'react-router'
 import { MonitorEmailPriority, Scalars } from '../../../../shared/src/graphql-operations'
-import { catchError, mergeMap, startWith, tap } from 'rxjs/operators'
+import { catchError, map, mergeMap, startWith, tap } from 'rxjs/operators'
 import { useEventObservable, useObservable } from '../../../../shared/src/util/useObservable'
 import { asError, isErrorLike } from '../../../../shared/src/util/errors'
 import { PageHeader } from '../../components/PageHeader'
 import { PageTitle } from '../../components/PageTitle'
 import { Form } from 'reactstrap'
-import { CodeMonitorForm } from './CodeMonitorForm'
-import { Action, CodeMonitorFields } from './CreateCodeMonitorPage'
+import { Action, CodeMonitorFields, CodeMonitorForm } from './CodeMonitorForm'
 import { Observable } from 'rxjs'
 import { LoadingSpinner } from '@sourcegraph/react-loading-spinner'
 
@@ -33,7 +32,7 @@ export const ManageCodeMonitorPage: React.FunctionComponent<ManageCodeMonitorPag
     const [codeMonitorState, setCodeMonitorState] = useState<CodeMonitorFields>({
         description: '',
         query: '',
-        action: { recipient: props.authenticatedUser.id, enabled: true },
+        actions: [{ recipient: props.authenticatedUser.id, enabled: true }],
         enabled: true,
     })
 
@@ -45,7 +44,7 @@ export const ManageCodeMonitorPage: React.FunctionComponent<ManageCodeMonitorPag
                         setCodeMonitorState({
                             description: monitor.node?.description || '',
                             query: monitor.node?.trigger?.query || '',
-                            action: { recipient: props.authenticatedUser.id, enabled: true },
+                            actions: [{ recipient: props.authenticatedUser.id, enabled: true }],
                             enabled: monitor.node?.enabled || true,
                         })
                     }),
@@ -78,8 +77,8 @@ export const ManageCodeMonitorPage: React.FunctionComponent<ManageCodeMonitorPag
         (enabled: boolean): void => setCodeMonitorState(codeMonitor => ({ ...codeMonitor, enabled })),
         []
     )
-    const onActionChange = useCallback(
-        (action: Action): void => setCodeMonitorState(codeMonitor => ({ ...codeMonitor, action })),
+    const onActionsChange = useCallback(
+        (actions: Action[]): void => setCodeMonitorState(codeMonitor => ({ ...codeMonitor, actions })),
         []
     )
 
@@ -99,20 +98,25 @@ export const ManageCodeMonitorPage: React.FunctionComponent<ManageCodeMonitorPag
                                 },
                             },
                             { id: props.match.params.id, update: { query: codeMonitorState.query } },
-                            [
-                                {
-                                    email: {
-                                        id: props.match.params.id,
-                                        update: {
-                                            enabled: codeMonitorState.action.enabled,
-                                            priority: MonitorEmailPriority.NORMAL,
-                                            recipients: [props.authenticatedUser.id],
-                                            header: '',
-                                        },
+                            codeMonitorState.actions.map(action => ({
+                                email: {
+                                    id: props.match.params.id,
+                                    update: {
+                                        enabled: action.enabled,
+                                        priority: MonitorEmailPriority.NORMAL,
+                                        recipients: [props.authenticatedUser.id],
+                                        header: '',
                                     },
                                 },
-                            ]
+                            }))
                         ).pipe(
+                            map(codeMonitor => ({
+                                description: codeMonitor.description,
+                                query: codeMonitor.trigger?.query,
+                                // TODO: this is hardcoded while we can only send emails to the owner of the code monitor.
+                                actions: [{ recipient: props.authenticatedUser.id, enabled: true }],
+                                enabled: codeMonitor.enabled,
+                            })),
                             startWith(LOADING),
                             catchError(error => [asError(error)])
                         )
@@ -139,7 +143,7 @@ export const ManageCodeMonitorPage: React.FunctionComponent<ManageCodeMonitorPag
                         onNameChange={onNameChange}
                         onQueryChange={onQueryChange}
                         onEnabledChange={onEnabledChange}
-                        onActionChange={onActionChange}
+                        onActionsChange={onActionsChange}
                         codeMonitor={codeMonitorState}
                         codeMonitorOrError={updatedCodeMonitorOrError}
                     />

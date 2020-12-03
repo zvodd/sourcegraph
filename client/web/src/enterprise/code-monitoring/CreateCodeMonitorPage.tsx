@@ -32,63 +32,6 @@ export const CreateCodeMonitorPage: React.FunctionComponent<CreateCodeMonitorPag
 
     const LOADING = 'loading' as const
 
-    const [codeMonitor, setCodeMonitor] = useState<CodeMonitorFields>({
-        description: '',
-        query: '',
-        // Even though we know the code monitor will have an action to send email notifications to the user's email,
-        // we send it as an empty list to sequentially render the form.
-        actions: [],
-        enabled: true,
-    })
-    const onNameChange = useCallback(
-        (description: string): void => setCodeMonitor(codeMonitor => ({ ...codeMonitor, description })),
-        []
-    )
-    const onQueryChange = useCallback(
-        (query: string): void => setCodeMonitor(codeMonitor => ({ ...codeMonitor, query })),
-        []
-    )
-    const onEnabledChange = useCallback(
-        (enabled: boolean): void => setCodeMonitor(codeMonitor => ({ ...codeMonitor, enabled })),
-        []
-    )
-    const onActionsChange = useCallback(
-        (actions: Action[]): void => setCodeMonitor(codeMonitor => ({ ...codeMonitor, actions })),
-        []
-    )
-
-    const [createRequest, codeMonitorOrError] = useEventObservable(
-        useCallback(
-            (submit: Observable<React.FormEvent<HTMLFormElement>>) =>
-                submit.pipe(
-                    tap(event => event.preventDefault()),
-                    mergeMap(() =>
-                        createCodeMonitor({
-                            monitor: {
-                                namespace: props.authenticatedUser.id,
-                                description: codeMonitor.description,
-                                enabled: codeMonitor.enabled,
-                            },
-                            trigger: { query: codeMonitor.query },
-
-                            actions: codeMonitor.actions.map(action => ({
-                                email: {
-                                    enabled: action.enabled,
-                                    priority: MonitorEmailPriority.NORMAL,
-                                    recipients: [props.authenticatedUser.id],
-                                    header: '',
-                                },
-                            })),
-                        }).pipe(
-                            startWith(LOADING),
-                            catchError(error => [asError(error)])
-                        )
-                    )
-                ),
-            [props.authenticatedUser, codeMonitor]
-        )
-    )
-
     const createMonitorRequest = useCallback(
         (codeMonitor: CodeMonitorFields): Observable<Partial<CodeMonitorFields>> =>
             createCodeMonitor({
@@ -121,34 +64,7 @@ export const CreateCodeMonitorPage: React.FunctionComponent<CreateCodeMonitorPag
                 Learn more
             </a>
             {/* <Form className="my-4" onSubmit={createRequest}> */}
-            <CodeMonitorForm
-                {...props}
-                onSubmit={createMonitorRequest}
-                codeMonitor={codeMonitor}
-                codeMonitorOrError={codeMonitorOrError}
-            />
-            <div className="flex my-4">
-                <button
-                    type="submit"
-                    disabled={
-                        codeMonitor.query.length === 0 ||
-                        codeMonitor.actions.length === 0 ||
-                        isErrorLike(codeMonitorOrError) ||
-                        codeMonitorOrError === LOADING
-                    }
-                    className="btn btn-primary mr-2 test-submit-monitor"
-                >
-                    Create code monitor
-                </button>
-                <button type="button" className="btn btn-outline-secondary">
-                    {/* TODO: this should link somewhere */}
-                    Cancel
-                </button>
-            </div>
-            {isErrorLike(codeMonitorOrError) && (
-                <div className="alert alert-danger">Failed to create monitor: {codeMonitorOrError.message}</div>
-            )}
-            {/* </Form> */}
+            <CodeMonitorForm {...props} onSubmit={createMonitorRequest} />
         </div>
     )
 }

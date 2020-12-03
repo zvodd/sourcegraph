@@ -15,7 +15,6 @@ import { Link } from '../../../../shared/src/components/Link'
 import { Observable } from 'rxjs'
 import { mergeMap, startWith, tap, catchError } from 'rxjs/operators'
 import { useEventObservable } from '../../../../shared/src/util/useObservable'
-import { createCodeMonitor } from './backend'
 import { Form } from '../../../../branded/src/components/Form'
 
 const LOADING = 'loading' as const
@@ -25,7 +24,6 @@ interface CodeMonitorFormProps {
     authenticatedUser: AuthenticatedUser
     onSubmit: (codeMonitor: CodeMonitorFields) => Observable<Partial<CodeMonitorFields>>
     codeMonitor?: CodeMonitorFields
-    codeMonitorOrError?: typeof LOADING | Partial<CodeMonitorFields> | ErrorLike
 }
 
 export interface FormCompletionSteps {
@@ -54,7 +52,7 @@ export const CodeMonitorForm: FunctionComponent<CodeMonitorFormProps> = props =>
         setFormCompletion(previousState => ({ ...previousState, actionCompleted: completed }))
     }, [])
 
-    const [codeMonitor, setCodeMonitor] = useState<CodeMonitorFields>(
+    const [codeMonitorState, setCodeMonitorState] = useState<CodeMonitorFields>(
         props.codeMonitor ?? {
             description: '',
             query: '',
@@ -64,24 +62,24 @@ export const CodeMonitorForm: FunctionComponent<CodeMonitorFormProps> = props =>
     )
 
     const [formCompletion, setFormCompletion] = useState<FormCompletionSteps>({
-        triggerCompleted: codeMonitor.query.length > 0,
-        actionCompleted: codeMonitor.actions.length > 0,
+        triggerCompleted: codeMonitorState.query.length > 0,
+        actionCompleted: codeMonitorState.actions.length > 0,
     })
 
     const onNameChange = useCallback(
-        (description: string): void => setCodeMonitor(codeMonitor => ({ ...codeMonitor, description })),
+        (description: string): void => setCodeMonitorState(codeMonitor => ({ ...codeMonitor, description })),
         []
     )
     const onQueryChange = useCallback(
-        (query: string): void => setCodeMonitor(codeMonitor => ({ ...codeMonitor, query })),
+        (query: string): void => setCodeMonitorState(codeMonitor => ({ ...codeMonitor, query })),
         []
     )
     const onEnabledChange = useCallback(
-        (enabled: boolean): void => setCodeMonitor(codeMonitor => ({ ...codeMonitor, enabled })),
+        (enabled: boolean): void => setCodeMonitorState(codeMonitor => ({ ...codeMonitor, enabled })),
         []
     )
     const onActionsChange = useCallback(
-        (actions: Action[]): void => setCodeMonitor(codeMonitor => ({ ...codeMonitor, actions })),
+        (actions: Action[]): void => setCodeMonitorState(codeMonitor => ({ ...codeMonitor, actions })),
         []
     )
 
@@ -93,13 +91,13 @@ export const CodeMonitorForm: FunctionComponent<CodeMonitorFormProps> = props =>
                 submit.pipe(
                     tap(event => event.preventDefault()),
                     mergeMap(() =>
-                        onSubmit(codeMonitor).pipe(
+                        onSubmit(codeMonitorState).pipe(
                             startWith(LOADING),
                             catchError(error => [asError(error)])
                         )
                     )
                 ),
-            [codeMonitor, onSubmit]
+            [codeMonitorState, onSubmit]
         )
     )
 
@@ -115,7 +113,7 @@ export const CodeMonitorForm: FunctionComponent<CodeMonitorFormProps> = props =>
                         onChange={event => {
                             onNameChange(event.target.value)
                         }}
-                        value={codeMonitor.description}
+                        value={codeMonitorState.description}
                         autoFocus={true}
                     />
                 </div>
@@ -141,7 +139,7 @@ export const CodeMonitorForm: FunctionComponent<CodeMonitorFormProps> = props =>
             <hr className="my-4" />
             <div className="create-monitor-page__triggers mb-4">
                 <TriggerArea
-                    query={codeMonitor.query}
+                    query={codeMonitorState.query}
                     onQueryChange={onQueryChange}
                     triggerCompleted={formCompletion.triggerCompleted}
                     setTriggerCompleted={setTriggerCompleted}
@@ -153,7 +151,7 @@ export const CodeMonitorForm: FunctionComponent<CodeMonitorFormProps> = props =>
                 })}
             >
                 <ActionArea
-                    action={codeMonitor.actions}
+                    action={codeMonitorState.actions}
                     setActionCompleted={setActionCompleted}
                     actionCompleted={formCompletion.actionCompleted}
                     authenticatedUser={props.authenticatedUser}
@@ -166,7 +164,7 @@ export const CodeMonitorForm: FunctionComponent<CodeMonitorFormProps> = props =>
                     <div>
                         <Toggle
                             title="Active"
-                            value={codeMonitor.enabled}
+                            value={codeMonitorState.enabled}
                             onToggle={onEnabledChange}
                             className="mr-2"
                         />{' '}

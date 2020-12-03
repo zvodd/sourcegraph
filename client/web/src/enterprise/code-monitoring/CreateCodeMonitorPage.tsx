@@ -41,7 +41,7 @@ interface CodeMonitorFields {
     description: string
     query: string
     enabled: boolean
-    action: Action
+    actions: Action[]
 }
 
 export const CreateCodeMonitorPage: React.FunctionComponent<CreateCodeMonitorPageProps> = props => {
@@ -60,7 +60,7 @@ export const CreateCodeMonitorPage: React.FunctionComponent<CreateCodeMonitorPag
     const [codeMonitor, setCodeMonitor] = useState<CodeMonitorFields>({
         description: '',
         query: '',
-        action: { recipient: props.authenticatedUser.id, enabled: true },
+        actions: [{ recipient: props.authenticatedUser.id, enabled: true }],
         enabled: true,
     })
     const onNameChange = useCallback(
@@ -75,8 +75,8 @@ export const CreateCodeMonitorPage: React.FunctionComponent<CreateCodeMonitorPag
         (enabled: boolean): void => setCodeMonitor(codeMonitor => ({ ...codeMonitor, enabled })),
         []
     )
-    const onActionChange = useCallback(
-        (action: Action): void => setCodeMonitor(codeMonitor => ({ ...codeMonitor, action })),
+    const onActionsChange = useCallback(
+        (actions: Action[]): void => setCodeMonitor(codeMonitor => ({ ...codeMonitor, actions })),
         []
     )
 
@@ -104,16 +104,15 @@ export const CreateCodeMonitorPage: React.FunctionComponent<CreateCodeMonitorPag
                                 enabled: codeMonitor.enabled,
                             },
                             trigger: { query: codeMonitor.query },
-                            actions: [
-                                {
-                                    email: {
-                                        enabled: codeMonitor.action.enabled,
-                                        priority: MonitorEmailPriority.NORMAL,
-                                        recipients: [props.authenticatedUser.id],
-                                        header: '',
-                                    },
+
+                            actions: codeMonitor.actions.map(action => ({
+                                email: {
+                                    enabled: action.enabled,
+                                    priority: MonitorEmailPriority.NORMAL,
+                                    recipients: [props.authenticatedUser.id],
+                                    header: '',
                                 },
-                            ],
+                            })),
                         }).pipe(
                             startWith(LOADING),
                             catchError(error => [asError(error)])
@@ -181,11 +180,12 @@ export const CreateCodeMonitorPage: React.FunctionComponent<CreateCodeMonitorPag
                     })}
                 >
                     <ActionArea
+                        actions={codeMonitor.actions}
                         setActionCompleted={setActionCompleted}
                         actionCompleted={formCompletion.actionCompleted}
                         authenticatedUser={props.authenticatedUser}
                         disabled={!formCompletion.triggerCompleted}
-                        onActionChange={onActionChange}
+                        onActionsChange={onActionsChange}
                     />
                 </div>
                 <div>
@@ -417,19 +417,21 @@ const TriggerArea: React.FunctionComponent<TriggerAreaProps> = ({
 }
 
 interface ActionAreaProps {
+    actions: Action[]
     actionCompleted: boolean
     setActionCompleted: () => void
     disabled: boolean
     authenticatedUser: AuthenticatedUser
-    onActionChange: (action: Action) => void
+    onActionsChange: (actions: Action[]) => void
 }
 
 const ActionArea: React.FunctionComponent<ActionAreaProps> = ({
+    actions,
     actionCompleted,
     setActionCompleted,
     disabled,
     authenticatedUser,
-    onActionChange,
+    onActionsChange,
 }) => {
     const [showEmailNotificationForm, setShowEmailNotificationForm] = useState(false)
     const toggleEmailNotificationForm: React.FormEventHandler = useCallback(event => {
@@ -441,18 +443,25 @@ const ActionArea: React.FunctionComponent<ActionAreaProps> = ({
         event => {
             event?.preventDefault()
             toggleEmailNotificationForm(event)
+            // For now, when actions is empty, it means that we're creating a new monitor. We want the parent
+            // component to pass it through as empty so we know which form state we're in. However,
+            // when editing the form, we want to pre-fill this with email notifications to the owner's email.
+            if (actions.length === 0) {
+                onActionsChange([{ recipient: authenticatedUser.id, enabled: true }])
+            }
+
             setActionCompleted()
         },
-        [toggleEmailNotificationForm, setActionCompleted]
+        [toggleEmailNotificationForm, setActionCompleted, actions.length, authenticatedUser.id, onActionsChange]
     )
 
     const [emailNotificationEnabled, setEmailNotificationEnabled] = useState(true)
     const toggleEmailNotificationEnabled: (value: boolean) => void = useCallback(
         enabled => {
             setEmailNotificationEnabled(enabled)
-            onActionChange({ recipient: authenticatedUser.email, enabled })
+            onActionsChange([{ recipient: authenticatedUser.email, enabled }])
         },
-        [authenticatedUser, onActionChange]
+        [authenticatedUser, onActionsChange]
     )
 
     return (

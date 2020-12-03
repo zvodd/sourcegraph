@@ -113,7 +113,12 @@ export const ManageCodeMonitorPage: React.FunctionComponent<ManageCodeMonitorPag
             {codeMonitorOrError === 'loading' && <LoadingSpinner className="icon-inline" />}
             {codeMonitorOrError && !isErrorLike(codeMonitorOrError) && codeMonitorOrError !== 'loading' && (
                 <>
-                    <CodeMonitorForm {...props} onSubmit={updateMonitorRequest} codeMonitor={codeMonitorState} />
+                    <CodeMonitorForm
+                        {...props}
+                        onSubmit={updateMonitorRequest}
+                        codeMonitor={codeMonitorState}
+                        submitButtonLabel="Save"
+                    />
                 </>
             )}
         </div>

@@ -18,6 +18,8 @@ interface CodeMonitorFormProps {
     authenticatedUser: AuthenticatedUser
     onSubmit: (codeMonitor: CodeMonitorFields) => Observable<Partial<CodeMonitorFields>>
     codeMonitor?: CodeMonitorFields
+
+    submitButtonLabel: string
 }
 
 export interface FormCompletionSteps {
@@ -169,7 +171,7 @@ export const CodeMonitorForm: FunctionComponent<CodeMonitorFormProps> = props =>
                         }
                         className="btn btn-primary mr-2 test-submit-monitor"
                     >
-                        Create code monitor
+                        {props.submitButtonLabel}
                     </button>
                     <button type="button" className="btn btn-outline-secondary">
                         {/* TODO: this should link somewhere */}

@@ -58,7 +58,7 @@ export const CreateCodeMonitorPage: React.FunctionComponent<CreateCodeMonitorPag
                 {/* TODO: populate link */}
                 Learn more
             </a>
-            <CodeMonitorForm {...props} onSubmit={createMonitorRequest} />
+            <CodeMonitorForm {...props} onSubmit={createMonitorRequest} submitButtonLabel="Create code monitor" />
         </div>
     )
 }

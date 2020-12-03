@@ -11,7 +11,7 @@ import { createCodeMonitor } from './backend'
 import { MonitorEmailPriority } from '../../../../shared/src/graphql/schema'
 import { Observable } from 'rxjs'
 import { catchError, mergeMap, startWith, tap } from 'rxjs/operators'
-import { asError } from '../../../../shared/src/util/errors'
+import { asError, isErrorLike } from '../../../../shared/src/util/errors'
 import { Action, CodeMonitorFields, CodeMonitorForm } from './CodeMonitorForm'
 
 export interface CreateCodeMonitorPageProps extends BreadcrumbsProps, BreadcrumbSetters {
@@ -109,6 +109,26 @@ export const CreateCodeMonitorPage: React.FunctionComponent<CreateCodeMonitorPag
                     codeMonitorOrError={codeMonitorOrError}
                     submitButtonText="Create code monitor"
                 />
+                <div className="flex my-4">
+                    <button
+                        type="submit"
+                        disabled={
+                            codeMonitor.actions.length === 0 ||
+                            isErrorLike(codeMonitorOrError) ||
+                            codeMonitorOrError === LOADING
+                        }
+                        className="btn btn-primary mr-2 test-submit-monitor"
+                    >
+                        Create code monitor
+                    </button>
+                    <button type="button" className="btn btn-outline-secondary">
+                        {/* TODO: this should link somewhere */}
+                        Cancel
+                    </button>
+                </div>
+                {isErrorLike(codeMonitorOrError) && (
+                    <div className="alert alert-danger">Failed to create monitor: {codeMonitorOrError.message}</div>
+                )}
             </Form>
         </div>
     )

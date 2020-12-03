@@ -24,7 +24,6 @@ interface CodeMonitorFormProps {
     onActionsChange: (action: Action[]) => void
     codeMonitor: CodeMonitorFields
     codeMonitorOrError?: typeof LOADING | Partial<CodeMonitorFields> | ErrorLike
-    submitButtonText: string
 }
 
 export interface FormCompletionSteps {
@@ -131,28 +130,6 @@ export const CodeMonitorForm: FunctionComponent<CodeMonitorFormProps> = props =>
                         <div className="text-muted">We will watch for the trigger and run actions in response</div>
                     </div>
                 </div>
-                <div className="flex my-4">
-                    <button
-                        type="submit"
-                        disabled={
-                            !formCompletion.actionCompleted ||
-                            isErrorLike(props.codeMonitorOrError) ||
-                            props.codeMonitorOrError === LOADING
-                        }
-                        className="btn btn-primary mr-2 test-submit-monitor"
-                    >
-                        {props.submitButtonText}
-                    </button>
-                    <button type="button" className="btn btn-outline-secondary">
-                        {/* TODO: this should link somewhere */}
-                        Cancel
-                    </button>
-                </div>
-                {isErrorLike(props.codeMonitorOrError) && (
-                    <div className="alert alert-danger">
-                        Failed to create monitor: {props.codeMonitorOrError.message}
-                    </div>
-                )}
             </div>
         </>
     )

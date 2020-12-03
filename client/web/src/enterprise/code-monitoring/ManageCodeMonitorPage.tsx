@@ -36,12 +36,27 @@ export const ManageCodeMonitorPage: React.FunctionComponent<ManageCodeMonitorPag
         enabled: true,
     })
 
+    const [initialMonitor, setInitialMonitor] = useState<CodeMonitorFields>({
+        description: '',
+        query: '',
+        actions: [{ recipient: props.authenticatedUser.id, enabled: true }],
+        enabled: true,
+    })
+
+    const [hasDifference, setHasDifference] = useState(false)
+
     const codeMonitorOrError = useObservable(
         useMemo(
             () =>
                 fetchCodeMonitor(props.match.params.id).pipe(
                     tap(monitor => {
                         setCodeMonitorState({
+                            description: monitor.node?.description || '',
+                            query: monitor.node?.trigger?.query || '',
+                            actions: [{ recipient: props.authenticatedUser.id, enabled: true }],
+                            enabled: monitor.node?.enabled || true,
+                        })
+                        setInitialMonitor({
                             description: monitor.node?.description || '',
                             query: monitor.node?.trigger?.query || '',
                             actions: [{ recipient: props.authenticatedUser.id, enabled: true }],
@@ -66,20 +81,47 @@ export const ManageCodeMonitorPage: React.FunctionComponent<ManageCodeMonitorPag
     )
 
     const onNameChange = useCallback(
-        (description: string): void => setCodeMonitorState(codeMonitor => ({ ...codeMonitor, description })),
-        []
+        (description: string): void =>
+            setCodeMonitorState(codeMonitor => {
+                if (description !== initialMonitor.description) {
+                    setHasDifference(true)
+                }
+                return { ...codeMonitor, description }
+            }),
+        [initialMonitor]
     )
+
     const onQueryChange = useCallback(
-        (query: string): void => setCodeMonitorState(codeMonitor => ({ ...codeMonitor, query })),
-        []
+        (query: string): void =>
+            setCodeMonitorState(codeMonitor => {
+                if (query !== initialMonitor.query) {
+                    setHasDifference(true)
+                }
+                return { ...codeMonitor, query }
+            }),
+        [initialMonitor]
     )
+
     const onEnabledChange = useCallback(
-        (enabled: boolean): void => setCodeMonitorState(codeMonitor => ({ ...codeMonitor, enabled })),
-        []
+        (enabled: boolean): void =>
+            setCodeMonitorState(codeMonitor => {
+                if (enabled !== initialMonitor.enabled) {
+                    setHasDifference(true)
+                }
+                return { ...codeMonitor, enabled }
+            }),
+        [initialMonitor]
     )
+
     const onActionsChange = useCallback(
-        (actions: Action[]): void => setCodeMonitorState(codeMonitor => ({ ...codeMonitor, actions })),
-        []
+        (actions: Action[]): void =>
+            setCodeMonitorState(codeMonitor => {
+                if (actions !== initialMonitor.actions) {
+                    setHasDifference(true)
+                }
+                return { ...codeMonitor, actions }
+            }),
+        [initialMonitor]
     )
 
     const [createRequest, updatedCodeMonitorOrError] = useEventObservable(
@@ -148,6 +190,22 @@ export const ManageCodeMonitorPage: React.FunctionComponent<ManageCodeMonitorPag
                         codeMonitorOrError={updatedCodeMonitorOrError}
                         submitButtonText="Save"
                     />
+                    <div className="flex my-4">
+                        <button
+                            type="submit"
+                            disabled={!hasDifference}
+                            className="btn btn-primary mr-2 test-submit-monitor"
+                        >
+                            Save
+                        </button>
+                        <button type="button" className="btn btn-outline-secondary">
+                            {/* TODO: this should link somewhere */}
+                            Cancel
+                        </button>
+                    </div>
+                    {isErrorLike(codeMonitorOrError) && (
+                        <div className="alert alert-danger">Failed to create monitor: {codeMonitorOrError.message}</div>
+                    )}
                 </Form>
             )}
         </div>

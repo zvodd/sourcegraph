@@ -5,24 +5,26 @@ import { Toggle } from '../../../../branded/src/components/Toggle'
 import { FilterType } from '../../../../shared/src/search/interactive/util'
 import { resolveFilter, validateFilter } from '../../../../shared/src/search/parser/filters'
 import { scanSearchQuery } from '../../../../shared/src/search/parser/scanner'
-import { ErrorLike, isErrorLike } from '../../../../shared/src/util/errors'
+import { asError, ErrorLike, isErrorLike } from '../../../../shared/src/util/errors'
 import { buildSearchURLQuery } from '../../../../shared/src/util/url'
 import { useInputValidation, deriveInputClassName } from '../../../../shared/src/util/useInputValidation'
 import { AuthenticatedUser } from '../../auth'
-import { SearchPatternType } from '../../graphql-operations'
+import { MonitorEmailPriority, SearchPatternType } from '../../graphql-operations'
 import React, { FormEventHandler, FunctionComponent, useCallback, useEffect, useMemo, useState } from 'react'
 import { Link } from '../../../../shared/src/components/Link'
+import { Observable } from 'rxjs'
+import { mergeMap, startWith, tap, catchError } from 'rxjs/operators'
+import { useEventObservable } from '../../../../shared/src/util/useObservable'
+import { createCodeMonitor } from './backend'
+import { Form } from '../../../../branded/src/components/Form'
 
 const LOADING = 'loading' as const
 
 interface CodeMonitorFormProps {
     location: H.Location
     authenticatedUser: AuthenticatedUser
-    onNameChange: (name: string) => void
-    onQueryChange: (query: string) => void
-    onEnabledChange: (enabled: boolean) => void
-    onActionsChange: (action: Action[]) => void
-    codeMonitor: CodeMonitorFields
+    onSubmit: (codeMonitor: CodeMonitorFields) => Observable<Partial<CodeMonitorFields>>
+    codeMonitor?: CodeMonitorFields
     codeMonitorOrError?: typeof LOADING | Partial<CodeMonitorFields> | ErrorLike
 }
 
@@ -44,21 +46,65 @@ export interface Action {
 }
 
 export const CodeMonitorForm: FunctionComponent<CodeMonitorFormProps> = props => {
+    const setTriggerCompleted = useCallback((completed: boolean) => {
+        setFormCompletion(previousState => ({ ...previousState, triggerCompleted: completed }))
+    }, [])
+
+    const setActionCompleted = useCallback((completed: boolean) => {
+        setFormCompletion(previousState => ({ ...previousState, actionCompleted: completed }))
+    }, [])
+
+    const [codeMonitor, setCodeMonitor] = useState<CodeMonitorFields>(
+        props.codeMonitor ?? {
+            description: '',
+            query: '',
+            actions: [],
+            enabled: true,
+        }
+    )
+
     const [formCompletion, setFormCompletion] = useState<FormCompletionSteps>({
-        triggerCompleted: props.codeMonitor.query.length > 0,
-        actionCompleted: props.codeMonitor.actions.length > 0,
+        triggerCompleted: codeMonitor.query.length > 0,
+        actionCompleted: codeMonitor.actions.length > 0,
     })
 
-    const setTriggerCompleted = useCallback(() => {
-        setFormCompletion(previousState => ({ ...previousState, triggerCompleted: !previousState.triggerCompleted }))
-    }, [])
+    const onNameChange = useCallback(
+        (description: string): void => setCodeMonitor(codeMonitor => ({ ...codeMonitor, description })),
+        []
+    )
+    const onQueryChange = useCallback(
+        (query: string): void => setCodeMonitor(codeMonitor => ({ ...codeMonitor, query })),
+        []
+    )
+    const onEnabledChange = useCallback(
+        (enabled: boolean): void => setCodeMonitor(codeMonitor => ({ ...codeMonitor, enabled })),
+        []
+    )
+    const onActionsChange = useCallback(
+        (actions: Action[]): void => setCodeMonitor(codeMonitor => ({ ...codeMonitor, actions })),
+        []
+    )
 
-    const setActionCompleted = useCallback(() => {
-        setFormCompletion(previousState => ({ ...previousState, actionCompleted: !previousState.actionCompleted }))
-    }, [])
+    const { onSubmit } = props
+
+    const [onSubmitRequest, latestValue] = useEventObservable(
+        useCallback(
+            (submit: Observable<React.FormEvent<HTMLFormElement>>) =>
+                submit.pipe(
+                    tap(event => event.preventDefault()),
+                    mergeMap(() =>
+                        onSubmit(codeMonitor).pipe(
+                            startWith(LOADING),
+                            catchError(error => [asError(error)])
+                        )
+                    )
+                ),
+            [codeMonitor, onSubmit]
+        )
+    )
 
     return (
-        <>
+        <Form className="my-4" onSubmit={onSubmitRequest}>
             <div className="flex mb-4">
                 Name
                 <div>
@@ -67,9 +113,9 @@ export const CodeMonitorForm: FunctionComponent<CodeMonitorFormProps> = props =>
                         className="form-control my-2 test-name-input"
                         required={true}
                         onChange={event => {
-                            props.onNameChange(event.target.value)
+                            onNameChange(event.target.value)
                         }}
-                        value={props.codeMonitor.description}
+                        value={codeMonitor.description}
                         autoFocus={true}
                     />
                 </div>
@@ -95,8 +141,8 @@ export const CodeMonitorForm: FunctionComponent<CodeMonitorFormProps> = props =>
             <hr className="my-4" />
             <div className="create-monitor-page__triggers mb-4">
                 <TriggerArea
-                    query={props.codeMonitor.query}
-                    onQueryChange={props.onQueryChange}
+                    query={codeMonitor.query}
+                    onQueryChange={onQueryChange}
                     triggerCompleted={formCompletion.triggerCompleted}
                     setTriggerCompleted={setTriggerCompleted}
                 />
@@ -107,12 +153,12 @@ export const CodeMonitorForm: FunctionComponent<CodeMonitorFormProps> = props =>
                 })}
             >
                 <ActionArea
-                    action={props.codeMonitor.actions}
+                    action={codeMonitor.actions}
                     setActionCompleted={setActionCompleted}
                     actionCompleted={formCompletion.actionCompleted}
                     authenticatedUser={props.authenticatedUser}
                     disabled={!formCompletion.triggerCompleted}
-                    onActionsChange={props.onActionsChange}
+                    onActionsChange={onActionsChange}
                 />
             </div>
             <div>
@@ -120,8 +166,8 @@ export const CodeMonitorForm: FunctionComponent<CodeMonitorFormProps> = props =>
                     <div>
                         <Toggle
                             title="Active"
-                            value={props.codeMonitor.enabled}
-                            onToggle={props.onEnabledChange}
+                            value={codeMonitor.enabled}
+                            onToggle={onEnabledChange}
                             className="mr-2"
                         />{' '}
                     </div>
@@ -134,9 +180,7 @@ export const CodeMonitorForm: FunctionComponent<CodeMonitorFormProps> = props =>
                     <button
                         type="submit"
                         disabled={
-                            !formCompletion.actionCompleted ||
-                            isErrorLike(props.codeMonitorOrError) ||
-                            props.codeMonitorOrError === LOADING
+                            !formCompletion.actionCompleted || isErrorLike(latestValue) || latestValue === LOADING
                         }
                         className="btn btn-primary mr-2 test-submit-monitor"
                     >
@@ -148,20 +192,14 @@ export const CodeMonitorForm: FunctionComponent<CodeMonitorFormProps> = props =>
                     </button>
                 </div>
                 {/** TODO: Error and success states. We will probably redirect the user to another page, so we could remove the success state. */}
-                {!isErrorLike(props.codeMonitorOrError) &&
-                    !!props.codeMonitorOrError &&
-                    props.codeMonitorOrError !== LOADING && (
-                        <div className="alert alert-success">
-                            Successfully created monitor {props.codeMonitorOrError.description}
-                        </div>
-                    )}
-                {isErrorLike(props.codeMonitorOrError) && (
-                    <div className="alert alert-danger">
-                        Failed to create monitor: {props.codeMonitorOrError.message}
-                    </div>
+                {!isErrorLike(latestValue) && !!latestValue && latestValue !== LOADING && (
+                    <div className="alert alert-success">Successfully created monitor {latestValue.description}</div>
+                )}
+                {isErrorLike(latestValue) && (
+                    <div className="alert alert-danger">Failed to create monitor: {latestValue.message}</div>
                 )}
             </div>
-        </>
+        </Form>
     )
 }
 
@@ -169,7 +207,7 @@ interface TriggerAreaProps {
     query: string
     onQueryChange: (query: string) => void
     triggerCompleted: boolean
-    setTriggerCompleted: () => void
+    setTriggerCompleted: (completed: boolean) => void
 }
 
 const isDiffOrCommit = (value: string): boolean => value === 'diff' || value === 'commit'
@@ -185,15 +223,6 @@ export const TriggerArea: FunctionComponent<TriggerAreaProps> = ({
         event.preventDefault()
         setShowQueryForm(show => !show)
     }, [])
-
-    const editOrCompleteForm: FormEventHandler = useCallback(
-        event => {
-            event.preventDefault()
-            toggleQueryForm(event)
-            setTriggerCompleted()
-        },
-        [setTriggerCompleted, toggleQueryForm]
-    )
 
     const [queryState, nextQueryFieldChange, queryInputReference] = useInputValidation(
         useMemo(
@@ -240,11 +269,31 @@ export const TriggerArea: FunctionComponent<TriggerAreaProps> = ({
         )
     )
 
-    useEffect(() => {
-        if (queryState.kind === 'VALID') {
+    const completeForm: FormEventHandler = useCallback(
+        event => {
+            event.preventDefault()
+            setShowQueryForm(false)
+            setTriggerCompleted(true)
             onQueryChange(queryState.value)
-        }
-    }, [onQueryChange, queryState])
+        },
+        [setTriggerCompleted, setShowQueryForm, onQueryChange, queryState]
+    )
+
+    const editForm: FormEventHandler = useCallback(
+        event => {
+            event.preventDefault()
+            setShowQueryForm(true)
+        },
+        [setShowQueryForm]
+    )
+
+    const cancelForm: FormEventHandler = useCallback(
+        event => {
+            event.preventDefault()
+            setShowQueryForm(false)
+        },
+        [setShowQueryForm]
+    )
 
     return (
         <>
@@ -308,27 +357,27 @@ export const TriggerArea: FunctionComponent<TriggerAreaProps> = ({
                         <div>
                             <button
                                 className="btn btn-outline-secondary mr-1 test-submit-trigger"
-                                onClick={editOrCompleteForm}
-                                onSubmit={editOrCompleteForm}
+                                onClick={completeForm}
+                                onSubmit={completeForm}
                                 type="submit"
                                 disabled={queryState.kind !== 'VALID'}
                             >
                                 Continue
                             </button>
-                            <button type="button" className="btn btn-outline-secondary" onClick={editOrCompleteForm}>
+                            <button type="button" className="btn btn-outline-secondary" onClick={cancelForm}>
                                 Cancel
                             </button>
                         </div>
                     </>
                 )}
-                {triggerCompleted && (
+                {!showQueryForm && triggerCompleted && (
                     <div className="d-flex justify-content-between align-items-center">
                         <div>
                             <div className="font-weight-bold">When there are new search results</div>
                             <code className="text-muted">{query}</code>
                         </div>
                         <div>
-                            <button type="button" onClick={editOrCompleteForm} className="btn btn-link p-0 text-left">
+                            <button type="button" onClick={editForm} className="btn btn-link p-0 text-left">
                                 Edit
                             </button>
                         </div>
@@ -350,7 +399,7 @@ export const TriggerArea: FunctionComponent<TriggerAreaProps> = ({
 interface ActionAreaProps {
     action: Action[]
     actionCompleted: boolean
-    setActionCompleted: () => void
+    setActionCompleted: (completed: boolean) => void
     disabled: boolean
     authenticatedUser: AuthenticatedUser
     onActionsChange: (action: Action[]) => void
@@ -370,18 +419,32 @@ export const ActionArea: FunctionComponent<ActionAreaProps> = ({
         setShowEmailNotificationForm(show => !show)
     }, [])
 
-    const editOrCompleteForm: FormEventHandler = useCallback(
+    const completeForm: FormEventHandler = useCallback(
         event => {
-            event?.preventDefault()
-            toggleEmailNotificationForm(event)
-            // For now, when action is undefined, it means that we're creating a new monitor.
-            // We currently want to pre-fill this with email notifications to the code monitor owner's email.
+            event.preventDefault()
+            setShowEmailNotificationForm(false)
+            setActionCompleted(true)
             if (action.length === 0) {
                 onActionsChange([{ recipient: authenticatedUser.id, enabled: true }])
             }
-            setActionCompleted()
         },
-        [toggleEmailNotificationForm, setActionCompleted, action, onActionsChange, authenticatedUser.id]
+        [setActionCompleted, setShowEmailNotificationForm, authenticatedUser.id, onActionsChange, action.length]
+    )
+
+    const editForm: FormEventHandler = useCallback(
+        event => {
+            event.preventDefault()
+            setShowEmailNotificationForm(true)
+        },
+        [setShowEmailNotificationForm]
+    )
+
+    const cancelForm: FormEventHandler = useCallback(
+        event => {
+            event.preventDefault()
+            setShowEmailNotificationForm(false)
+        },
+        [setShowEmailNotificationForm]
     )
 
     const [emailNotificationEnabled, setEmailNotificationEnabled] = useState(true)
@@ -412,7 +475,7 @@ export const ActionArea: FunctionComponent<ActionAreaProps> = ({
                         <span className="text-muted">Deliver email notifications to specified recipients.</span>
                     </>
                 )}
-                {showEmailNotificationForm && !actionCompleted && (
+                {showEmailNotificationForm && (
                     <>
                         <div className="font-weight-bold">Send email notifications</div>
                         <span className="text-muted">Deliver email notifications to specified recipients.</span>
@@ -442,18 +505,18 @@ export const ActionArea: FunctionComponent<ActionAreaProps> = ({
                             <button
                                 type="submit"
                                 className="btn btn-outline-secondary mr-1 test-submit-action"
-                                onClick={editOrCompleteForm}
-                                onSubmit={editOrCompleteForm}
+                                onClick={completeForm}
+                                onSubmit={completeForm}
                             >
                                 Done
                             </button>
-                            <button type="button" className="btn btn-outline-secondary" onClick={editOrCompleteForm}>
+                            <button type="button" className="btn btn-outline-secondary" onClick={cancelForm}>
                                 Cancel
                             </button>
                         </div>
                     </>
                 )}
-                {actionCompleted && (
+                {actionCompleted && !showEmailNotificationForm && (
                     <div className="d-flex justify-content-between align-items-center">
                         <div>
                             <div className="font-weight-bold">Send email notifications</div>
@@ -468,7 +531,7 @@ export const ActionArea: FunctionComponent<ActionAreaProps> = ({
                                     className="mr-2"
                                 />
                             </div>
-                            <button type="button" onClick={editOrCompleteForm} className="btn btn-link p-0 text-left">
+                            <button type="button" onClick={editForm} className="btn btn-link p-0 text-left">
                                 Edit
                             </button>
                         </div>

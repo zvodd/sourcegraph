@@ -11,17 +11,12 @@ import { createCodeMonitor } from './backend'
 import { MonitorEmailPriority } from '../../../../shared/src/graphql/schema'
 import { Observable } from 'rxjs'
 import { catchError, mergeMap, startWith, tap } from 'rxjs/operators'
-import { asError } from '../../../../shared/src/util/errors'
+import { asError, isErrorLike } from '../../../../shared/src/util/errors'
 import { Action, CodeMonitorFields, CodeMonitorForm } from './CodeMonitorForm'
 
 export interface CreateCodeMonitorPageProps extends BreadcrumbsProps, BreadcrumbSetters {
     location: H.Location
     authenticatedUser: AuthenticatedUser
-}
-
-export interface FormCompletionSteps {
-    triggerCompleted: boolean
-    actionCompleted: boolean
 }
 
 export const CreateCodeMonitorPage: React.FunctionComponent<CreateCodeMonitorPageProps> = props => {
@@ -40,10 +35,11 @@ export const CreateCodeMonitorPage: React.FunctionComponent<CreateCodeMonitorPag
     const [codeMonitor, setCodeMonitor] = useState<CodeMonitorFields>({
         description: '',
         query: '',
+        // Even though we know the code monitor will have an action to send email notifications to the user's email,
+        // we send it as an empty list to sequentially render the form.
         actions: [],
         enabled: true,
     })
-
     const onNameChange = useCallback(
         (description: string): void => setCodeMonitor(codeMonitor => ({ ...codeMonitor, description })),
         []
@@ -74,6 +70,7 @@ export const CreateCodeMonitorPage: React.FunctionComponent<CreateCodeMonitorPag
                                 enabled: codeMonitor.enabled,
                             },
                             trigger: { query: codeMonitor.query },
+
                             actions: codeMonitor.actions.map(action => ({
                                 email: {
                                     enabled: action.enabled,
@@ -92,6 +89,28 @@ export const CreateCodeMonitorPage: React.FunctionComponent<CreateCodeMonitorPag
         )
     )
 
+    const createMonitorRequest = useCallback(
+        (codeMonitor: CodeMonitorFields): Observable<Partial<CodeMonitorFields>> =>
+            createCodeMonitor({
+                monitor: {
+                    namespace: props.authenticatedUser.id,
+                    description: codeMonitor.description,
+                    enabled: codeMonitor.enabled,
+                },
+                trigger: { query: codeMonitor.query },
+
+                actions: codeMonitor.actions.map(action => ({
+                    email: {
+                        enabled: action.enabled,
+                        priority: MonitorEmailPriority.NORMAL,
+                        recipients: [props.authenticatedUser.id],
+                        header: '',
+                    },
+                })),
+            }),
+        [props.authenticatedUser.id]
+    )
+
     return (
         <div className="container mt-3 web-content">
             <PageTitle title="Create new code monitor" />
@@ -101,17 +120,35 @@ export const CreateCodeMonitorPage: React.FunctionComponent<CreateCodeMonitorPag
                 {/* TODO: populate link */}
                 Learn more
             </a>
-            <Form className="my-4" onSubmit={createRequest}>
-                <CodeMonitorForm
-                    {...props}
-                    onNameChange={onNameChange}
-                    onQueryChange={onQueryChange}
-                    onEnabledChange={onEnabledChange}
-                    onActionsChange={onActionsChange}
-                    codeMonitor={codeMonitor}
-                    codeMonitorOrError={codeMonitorOrError}
-                />
-            </Form>
+            {/* <Form className="my-4" onSubmit={createRequest}> */}
+            <CodeMonitorForm
+                {...props}
+                onSubmit={createMonitorRequest}
+                codeMonitor={codeMonitor}
+                codeMonitorOrError={codeMonitorOrError}
+            />
+            <div className="flex my-4">
+                <button
+                    type="submit"
+                    disabled={
+                        codeMonitor.query.length === 0 ||
+                        codeMonitor.actions.length === 0 ||
+                        isErrorLike(codeMonitorOrError) ||
+                        codeMonitorOrError === LOADING
+                    }
+                    className="btn btn-primary mr-2 test-submit-monitor"
+                >
+                    Create code monitor
+                </button>
+                <button type="button" className="btn btn-outline-secondary">
+                    {/* TODO: this should link somewhere */}
+                    Cancel
+                </button>
+            </div>
+            {isErrorLike(codeMonitorOrError) && (
+                <div className="alert alert-danger">Failed to create monitor: {codeMonitorOrError.message}</div>
+            )}
+            {/* </Form> */}
         </div>
     )
 }

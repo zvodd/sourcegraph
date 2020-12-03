@@ -177,6 +177,7 @@ export const fetchCodeMonitor = (id: string): Observable<FetchCodeMonitorResult>
                     }
                     trigger {
                         ... on MonitorQuery {
+                            id
                             query
                         }
                     }

@@ -24,6 +24,7 @@ interface CodeMonitorFormProps {
     onActionsChange: (action: Action[]) => void
     codeMonitor: CodeMonitorFields
     codeMonitorOrError?: typeof LOADING | Partial<CodeMonitorFields> | ErrorLike
+    submitButtonText: string
 }
 
 export interface FormCompletionSteps {
@@ -140,21 +141,13 @@ export const CodeMonitorForm: FunctionComponent<CodeMonitorFormProps> = props =>
                         }
                         className="btn btn-primary mr-2 test-submit-monitor"
                     >
-                        Create code monitor
+                        {props.submitButtonText}
                     </button>
                     <button type="button" className="btn btn-outline-secondary">
                         {/* TODO: this should link somewhere */}
                         Cancel
                     </button>
                 </div>
-                {/** TODO: Error and success states. We will probably redirect the user to another page, so we could remove the success state. */}
-                {!isErrorLike(props.codeMonitorOrError) &&
-                    !!props.codeMonitorOrError &&
-                    props.codeMonitorOrError !== LOADING && (
-                        <div className="alert alert-success">
-                            Successfully created monitor {props.codeMonitorOrError.description}
-                        </div>
-                    )}
                 {isErrorLike(props.codeMonitorOrError) && (
                     <div className="alert alert-danger">
                         Failed to create monitor: {props.codeMonitorOrError.message}

@@ -146,6 +146,7 @@ export const ManageCodeMonitorPage: React.FunctionComponent<ManageCodeMonitorPag
                         onActionsChange={onActionsChange}
                         codeMonitor={codeMonitorState}
                         codeMonitorOrError={updatedCodeMonitorOrError}
+                        submitButtonText="Save"
                     />
                 </Form>
             )}

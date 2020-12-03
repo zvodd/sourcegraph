@@ -105,6 +105,7 @@ export const CreateCodeMonitorPage: React.FunctionComponent<CreateCodeMonitorPag
                     onActionsChange={onActionsChange}
                     codeMonitor={codeMonitor}
                     codeMonitorOrError={codeMonitorOrError}
+                    submitButtonText="Create code monitor"
                 />
             </Form>
         </div>

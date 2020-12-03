@@ -5,12 +5,12 @@ import { Toggle } from '../../../../branded/src/components/Toggle'
 import { FilterType } from '../../../../shared/src/search/interactive/util'
 import { resolveFilter, validateFilter } from '../../../../shared/src/search/parser/filters'
 import { scanSearchQuery } from '../../../../shared/src/search/parser/scanner'
-import { asError, ErrorLike, isErrorLike } from '../../../../shared/src/util/errors'
+import { asError, isErrorLike } from '../../../../shared/src/util/errors'
 import { buildSearchURLQuery } from '../../../../shared/src/util/url'
 import { useInputValidation, deriveInputClassName } from '../../../../shared/src/util/useInputValidation'
 import { AuthenticatedUser } from '../../auth'
-import { MonitorEmailPriority, SearchPatternType } from '../../graphql-operations'
-import React, { FormEventHandler, FunctionComponent, useCallback, useEffect, useMemo, useState } from 'react'
+import { CodeMonitorFields, SearchPatternType } from '../../graphql-operations'
+import React, { FormEventHandler, FunctionComponent, useCallback, useMemo, useState } from 'react'
 import { Link } from '../../../../shared/src/components/Link'
 import { Observable } from 'rxjs'
 import { mergeMap, startWith, tap, catchError } from 'rxjs/operators'
@@ -18,7 +18,6 @@ import { useEventObservable } from '../../../../shared/src/util/useObservable'
 import { Form } from '../../../../branded/src/components/Form'
 
 const LOADING = 'loading' as const
-
 interface CodeMonitorFormProps {
     location: H.Location
     authenticatedUser: AuthenticatedUser
@@ -29,18 +28,6 @@ interface CodeMonitorFormProps {
 export interface FormCompletionSteps {
     triggerCompleted: boolean
     actionCompleted: boolean
-}
-
-export interface CodeMonitorFields {
-    description: string
-    query: string
-    enabled: boolean
-    actions: Action[]
-}
-
-export interface Action {
-    recipient: string
-    enabled: boolean
 }
 
 export const CodeMonitorForm: FunctionComponent<CodeMonitorFormProps> = props => {
@@ -54,16 +41,19 @@ export const CodeMonitorForm: FunctionComponent<CodeMonitorFormProps> = props =>
 
     const [codeMonitorState, setCodeMonitorState] = useState<CodeMonitorFields>(
         props.codeMonitor ?? {
+            id: '',
             description: '',
-            query: '',
-            actions: [],
             enabled: true,
+            trigger: null,
+            actions: {
+                nodes: [{ id: '', enabled: true, recipients: { nodes: [{ id: props.authenticatedUser.id }] } }],
+            },
         }
     )
 
     const [formCompletion, setFormCompletion] = useState<FormCompletionSteps>({
-        triggerCompleted: codeMonitorState.query.length > 0,
-        actionCompleted: codeMonitorState.actions.length > 0,
+        triggerCompleted: (codeMonitorState.trigger?.query && codeMonitorState.trigger?.query.length > 0) || false,
+        actionCompleted: codeMonitorState.actions.nodes.length > 0,
     })
 
     const onNameChange = useCallback(
@@ -79,7 +69,8 @@ export const CodeMonitorForm: FunctionComponent<CodeMonitorFormProps> = props =>
         []
     )
     const onActionsChange = useCallback(
-        (actions: Action[]): void => setCodeMonitorState(codeMonitor => ({ ...codeMonitor, actions })),
+        (actions: CodeMonitorFields['actions']): void =>
+            setCodeMonitorState(codeMonitor => ({ ...codeMonitor, actions })),
         []
     )
 
@@ -139,7 +130,7 @@ export const CodeMonitorForm: FunctionComponent<CodeMonitorFormProps> = props =>
             <hr className="my-4" />
             <div className="create-monitor-page__triggers mb-4">
                 <TriggerArea
-                    query={codeMonitorState.query}
+                    query={codeMonitorState.trigger?.query || ''}
                     onQueryChange={onQueryChange}
                     triggerCompleted={formCompletion.triggerCompleted}
                     setTriggerCompleted={setTriggerCompleted}
@@ -395,12 +386,12 @@ export const TriggerArea: FunctionComponent<TriggerAreaProps> = ({
 }
 
 interface ActionAreaProps {
-    action: Action[]
+    action: CodeMonitorFields['actions']
     actionCompleted: boolean
     setActionCompleted: (completed: boolean) => void
     disabled: boolean
     authenticatedUser: AuthenticatedUser
-    onActionsChange: (action: Action[]) => void
+    onActionsChange: (action: CodeMonitorFields['actions']) => void
 }
 
 export const ActionArea: FunctionComponent<ActionAreaProps> = ({
@@ -422,11 +413,14 @@ export const ActionArea: FunctionComponent<ActionAreaProps> = ({
             event.preventDefault()
             setShowEmailNotificationForm(false)
             setActionCompleted(true)
-            if (action.length === 0) {
-                onActionsChange([{ recipient: authenticatedUser.id, enabled: true }])
+            if (action.nodes.length === 0) {
+                // ID can be empty here, since we'll generate a new ID when we create the monitor.
+                onActionsChange({
+                    nodes: [{ id: '', enabled: true, recipients: { nodes: [{ id: authenticatedUser.id }] } }],
+                })
             }
         },
-        [setActionCompleted, setShowEmailNotificationForm, authenticatedUser.id, onActionsChange, action.length]
+        [setActionCompleted, setShowEmailNotificationForm, action.nodes.length, authenticatedUser.id, onActionsChange]
     )
 
     const editForm: FormEventHandler = useCallback(
@@ -449,7 +443,7 @@ export const ActionArea: FunctionComponent<ActionAreaProps> = ({
     const toggleEmailNotificationEnabled: (value: boolean) => void = useCallback(
         enabled => {
             setEmailNotificationEnabled(enabled)
-            onActionsChange([{ recipient: authenticatedUser.email, enabled }])
+            onActionsChange({ nodes: [{ id: '', recipients: { nodes: [{ id: authenticatedUser.email }] }, enabled }] })
         },
         [authenticatedUser, onActionsChange]
     )

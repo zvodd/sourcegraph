@@ -1,20 +1,20 @@
 import React, { useCallback, useMemo, useState } from 'react'
 import * as H from 'history'
 import { CodeMonitoringProps } from '.'
-import { authenticatedUser, AuthenticatedUser } from '../../auth'
+import { AuthenticatedUser } from '../../auth'
 import { BreadcrumbSetters, BreadcrumbsProps } from '../../components/Breadcrumbs'
 import { fetchCodeMonitor, updateCodeMonitor } from './backend'
 import { RouteComponentProps } from 'react-router'
 import { MonitorEmailPriority, Scalars } from '../../../../shared/src/graphql-operations'
-import { catchError, map, mergeMap, startWith, tap } from 'rxjs/operators'
-import { useEventObservable, useObservable } from '../../../../shared/src/util/useObservable'
+import { catchError, startWith, tap } from 'rxjs/operators'
+import { useObservable } from '../../../../shared/src/util/useObservable'
 import { asError, isErrorLike } from '../../../../shared/src/util/errors'
 import { PageHeader } from '../../components/PageHeader'
 import { PageTitle } from '../../components/PageTitle'
-import { Form } from 'reactstrap'
-import { Action, CodeMonitorFields, CodeMonitorForm } from './CodeMonitorForm'
+import { CodeMonitorForm } from './CodeMonitorForm'
 import { Observable } from 'rxjs'
 import { LoadingSpinner } from '@sourcegraph/react-loading-spinner'
+import { CodeMonitorFields } from '../../graphql-operations'
 
 export interface ManageCodeMonitorPageProps
     extends RouteComponentProps<{ id: Scalars['ID'] }>,
@@ -26,22 +26,30 @@ export interface ManageCodeMonitorPageProps
     history: H.History
 }
 
+// id: string
+//     description: string
+//     enabled: boolean
+//     trigger: Maybe<{ query: string }>
+//     actions: { nodes: Array<{ enabled: boolean; recipients: { nodes: Array<{ id: string } | { id: string }> } }> }
+
 export const ManageCodeMonitorPage: React.FunctionComponent<ManageCodeMonitorPageProps> = props => {
     const LOADING = 'loading' as const
 
     const [codeMonitorState, setCodeMonitorState] = useState<CodeMonitorFields>({
+        id: '',
         description: '',
-        query: '',
-        actions: [{ recipient: props.authenticatedUser.id, enabled: true }],
         enabled: true,
+        trigger: null,
+        actions: { nodes: [{ id: '', enabled: true, recipients: { nodes: [{ id: props.authenticatedUser.id }] } }] },
     })
 
-    const [initialMonitor, setInitialMonitor] = useState<CodeMonitorFields>({
-        description: '',
-        query: '',
-        actions: [{ recipient: props.authenticatedUser.id, enabled: true }],
-        enabled: true,
-    })
+    // const [initial, setInitialMonitor] = useState<CodeMonitorFields>({
+    //     id: '',
+    //     description: '',
+    //     enabled: true,
+    //     trigger: null,
+    //     actions: { nodes: [{ id: '', enabled: true, recipients: { nodes: [{ id: props.authenticatedUser.id }] } }] },
+    // })
 
     // const [hasDifference, setHasDifference] = useState(false)
 
@@ -50,23 +58,15 @@ export const ManageCodeMonitorPage: React.FunctionComponent<ManageCodeMonitorPag
             () =>
                 fetchCodeMonitor(props.match.params.id).pipe(
                     tap(monitor => {
-                        setCodeMonitorState({
-                            description: monitor.node?.description || '',
-                            query: monitor.node?.trigger?.query || '',
-                            actions: [{ recipient: props.authenticatedUser.id, enabled: true }],
-                            enabled: monitor.node?.enabled || true,
-                        })
-                        setInitialMonitor({
-                            description: monitor.node?.description || '',
-                            query: monitor.node?.trigger?.query || '',
-                            actions: [{ recipient: props.authenticatedUser.id, enabled: true }],
-                            enabled: monitor.node?.enabled || true,
-                        })
+                        if (monitor?.node !== null) {
+                            setCodeMonitorState(monitor.node)
+                            // setInitialMonitor(monitor.node)
+                        }
                     }),
                     startWith(LOADING),
                     catchError(error => [asError(error)])
                 ),
-            [props.match.params.id, props.authenticatedUser.id]
+            [props.match.params.id]
         )
     )
 
@@ -91,10 +91,10 @@ export const ManageCodeMonitorPage: React.FunctionComponent<ManageCodeMonitorPag
                         enabled: codeMonitor.enabled,
                     },
                 },
-                { id: props.match.params.id, update: { query: codeMonitor.query } },
-                codeMonitor.actions.map(action => ({
+                { id: codeMonitor.trigger?.id || '', update: { query: codeMonitor.trigger?.query || '' } },
+                codeMonitor.actions.nodes.map(action => ({
                     email: {
-                        id: action.recipient,
+                        id: action.id,
                         update: {
                             enabled: action.enabled,
                             priority: MonitorEmailPriority.NORMAL,
@@ -102,16 +102,6 @@ export const ManageCodeMonitorPage: React.FunctionComponent<ManageCodeMonitorPag
                             header: '',
                         },
                     },
-                }))
-            ).pipe(
-                map(monitor => ({
-                    ...monitor,
-                    actions: [
-                        {
-                            recipient: props.authenticatedUser.id,
-                            enabled: true,
-                        },
-                    ],
                 }))
             ),
         [props.authenticatedUser.id, props.match.params.id]

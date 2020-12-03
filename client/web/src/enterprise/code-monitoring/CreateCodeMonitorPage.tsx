@@ -1,18 +1,15 @@
 import * as H from 'history'
 import VideoInputAntennaIcon from 'mdi-react/VideoInputAntennaIcon'
 import React, { useCallback, useMemo, useState } from 'react'
-import { Form } from '../../../../branded/src/components/Form'
 import { AuthenticatedUser } from '../../auth'
 import { BreadcrumbSetters, BreadcrumbsProps } from '../../components/Breadcrumbs'
 import { PageHeader } from '../../components/PageHeader'
 import { PageTitle } from '../../components/PageTitle'
-import { useEventObservable } from '../../../../shared/src/util/useObservable'
 import { createCodeMonitor } from './backend'
 import { MonitorEmailPriority } from '../../../../shared/src/graphql/schema'
 import { Observable } from 'rxjs'
-import { catchError, mergeMap, startWith, tap } from 'rxjs/operators'
-import { asError, isErrorLike } from '../../../../shared/src/util/errors'
-import { Action, CodeMonitorFields, CodeMonitorForm } from './CodeMonitorForm'
+import { CodeMonitorForm } from './CodeMonitorForm'
+import { CodeMonitorFields } from '../../graphql-operations'
 
 export interface CreateCodeMonitorPageProps extends BreadcrumbsProps, BreadcrumbSetters {
     location: H.Location
@@ -40,9 +37,9 @@ export const CreateCodeMonitorPage: React.FunctionComponent<CreateCodeMonitorPag
                     description: codeMonitor.description,
                     enabled: codeMonitor.enabled,
                 },
-                trigger: { query: codeMonitor.query },
+                trigger: { query: codeMonitor.trigger?.query || '' },
 
-                actions: codeMonitor.actions.map(action => ({
+                actions: codeMonitor.actions.nodes.map(action => ({
                     email: {
                         enabled: action.enabled,
                         priority: MonitorEmailPriority.NORMAL,

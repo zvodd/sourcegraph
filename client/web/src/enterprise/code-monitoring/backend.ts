@@ -53,12 +53,14 @@ const CodeMonitorFragment = gql`
         enabled
         trigger {
             ... on MonitorQuery {
+                id
                 query
             }
         }
         actions {
             nodes {
                 ... on MonitorEmail {
+                    id
                     enabled
                     recipients {
                         nodes {
@@ -172,6 +174,7 @@ export const fetchCodeMonitor = (id: string): Observable<FetchCodeMonitorResult>
                                         url
                                     }
                                 }
+                                enabled
                             }
                         }
                     }

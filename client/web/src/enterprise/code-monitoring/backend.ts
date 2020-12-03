@@ -5,11 +5,18 @@ import { requestGraphQL } from '../../backend/graphql'
 import {
     CreateCodeMonitorResult,
     CreateCodeMonitorVariables,
+    FetchCodeMonitorResult,
+    FetchCodeMonitorVariables,
     ListCodeMonitors,
     ListUserCodeMonitorsResult,
     ListUserCodeMonitorsVariables,
+    MonitorEditActionInput,
+    MonitorEditInput,
+    MonitorEditTriggerInput,
     ToggleCodeMonitorEnabledResult,
     ToggleCodeMonitorEnabledVariables,
+    UpdateCodeMonitorResult,
+    UpdateCodeMonitorVariables,
 } from '../../graphql-operations'
 
 export const createCodeMonitor = ({
@@ -44,6 +51,11 @@ const CodeMonitorFragment = gql`
         id
         description
         enabled
+        trigger {
+            ... on MonitorQuery {
+                query
+            }
+        }
         actions {
             nodes {
                 ... on MonitorEmail {
@@ -135,5 +147,76 @@ export const toggleCodeMonitorEnabled = (
     }).pipe(
         map(dataOrThrowErrors),
         map(data => data.toggleCodeMonitor)
+    )
+}
+
+export const fetchCodeMonitor = (id: string): Observable<FetchCodeMonitorResult> => {
+    const query = gql`
+        query FetchCodeMonitor($id: ID!) {
+            node(id: $id) {
+                ... on Monitor {
+                    id
+                    description
+                    owner {
+                        id
+                        namespaceName
+                    }
+                    enabled
+                    actions {
+                        nodes {
+                            ... on MonitorEmail {
+                                id
+                                recipients {
+                                    nodes {
+                                        id
+                                        url
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    trigger {
+                        ... on MonitorQuery {
+                            query
+                        }
+                    }
+                }
+            }
+        }
+    `
+
+    return requestGraphQL<FetchCodeMonitorResult, FetchCodeMonitorVariables>(query, {
+        id,
+    }).pipe(
+        map(dataOrThrowErrors),
+        map(data => data)
+    )
+}
+
+export const updateCodeMonitor = (
+    monitorEditInput: MonitorEditInput,
+    triggerEditInput: MonitorEditTriggerInput,
+    actionEditInput: MonitorEditActionInput[]
+): Observable<UpdateCodeMonitorResult['updateCodeMonitor']> => {
+    const updateCodeMonitorQuery = gql`
+        mutation UpdateCodeMonitor(
+            $monitor: MonitorEditInput!
+            $trigger: MonitorEditTriggerInput!
+            $actions: [MonitorEditActionInput!]!
+        ) {
+            updateCodeMonitor(monitor: $monitor, trigger: $trigger, actions: $actions) {
+                ...CodeMonitorFields
+            }
+        }
+        ${CodeMonitorFragment}
+    `
+
+    return requestGraphQL<UpdateCodeMonitorResult, UpdateCodeMonitorVariables>(updateCodeMonitorQuery, {
+        monitor: monitorEditInput,
+        trigger: triggerEditInput,
+        actions: actionEditInput,
+    }).pipe(
+        map(dataOrThrowErrors),
+        map(data => data.updateCodeMonitor)
     )
 }

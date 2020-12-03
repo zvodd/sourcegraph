@@ -41,7 +41,7 @@ interface CodeMonitorFields {
     description: string
     query: string
     enabled: boolean
-    action: Action
+    actions: Action[]
 }
 
 export const CreateCodeMonitorPage: React.FunctionComponent<CreateCodeMonitorPageProps> = props => {
@@ -60,7 +60,7 @@ export const CreateCodeMonitorPage: React.FunctionComponent<CreateCodeMonitorPag
     const [codeMonitor, setCodeMonitor] = useState<CodeMonitorFields>({
         description: '',
         query: '',
-        action: { recipient: props.authenticatedUser.id, enabled: true },
+        actions: [{ recipient: props.authenticatedUser.id, enabled: true }],
         enabled: true,
     })
     const onNameChange = useCallback(
@@ -75,8 +75,8 @@ export const CreateCodeMonitorPage: React.FunctionComponent<CreateCodeMonitorPag
         (enabled: boolean): void => setCodeMonitor(codeMonitor => ({ ...codeMonitor, enabled })),
         []
     )
-    const onActionChange = useCallback(
-        (action: Action): void => setCodeMonitor(codeMonitor => ({ ...codeMonitor, action })),
+    const onActionsChange = useCallback(
+        (actions: Action[]): void => setCodeMonitor(codeMonitor => ({ ...codeMonitor, actions })),
         []
     )
 
@@ -104,16 +104,15 @@ export const CreateCodeMonitorPage: React.FunctionComponent<CreateCodeMonitorPag
                                 enabled: codeMonitor.enabled,
                             },
                             trigger: { query: codeMonitor.query },
-                            actions: [
-                                {
-                                    email: {
-                                        enabled: codeMonitor.action.enabled,
-                                        priority: MonitorEmailPriority.NORMAL,
-                                        recipients: [props.authenticatedUser.id],
-                                        header: '',
-                                    },
+
+                            actions: codeMonitor.actions.map(action => ({
+                                email: {
+                                    enabled: action.enabled,
+                                    priority: MonitorEmailPriority.NORMAL,
+                                    recipients: [props.authenticatedUser.id],
+                                    header: '',
                                 },
-                            ],
+                            })),
                         }).pipe(
                             startWith(LOADING),
                             catchError(error => [asError(error)])
@@ -185,7 +184,7 @@ export const CreateCodeMonitorPage: React.FunctionComponent<CreateCodeMonitorPag
                         actionCompleted={formCompletion.actionCompleted}
                         authenticatedUser={props.authenticatedUser}
                         disabled={!formCompletion.triggerCompleted}
-                        onActionChange={onActionChange}
+                        onActionsChange={onActionsChange}
                     />
                 </div>
                 <div>
@@ -421,7 +420,7 @@ interface ActionAreaProps {
     setActionCompleted: () => void
     disabled: boolean
     authenticatedUser: AuthenticatedUser
-    onActionChange: (action: Action) => void
+    onActionsChange: (actions: Action[]) => void
 }
 
 const ActionArea: React.FunctionComponent<ActionAreaProps> = ({
@@ -429,7 +428,7 @@ const ActionArea: React.FunctionComponent<ActionAreaProps> = ({
     setActionCompleted,
     disabled,
     authenticatedUser,
-    onActionChange,
+    onActionsChange: onActionChange,
 }) => {
     const [showEmailNotificationForm, setShowEmailNotificationForm] = useState(false)
     const toggleEmailNotificationForm: React.FormEventHandler = useCallback(event => {
@@ -450,7 +449,7 @@ const ActionArea: React.FunctionComponent<ActionAreaProps> = ({
     const toggleEmailNotificationEnabled: (value: boolean) => void = useCallback(
         enabled => {
             setEmailNotificationEnabled(enabled)
-            onActionChange({ recipient: authenticatedUser.email, enabled })
+            onActionChange([{ recipient: authenticatedUser.email, enabled }])
         },
         [authenticatedUser, onActionChange]
     )

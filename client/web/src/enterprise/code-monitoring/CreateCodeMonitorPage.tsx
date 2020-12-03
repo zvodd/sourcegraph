@@ -35,7 +35,9 @@ export const CreateCodeMonitorPage: React.FunctionComponent<CreateCodeMonitorPag
     const [codeMonitor, setCodeMonitor] = useState<CodeMonitorFields>({
         description: '',
         query: '',
-        actions: [{ recipient: props.authenticatedUser.id, enabled: true }],
+        // Even though we know the code monitor will have an action to send email notifications to the user's email,
+        // we send it as an empty list to sequentially render the form.
+        actions: [],
         enabled: true,
     })
     const onNameChange = useCallback(

@@ -11,7 +11,7 @@ import { useObservable } from '../../../../shared/src/util/useObservable'
 import { asError, isErrorLike } from '../../../../shared/src/util/errors'
 import { PageHeader } from '../../components/PageHeader'
 import { PageTitle } from '../../components/PageTitle'
-import { CodeMonitorForm } from './CodeMonitorForm'
+import { CodeMonitorForm } from './components/CodeMonitorForm'
 import { Observable } from 'rxjs'
 import { LoadingSpinner } from '@sourcegraph/react-loading-spinner'
 import { CodeMonitorFields } from '../../graphql-operations'
@@ -26,12 +26,6 @@ export interface ManageCodeMonitorPageProps
     history: H.History
 }
 
-// id: string
-//     description: string
-//     enabled: boolean
-//     trigger: Maybe<{ query: string }>
-//     actions: { nodes: Array<{ enabled: boolean; recipients: { nodes: Array<{ id: string } | { id: string }> } }> }
-
 export const ManageCodeMonitorPage: React.FunctionComponent<ManageCodeMonitorPageProps> = props => {
     const LOADING = 'loading' as const
 
@@ -39,7 +33,7 @@ export const ManageCodeMonitorPage: React.FunctionComponent<ManageCodeMonitorPag
         id: '',
         description: '',
         enabled: true,
-        trigger: null,
+        trigger: { id: '', query: '' },
         actions: { nodes: [{ id: '', enabled: true, recipients: { nodes: [{ id: props.authenticatedUser.id }] } }] },
     })
 
@@ -91,7 +85,7 @@ export const ManageCodeMonitorPage: React.FunctionComponent<ManageCodeMonitorPag
                         enabled: codeMonitor.enabled,
                     },
                 },
-                { id: codeMonitor.trigger?.id || '', update: { query: codeMonitor.trigger?.query || '' } },
+                { id: codeMonitor.trigger?.id, update: { query: codeMonitor.trigger.query } },
                 codeMonitor.actions.nodes.map(action => ({
                     email: {
                         id: action.id,

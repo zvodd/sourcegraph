@@ -8,7 +8,7 @@ import { PageTitle } from '../../components/PageTitle'
 import { createCodeMonitor } from './backend'
 import { MonitorEmailPriority } from '../../../../shared/src/graphql/schema'
 import { Observable } from 'rxjs'
-import { CodeMonitorForm } from './CodeMonitorForm'
+import { CodeMonitorForm } from './components/CodeMonitorForm'
 import { CodeMonitorFields } from '../../graphql-operations'
 
 export interface CreateCodeMonitorPageProps extends BreadcrumbsProps, BreadcrumbSetters {
@@ -27,8 +27,6 @@ export const CreateCodeMonitorPage: React.FunctionComponent<CreateCodeMonitorPag
         )
     )
 
-    const LOADING = 'loading' as const
-
     const createMonitorRequest = useCallback(
         (codeMonitor: CodeMonitorFields): Observable<Partial<CodeMonitorFields>> =>
             createCodeMonitor({
@@ -37,7 +35,7 @@ export const CreateCodeMonitorPage: React.FunctionComponent<CreateCodeMonitorPag
                     description: codeMonitor.description,
                     enabled: codeMonitor.enabled,
                 },
-                trigger: { query: codeMonitor.trigger?.query || '' },
+                trigger: { query: codeMonitor.trigger.query },
 
                 actions: codeMonitor.actions.nodes.map(action => ({
                     email: {
@@ -60,7 +58,6 @@ export const CreateCodeMonitorPage: React.FunctionComponent<CreateCodeMonitorPag
                 {/* TODO: populate link */}
                 Learn more
             </a>
-            {/* <Form className="my-4" onSubmit={createRequest}> */}
             <CodeMonitorForm {...props} onSubmit={createMonitorRequest} />
         </div>
     )

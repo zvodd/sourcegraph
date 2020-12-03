@@ -188,7 +188,6 @@ export const ManageCodeMonitorPage: React.FunctionComponent<ManageCodeMonitorPag
                         onActionsChange={onActionsChange}
                         codeMonitor={codeMonitorState}
                         codeMonitorOrError={updatedCodeMonitorOrError}
-                        submitButtonText="Save"
                     />
                     <div className="flex my-4">
                         <button

@@ -44,6 +44,35 @@ export interface Action {
 }
 
 export const CodeMonitorForm: FunctionComponent<CodeMonitorFormProps> = props => {
+    const [codeMonitor, setCodeMonitor] = useState<CodeMonitorFields>({
+        description: '',
+        query: '',
+        // Even though we know the code monitor will have an action to send email notifications to the user's email,
+        // we send it as an empty list to sequentially render the form.
+        actions: [],
+        enabled: true,
+    })
+    const onNameChange = useCallback(
+        (description: string): void => setCodeMonitor(codeMonitor => ({ ...codeMonitor, description })),
+        []
+    )
+    const onQueryChange = useCallback(
+        (query: string): void => setCodeMonitor(codeMonitor => ({ ...codeMonitor, query })),
+        []
+    )
+    const onEnabledChange = useCallback(
+        (enabled: boolean): void => setCodeMonitor(codeMonitor => ({ ...codeMonitor, enabled })),
+        []
+    )
+    const onActionsChange = useCallback(
+        (actions: Action[]): void => setCodeMonitor(codeMonitor => ({ ...codeMonitor, actions })),
+        []
+    )
+
+    // Initial values for triggerCompleted and actionCompleted are determined by
+    // whether the parent component has non-empty values for trigger and action.
+    // Later on, these are only updated by setTriggerCompleted and setActionCompleted
+    // when the `Continue` buttons are clicked.
     const [formCompletion, setFormCompletion] = useState<FormCompletionSteps>({
         triggerCompleted: props.codeMonitor.query.length > 0,
         actionCompleted: props.codeMonitor.actions.length > 0,

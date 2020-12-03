@@ -107,12 +107,12 @@ export const CreateCodeMonitorPage: React.FunctionComponent<CreateCodeMonitorPag
                     onActionsChange={onActionsChange}
                     codeMonitor={codeMonitor}
                     codeMonitorOrError={codeMonitorOrError}
-                    submitButtonText="Create code monitor"
                 />
                 <div className="flex my-4">
                     <button
                         type="submit"
                         disabled={
+                            codeMonitor.query.length === 0 ||
                             codeMonitor.actions.length === 0 ||
                             isErrorLike(codeMonitorOrError) ||
                             codeMonitorOrError === LOADING

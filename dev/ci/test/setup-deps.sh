@@ -1,6 +1,10 @@
 #!/usr/bin/env bash
 
 asdf install
+
+asdf plugin add nodejs
+echo "legacy_version_file = yes" >>"$HOME/.asdfrc"
+
 yarn
 yarn generate
 yes | gcloud auth configure-docker

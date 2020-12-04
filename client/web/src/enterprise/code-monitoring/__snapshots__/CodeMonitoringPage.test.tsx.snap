@@ -188,9 +188,12 @@ exports[`CodeMonitoringListPage Code monitoring page with 10 results 1`] = `
                     "nodes": Array [
                       Object {
                         "actions": Object {
+                          "enabled": true,
+                          "id": "test",
                           "nodes": Array [
                             Object {
                               "enabled": true,
+                              "id": "test",
                               "recipients": Object {
                                 "nodes": Array [
                                   Object {
@@ -205,14 +208,18 @@ exports[`CodeMonitoringListPage Code monitoring page with 10 results 1`] = `
                         "enabled": true,
                         "id": "foo0",
                         "trigger": Object {
+                          "id": "test",
                           "query": "test",
                         },
                       },
                       Object {
                         "actions": Object {
+                          "enabled": true,
+                          "id": "test",
                           "nodes": Array [
                             Object {
                               "enabled": true,
+                              "id": "test",
                               "recipients": Object {
                                 "nodes": Array [
                                   Object {
@@ -227,14 +234,18 @@ exports[`CodeMonitoringListPage Code monitoring page with 10 results 1`] = `
                         "enabled": true,
                         "id": "foo1",
                         "trigger": Object {
+                          "id": "test",
                           "query": "test",
                         },
                       },
                       Object {
                         "actions": Object {
+                          "enabled": true,
+                          "id": "test",
                           "nodes": Array [
                             Object {
                               "enabled": true,
+                              "id": "test",
                               "recipients": Object {
                                 "nodes": Array [
                                   Object {
@@ -249,14 +260,18 @@ exports[`CodeMonitoringListPage Code monitoring page with 10 results 1`] = `
                         "enabled": true,
                         "id": "foo2",
                         "trigger": Object {
+                          "id": "test",
                           "query": "test",
                         },
                       },
                       Object {
                         "actions": Object {
+                          "enabled": true,
+                          "id": "test",
                           "nodes": Array [
                             Object {
                               "enabled": true,
+                              "id": "test",
                               "recipients": Object {
                                 "nodes": Array [
                                   Object {
@@ -271,14 +286,18 @@ exports[`CodeMonitoringListPage Code monitoring page with 10 results 1`] = `
                         "enabled": true,
                         "id": "foo3",
                         "trigger": Object {
+                          "id": "test",
                           "query": "test",
                         },
                       },
                       Object {
                         "actions": Object {
+                          "enabled": true,
+                          "id": "test",
                           "nodes": Array [
                             Object {
                               "enabled": true,
+                              "id": "test",
                               "recipients": Object {
                                 "nodes": Array [
                                   Object {
@@ -293,14 +312,18 @@ exports[`CodeMonitoringListPage Code monitoring page with 10 results 1`] = `
                         "enabled": true,
                         "id": "foo4",
                         "trigger": Object {
+                          "id": "test",
                           "query": "test",
                         },
                       },
                       Object {
                         "actions": Object {
+                          "enabled": true,
+                          "id": "test",
                           "nodes": Array [
                             Object {
                               "enabled": true,
+                              "id": "test",
                               "recipients": Object {
                                 "nodes": Array [
                                   Object {
@@ -315,14 +338,18 @@ exports[`CodeMonitoringListPage Code monitoring page with 10 results 1`] = `
                         "enabled": true,
                         "id": "foo5",
                         "trigger": Object {
+                          "id": "test",
                           "query": "test",
                         },
                       },
                       Object {
                         "actions": Object {
+                          "enabled": true,
+                          "id": "test",
                           "nodes": Array [
                             Object {
                               "enabled": true,
+                              "id": "test",
                               "recipients": Object {
                                 "nodes": Array [
                                   Object {
@@ -337,14 +364,18 @@ exports[`CodeMonitoringListPage Code monitoring page with 10 results 1`] = `
                         "enabled": true,
                         "id": "foo6",
                         "trigger": Object {
+                          "id": "test",
                           "query": "test",
                         },
                       },
                       Object {
                         "actions": Object {
+                          "enabled": true,
+                          "id": "test",
                           "nodes": Array [
                             Object {
                               "enabled": true,
+                              "id": "test",
                               "recipients": Object {
                                 "nodes": Array [
                                   Object {
@@ -359,14 +390,18 @@ exports[`CodeMonitoringListPage Code monitoring page with 10 results 1`] = `
                         "enabled": true,
                         "id": "foo7",
                         "trigger": Object {
+                          "id": "test",
                           "query": "test",
                         },
                       },
                       Object {
                         "actions": Object {
+                          "enabled": true,
+                          "id": "test",
                           "nodes": Array [
                             Object {
                               "enabled": true,
+                              "id": "test",
                               "recipients": Object {
                                 "nodes": Array [
                                   Object {
@@ -381,14 +416,18 @@ exports[`CodeMonitoringListPage Code monitoring page with 10 results 1`] = `
                         "enabled": true,
                         "id": "foo9",
                         "trigger": Object {
+                          "id": "test",
                           "query": "test",
                         },
                       },
                       Object {
                         "actions": Object {
+                          "enabled": true,
+                          "id": "test",
                           "nodes": Array [
                             Object {
                               "enabled": true,
+                              "id": "test",
                               "recipients": Object {
                                 "nodes": Array [
                                   Object {
@@ -403,6 +442,7 @@ exports[`CodeMonitoringListPage Code monitoring page with 10 results 1`] = `
                         "enabled": true,
                         "id": "foo10",
                         "trigger": Object {
+                          "id": "test",
                           "query": "test",
                         },
                       },
@@ -439,9 +479,12 @@ exports[`CodeMonitoringListPage Code monitoring page with 10 results 1`] = `
                     node={
                       Object {
                         "actions": Object {
+                          "enabled": true,
+                          "id": "test",
                           "nodes": Array [
                             Object {
                               "enabled": true,
+                              "id": "test",
                               "recipients": Object {
                                 "nodes": Array [
                                   Object {
@@ -456,6 +499,7 @@ exports[`CodeMonitoringListPage Code monitoring page with 10 results 1`] = `
                         "enabled": true,
                         "id": "foo0",
                         "trigger": Object {
+                          "id": "test",
                           "query": "test",
                         },
                       }
@@ -536,9 +580,12 @@ exports[`CodeMonitoringListPage Code monitoring page with 10 results 1`] = `
                     node={
                       Object {
                         "actions": Object {
+                          "enabled": true,
+                          "id": "test",
                           "nodes": Array [
                             Object {
                               "enabled": true,
+                              "id": "test",
                               "recipients": Object {
                                 "nodes": Array [
                                   Object {
@@ -553,6 +600,7 @@ exports[`CodeMonitoringListPage Code monitoring page with 10 results 1`] = `
                         "enabled": true,
                         "id": "foo1",
                         "trigger": Object {
+                          "id": "test",
                           "query": "test",
                         },
                       }
@@ -633,9 +681,12 @@ exports[`CodeMonitoringListPage Code monitoring page with 10 results 1`] = `
                     node={
                       Object {
                         "actions": Object {
+                          "enabled": true,
+                          "id": "test",
                           "nodes": Array [
                             Object {
                               "enabled": true,
+                              "id": "test",
                               "recipients": Object {
                                 "nodes": Array [
                                   Object {
@@ -650,6 +701,7 @@ exports[`CodeMonitoringListPage Code monitoring page with 10 results 1`] = `
                         "enabled": true,
                         "id": "foo2",
                         "trigger": Object {
+                          "id": "test",
                           "query": "test",
                         },
                       }
@@ -730,9 +782,12 @@ exports[`CodeMonitoringListPage Code monitoring page with 10 results 1`] = `
                     node={
                       Object {
                         "actions": Object {
+                          "enabled": true,
+                          "id": "test",
                           "nodes": Array [
                             Object {
                               "enabled": true,
+                              "id": "test",
                               "recipients": Object {
                                 "nodes": Array [
                                   Object {
@@ -747,6 +802,7 @@ exports[`CodeMonitoringListPage Code monitoring page with 10 results 1`] = `
                         "enabled": true,
                         "id": "foo3",
                         "trigger": Object {
+                          "id": "test",
                           "query": "test",
                         },
                       }
@@ -827,9 +883,12 @@ exports[`CodeMonitoringListPage Code monitoring page with 10 results 1`] = `
                     node={
                       Object {
                         "actions": Object {
+                          "enabled": true,
+                          "id": "test",
                           "nodes": Array [
                             Object {
                               "enabled": true,
+                              "id": "test",
                               "recipients": Object {
                                 "nodes": Array [
                                   Object {
@@ -844,6 +903,7 @@ exports[`CodeMonitoringListPage Code monitoring page with 10 results 1`] = `
                         "enabled": true,
                         "id": "foo4",
                         "trigger": Object {
+                          "id": "test",
                           "query": "test",
                         },
                       }
@@ -924,9 +984,12 @@ exports[`CodeMonitoringListPage Code monitoring page with 10 results 1`] = `
                     node={
                       Object {
                         "actions": Object {
+                          "enabled": true,
+                          "id": "test",
                           "nodes": Array [
                             Object {
                               "enabled": true,
+                              "id": "test",
                               "recipients": Object {
                                 "nodes": Array [
                                   Object {
@@ -941,6 +1004,7 @@ exports[`CodeMonitoringListPage Code monitoring page with 10 results 1`] = `
                         "enabled": true,
                         "id": "foo5",
                         "trigger": Object {
+                          "id": "test",
                           "query": "test",
                         },
                       }
@@ -1021,9 +1085,12 @@ exports[`CodeMonitoringListPage Code monitoring page with 10 results 1`] = `
                     node={
                       Object {
                         "actions": Object {
+                          "enabled": true,
+                          "id": "test",
                           "nodes": Array [
                             Object {
                               "enabled": true,
+                              "id": "test",
                               "recipients": Object {
                                 "nodes": Array [
                                   Object {
@@ -1038,6 +1105,7 @@ exports[`CodeMonitoringListPage Code monitoring page with 10 results 1`] = `
                         "enabled": true,
                         "id": "foo6",
                         "trigger": Object {
+                          "id": "test",
                           "query": "test",
                         },
                       }
@@ -1118,9 +1186,12 @@ exports[`CodeMonitoringListPage Code monitoring page with 10 results 1`] = `
                     node={
                       Object {
                         "actions": Object {
+                          "enabled": true,
+                          "id": "test",
                           "nodes": Array [
                             Object {
                               "enabled": true,
+                              "id": "test",
                               "recipients": Object {
                                 "nodes": Array [
                                   Object {
@@ -1135,6 +1206,7 @@ exports[`CodeMonitoringListPage Code monitoring page with 10 results 1`] = `
                         "enabled": true,
                         "id": "foo7",
                         "trigger": Object {
+                          "id": "test",
                           "query": "test",
                         },
                       }
@@ -1215,9 +1287,12 @@ exports[`CodeMonitoringListPage Code monitoring page with 10 results 1`] = `
                     node={
                       Object {
                         "actions": Object {
+                          "enabled": true,
+                          "id": "test",
                           "nodes": Array [
                             Object {
                               "enabled": true,
+                              "id": "test",
                               "recipients": Object {
                                 "nodes": Array [
                                   Object {
@@ -1232,6 +1307,7 @@ exports[`CodeMonitoringListPage Code monitoring page with 10 results 1`] = `
                         "enabled": true,
                         "id": "foo9",
                         "trigger": Object {
+                          "id": "test",
                           "query": "test",
                         },
                       }
@@ -1312,9 +1388,12 @@ exports[`CodeMonitoringListPage Code monitoring page with 10 results 1`] = `
                     node={
                       Object {
                         "actions": Object {
+                          "enabled": true,
+                          "id": "test",
                           "nodes": Array [
                             Object {
                               "enabled": true,
+                              "id": "test",
                               "recipients": Object {
                                 "nodes": Array [
                                   Object {
@@ -1329,6 +1408,7 @@ exports[`CodeMonitoringListPage Code monitoring page with 10 results 1`] = `
                         "enabled": true,
                         "id": "foo10",
                         "trigger": Object {
+                          "id": "test",
                           "query": "test",
                         },
                       }
@@ -1612,9 +1692,12 @@ exports[`CodeMonitoringListPage Code monitoring page with less than 10 results 1
                     "nodes": Array [
                       Object {
                         "actions": Object {
+                          "enabled": true,
+                          "id": "test",
                           "nodes": Array [
                             Object {
                               "enabled": true,
+                              "id": "test",
                               "recipients": Object {
                                 "nodes": Array [
                                   Object {
@@ -1629,14 +1712,18 @@ exports[`CodeMonitoringListPage Code monitoring page with less than 10 results 1
                         "enabled": true,
                         "id": "foo0",
                         "trigger": Object {
+                          "id": "test",
                           "query": "test",
                         },
                       },
                       Object {
                         "actions": Object {
+                          "enabled": true,
+                          "id": "test",
                           "nodes": Array [
                             Object {
                               "enabled": true,
+                              "id": "test",
                               "recipients": Object {
                                 "nodes": Array [
                                   Object {
@@ -1651,14 +1738,18 @@ exports[`CodeMonitoringListPage Code monitoring page with less than 10 results 1
                         "enabled": true,
                         "id": "foo1",
                         "trigger": Object {
+                          "id": "test",
                           "query": "test",
                         },
                       },
                       Object {
                         "actions": Object {
+                          "enabled": true,
+                          "id": "test",
                           "nodes": Array [
                             Object {
                               "enabled": true,
+                              "id": "test",
                               "recipients": Object {
                                 "nodes": Array [
                                   Object {
@@ -1673,6 +1764,7 @@ exports[`CodeMonitoringListPage Code monitoring page with less than 10 results 1
                         "enabled": true,
                         "id": "foo2",
                         "trigger": Object {
+                          "id": "test",
                           "query": "test",
                         },
                       },
@@ -1709,9 +1801,12 @@ exports[`CodeMonitoringListPage Code monitoring page with less than 10 results 1
                     node={
                       Object {
                         "actions": Object {
+                          "enabled": true,
+                          "id": "test",
                           "nodes": Array [
                             Object {
                               "enabled": true,
+                              "id": "test",
                               "recipients": Object {
                                 "nodes": Array [
                                   Object {
@@ -1726,6 +1821,7 @@ exports[`CodeMonitoringListPage Code monitoring page with less than 10 results 1
                         "enabled": true,
                         "id": "foo0",
                         "trigger": Object {
+                          "id": "test",
                           "query": "test",
                         },
                       }
@@ -1806,9 +1902,12 @@ exports[`CodeMonitoringListPage Code monitoring page with less than 10 results 1
                     node={
                       Object {
                         "actions": Object {
+                          "enabled": true,
+                          "id": "test",
                           "nodes": Array [
                             Object {
                               "enabled": true,
+                              "id": "test",
                               "recipients": Object {
                                 "nodes": Array [
                                   Object {
@@ -1823,6 +1922,7 @@ exports[`CodeMonitoringListPage Code monitoring page with less than 10 results 1
                         "enabled": true,
                         "id": "foo1",
                         "trigger": Object {
+                          "id": "test",
                           "query": "test",
                         },
                       }
@@ -1903,9 +2003,12 @@ exports[`CodeMonitoringListPage Code monitoring page with less than 10 results 1
                     node={
                       Object {
                         "actions": Object {
+                          "enabled": true,
+                          "id": "test",
                           "nodes": Array [
                             Object {
                               "enabled": true,
+                              "id": "test",
                               "recipients": Object {
                                 "nodes": Array [
                                   Object {
@@ -1920,6 +2023,7 @@ exports[`CodeMonitoringListPage Code monitoring page with less than 10 results 1
                         "enabled": true,
                         "id": "foo2",
                         "trigger": Object {
+                          "id": "test",
                           "query": "test",
                         },
                       }
@@ -2203,9 +2307,12 @@ exports[`CodeMonitoringListPage Code monitoring page with more than 10 results 1
                     "nodes": Array [
                       Object {
                         "actions": Object {
+                          "enabled": true,
+                          "id": "test",
                           "nodes": Array [
                             Object {
                               "enabled": true,
+                              "id": "test",
                               "recipients": Object {
                                 "nodes": Array [
                                   Object {
@@ -2220,14 +2327,18 @@ exports[`CodeMonitoringListPage Code monitoring page with more than 10 results 1
                         "enabled": true,
                         "id": "foo0",
                         "trigger": Object {
+                          "id": "test",
                           "query": "test",
                         },
                       },
                       Object {
                         "actions": Object {
+                          "enabled": true,
+                          "id": "test",
                           "nodes": Array [
                             Object {
                               "enabled": true,
+                              "id": "test",
                               "recipients": Object {
                                 "nodes": Array [
                                   Object {
@@ -2242,14 +2353,18 @@ exports[`CodeMonitoringListPage Code monitoring page with more than 10 results 1
                         "enabled": true,
                         "id": "foo1",
                         "trigger": Object {
+                          "id": "test",
                           "query": "test",
                         },
                       },
                       Object {
                         "actions": Object {
+                          "enabled": true,
+                          "id": "test",
                           "nodes": Array [
                             Object {
                               "enabled": true,
+                              "id": "test",
                               "recipients": Object {
                                 "nodes": Array [
                                   Object {
@@ -2264,14 +2379,18 @@ exports[`CodeMonitoringListPage Code monitoring page with more than 10 results 1
                         "enabled": true,
                         "id": "foo2",
                         "trigger": Object {
+                          "id": "test",
                           "query": "test",
                         },
                       },
                       Object {
                         "actions": Object {
+                          "enabled": true,
+                          "id": "test",
                           "nodes": Array [
                             Object {
                               "enabled": true,
+                              "id": "test",
                               "recipients": Object {
                                 "nodes": Array [
                                   Object {
@@ -2286,14 +2405,18 @@ exports[`CodeMonitoringListPage Code monitoring page with more than 10 results 1
                         "enabled": true,
                         "id": "foo3",
                         "trigger": Object {
+                          "id": "test",
                           "query": "test",
                         },
                       },
                       Object {
                         "actions": Object {
+                          "enabled": true,
+                          "id": "test",
                           "nodes": Array [
                             Object {
                               "enabled": true,
+                              "id": "test",
                               "recipients": Object {
                                 "nodes": Array [
                                   Object {
@@ -2308,14 +2431,18 @@ exports[`CodeMonitoringListPage Code monitoring page with more than 10 results 1
                         "enabled": true,
                         "id": "foo4",
                         "trigger": Object {
+                          "id": "test",
                           "query": "test",
                         },
                       },
                       Object {
                         "actions": Object {
+                          "enabled": true,
+                          "id": "test",
                           "nodes": Array [
                             Object {
                               "enabled": true,
+                              "id": "test",
                               "recipients": Object {
                                 "nodes": Array [
                                   Object {
@@ -2330,14 +2457,18 @@ exports[`CodeMonitoringListPage Code monitoring page with more than 10 results 1
                         "enabled": true,
                         "id": "foo5",
                         "trigger": Object {
+                          "id": "test",
                           "query": "test",
                         },
                       },
                       Object {
                         "actions": Object {
+                          "enabled": true,
+                          "id": "test",
                           "nodes": Array [
                             Object {
                               "enabled": true,
+                              "id": "test",
                               "recipients": Object {
                                 "nodes": Array [
                                   Object {
@@ -2352,14 +2483,18 @@ exports[`CodeMonitoringListPage Code monitoring page with more than 10 results 1
                         "enabled": true,
                         "id": "foo6",
                         "trigger": Object {
+                          "id": "test",
                           "query": "test",
                         },
                       },
                       Object {
                         "actions": Object {
+                          "enabled": true,
+                          "id": "test",
                           "nodes": Array [
                             Object {
                               "enabled": true,
+                              "id": "test",
                               "recipients": Object {
                                 "nodes": Array [
                                   Object {
@@ -2374,14 +2509,18 @@ exports[`CodeMonitoringListPage Code monitoring page with more than 10 results 1
                         "enabled": true,
                         "id": "foo7",
                         "trigger": Object {
+                          "id": "test",
                           "query": "test",
                         },
                       },
                       Object {
                         "actions": Object {
+                          "enabled": true,
+                          "id": "test",
                           "nodes": Array [
                             Object {
                               "enabled": true,
+                              "id": "test",
                               "recipients": Object {
                                 "nodes": Array [
                                   Object {
@@ -2396,14 +2535,18 @@ exports[`CodeMonitoringListPage Code monitoring page with more than 10 results 1
                         "enabled": true,
                         "id": "foo9",
                         "trigger": Object {
+                          "id": "test",
                           "query": "test",
                         },
                       },
                       Object {
                         "actions": Object {
+                          "enabled": true,
+                          "id": "test",
                           "nodes": Array [
                             Object {
                               "enabled": true,
+                              "id": "test",
                               "recipients": Object {
                                 "nodes": Array [
                                   Object {
@@ -2418,14 +2561,18 @@ exports[`CodeMonitoringListPage Code monitoring page with more than 10 results 1
                         "enabled": true,
                         "id": "foo10",
                         "trigger": Object {
+                          "id": "test",
                           "query": "test",
                         },
                       },
                       Object {
                         "actions": Object {
+                          "enabled": true,
+                          "id": "test",
                           "nodes": Array [
                             Object {
                               "enabled": true,
+                              "id": "test",
                               "recipients": Object {
                                 "nodes": Array [
                                   Object {
@@ -2440,14 +2587,18 @@ exports[`CodeMonitoringListPage Code monitoring page with more than 10 results 1
                         "enabled": true,
                         "id": "foo11",
                         "trigger": Object {
+                          "id": "test",
                           "query": "test",
                         },
                       },
                       Object {
                         "actions": Object {
+                          "enabled": true,
+                          "id": "test",
                           "nodes": Array [
                             Object {
                               "enabled": true,
+                              "id": "test",
                               "recipients": Object {
                                 "nodes": Array [
                                   Object {
@@ -2462,6 +2613,7 @@ exports[`CodeMonitoringListPage Code monitoring page with more than 10 results 1
                         "enabled": true,
                         "id": "foo12",
                         "trigger": Object {
+                          "id": "test",
                           "query": "test",
                         },
                       },
@@ -2498,9 +2650,12 @@ exports[`CodeMonitoringListPage Code monitoring page with more than 10 results 1
                     node={
                       Object {
                         "actions": Object {
+                          "enabled": true,
+                          "id": "test",
                           "nodes": Array [
                             Object {
                               "enabled": true,
+                              "id": "test",
                               "recipients": Object {
                                 "nodes": Array [
                                   Object {
@@ -2515,6 +2670,7 @@ exports[`CodeMonitoringListPage Code monitoring page with more than 10 results 1
                         "enabled": true,
                         "id": "foo0",
                         "trigger": Object {
+                          "id": "test",
                           "query": "test",
                         },
                       }
@@ -2595,9 +2751,12 @@ exports[`CodeMonitoringListPage Code monitoring page with more than 10 results 1
                     node={
                       Object {
                         "actions": Object {
+                          "enabled": true,
+                          "id": "test",
                           "nodes": Array [
                             Object {
                               "enabled": true,
+                              "id": "test",
                               "recipients": Object {
                                 "nodes": Array [
                                   Object {
@@ -2612,6 +2771,7 @@ exports[`CodeMonitoringListPage Code monitoring page with more than 10 results 1
                         "enabled": true,
                         "id": "foo1",
                         "trigger": Object {
+                          "id": "test",
                           "query": "test",
                         },
                       }
@@ -2692,9 +2852,12 @@ exports[`CodeMonitoringListPage Code monitoring page with more than 10 results 1
                     node={
                       Object {
                         "actions": Object {
+                          "enabled": true,
+                          "id": "test",
                           "nodes": Array [
                             Object {
                               "enabled": true,
+                              "id": "test",
                               "recipients": Object {
                                 "nodes": Array [
                                   Object {
@@ -2709,6 +2872,7 @@ exports[`CodeMonitoringListPage Code monitoring page with more than 10 results 1
                         "enabled": true,
                         "id": "foo2",
                         "trigger": Object {
+                          "id": "test",
                           "query": "test",
                         },
                       }
@@ -2789,9 +2953,12 @@ exports[`CodeMonitoringListPage Code monitoring page with more than 10 results 1
                     node={
                       Object {
                         "actions": Object {
+                          "enabled": true,
+                          "id": "test",
                           "nodes": Array [
                             Object {
                               "enabled": true,
+                              "id": "test",
                               "recipients": Object {
                                 "nodes": Array [
                                   Object {
@@ -2806,6 +2973,7 @@ exports[`CodeMonitoringListPage Code monitoring page with more than 10 results 1
                         "enabled": true,
                         "id": "foo3",
                         "trigger": Object {
+                          "id": "test",
                           "query": "test",
                         },
                       }
@@ -2886,9 +3054,12 @@ exports[`CodeMonitoringListPage Code monitoring page with more than 10 results 1
                     node={
                       Object {
                         "actions": Object {
+                          "enabled": true,
+                          "id": "test",
                           "nodes": Array [
                             Object {
                               "enabled": true,
+                              "id": "test",
                               "recipients": Object {
                                 "nodes": Array [
                                   Object {
@@ -2903,6 +3074,7 @@ exports[`CodeMonitoringListPage Code monitoring page with more than 10 results 1
                         "enabled": true,
                         "id": "foo4",
                         "trigger": Object {
+                          "id": "test",
                           "query": "test",
                         },
                       }
@@ -2983,9 +3155,12 @@ exports[`CodeMonitoringListPage Code monitoring page with more than 10 results 1
                     node={
                       Object {
                         "actions": Object {
+                          "enabled": true,
+                          "id": "test",
                           "nodes": Array [
                             Object {
                               "enabled": true,
+                              "id": "test",
                               "recipients": Object {
                                 "nodes": Array [
                                   Object {
@@ -3000,6 +3175,7 @@ exports[`CodeMonitoringListPage Code monitoring page with more than 10 results 1
                         "enabled": true,
                         "id": "foo5",
                         "trigger": Object {
+                          "id": "test",
                           "query": "test",
                         },
                       }
@@ -3080,9 +3256,12 @@ exports[`CodeMonitoringListPage Code monitoring page with more than 10 results 1
                     node={
                       Object {
                         "actions": Object {
+                          "enabled": true,
+                          "id": "test",
                           "nodes": Array [
                             Object {
                               "enabled": true,
+                              "id": "test",
                               "recipients": Object {
                                 "nodes": Array [
                                   Object {
@@ -3097,6 +3276,7 @@ exports[`CodeMonitoringListPage Code monitoring page with more than 10 results 1
                         "enabled": true,
                         "id": "foo6",
                         "trigger": Object {
+                          "id": "test",
                           "query": "test",
                         },
                       }
@@ -3177,9 +3357,12 @@ exports[`CodeMonitoringListPage Code monitoring page with more than 10 results 1
                     node={
                       Object {
                         "actions": Object {
+                          "enabled": true,
+                          "id": "test",
                           "nodes": Array [
                             Object {
                               "enabled": true,
+                              "id": "test",
                               "recipients": Object {
                                 "nodes": Array [
                                   Object {
@@ -3194,6 +3377,7 @@ exports[`CodeMonitoringListPage Code monitoring page with more than 10 results 1
                         "enabled": true,
                         "id": "foo7",
                         "trigger": Object {
+                          "id": "test",
                           "query": "test",
                         },
                       }
@@ -3274,9 +3458,12 @@ exports[`CodeMonitoringListPage Code monitoring page with more than 10 results 1
                     node={
                       Object {
                         "actions": Object {
+                          "enabled": true,
+                          "id": "test",
                           "nodes": Array [
                             Object {
                               "enabled": true,
+                              "id": "test",
                               "recipients": Object {
                                 "nodes": Array [
                                   Object {
@@ -3291,6 +3478,7 @@ exports[`CodeMonitoringListPage Code monitoring page with more than 10 results 1
                         "enabled": true,
                         "id": "foo9",
                         "trigger": Object {
+                          "id": "test",
                           "query": "test",
                         },
                       }
@@ -3371,9 +3559,12 @@ exports[`CodeMonitoringListPage Code monitoring page with more than 10 results 1
                     node={
                       Object {
                         "actions": Object {
+                          "enabled": true,
+                          "id": "test",
                           "nodes": Array [
                             Object {
                               "enabled": true,
+                              "id": "test",
                               "recipients": Object {
                                 "nodes": Array [
                                   Object {
@@ -3388,6 +3579,7 @@ exports[`CodeMonitoringListPage Code monitoring page with more than 10 results 1
                         "enabled": true,
                         "id": "foo10",
                         "trigger": Object {
+                          "id": "test",
                           "query": "test",
                         },
                       }
@@ -3468,9 +3660,12 @@ exports[`CodeMonitoringListPage Code monitoring page with more than 10 results 1
                     node={
                       Object {
                         "actions": Object {
+                          "enabled": true,
+                          "id": "test",
                           "nodes": Array [
                             Object {
                               "enabled": true,
+                              "id": "test",
                               "recipients": Object {
                                 "nodes": Array [
                                   Object {
@@ -3485,6 +3680,7 @@ exports[`CodeMonitoringListPage Code monitoring page with more than 10 results 1
                         "enabled": true,
                         "id": "foo11",
                         "trigger": Object {
+                          "id": "test",
                           "query": "test",
                         },
                       }
@@ -3565,9 +3761,12 @@ exports[`CodeMonitoringListPage Code monitoring page with more than 10 results 1
                     node={
                       Object {
                         "actions": Object {
+                          "enabled": true,
+                          "id": "test",
                           "nodes": Array [
                             Object {
                               "enabled": true,
+                              "id": "test",
                               "recipients": Object {
                                 "nodes": Array [
                                   Object {
@@ -3582,6 +3781,7 @@ exports[`CodeMonitoringListPage Code monitoring page with more than 10 results 1
                         "enabled": true,
                         "id": "foo12",
                         "trigger": Object {
+                          "id": "test",
                           "query": "test",
                         },
                       }

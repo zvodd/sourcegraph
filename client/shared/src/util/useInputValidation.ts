@@ -72,6 +72,7 @@ export function useInputValidation(
 
     const validationPipeline = useMemo(() => createValidationPipeline(options, inputReference, setInputState), [
         options,
+        inputReference,
     ])
 
     const [nextInputChangeEvent] = useEventObservable(validationPipeline)
@@ -83,9 +84,12 @@ export function useInputValidation(
             inputReference.current?.setCustomValidity('')
 
             // clear React state
-            setInputState({
-                kind: overrideOptions?.validate ? 'LOADING' : 'NOT_VALIDATED',
-                value: overrideOptions?.value ?? '',
+            setInputState(() => {
+                console.log('clearinput state')
+                return {
+                    kind: overrideOptions?.validate ? 'LOADING' : 'NOT_VALIDATED',
+                    value: overrideOptions?.value ?? '',
+                }
             })
 
             if (overrideOptions?.validate) {
@@ -97,7 +101,7 @@ export function useInputValidation(
         },
         [nextInputChangeEvent]
     )
-
+    console.log('returned inputState.kind, inputState.value', inputState.kind, inputState.value)
     return [inputState, nextInputChangeEvent, inputReference, overrideState]
 }
 
@@ -107,6 +111,7 @@ export function useInputValidation(
  * @param inputState
  */
 export function deriveInputClassName(inputState: InputValidationState): string {
+    console.log('deriveInputClassName', inputState.kind, inputState.value)
     if (inputState.kind === 'LOADING' || inputState.kind === 'NOT_VALIDATED') {
         return ''
     }
@@ -148,7 +153,6 @@ export function createValidationPipeline(
             // This is to allow immediate validation on type but at the same time not flag invalid input as it's being typed.
             debounceTime(VALIDATION_DEBOUNCE_TIME),
             switchMap(value => {
-                // check validity (synchronous)
                 const valid = inputReference.current?.checkValidity()
                 if (!valid) {
                     onValidationUpdate({

@@ -36,6 +36,7 @@ export const FormTriggerArea: React.FunctionComponent<TriggerAreaProps> = ({
                 initialValue: query,
                 synchronousValidators: [
                     (value: string) => {
+                        console.log('%%%VAL', value)
                         const tokens = scanSearchQuery(value)
                         if (tokens.type === 'success') {
                             const filters = tokens.term.filter(token => token.type === 'filter')
@@ -116,6 +117,18 @@ export const FormTriggerArea: React.FunctionComponent<TriggerAreaProps> = ({
                     <span className="text-muted">
                         This trigger will fire when new search results are found for a given search query.
                     </span>
+                    <input
+                        type="text"
+                        className={classnames(
+                            'd-none create-monitor-page__query-input-field form-control my-2 test-trigger-input',
+                            deriveInputClassName(queryState)
+                        )}
+                        onChange={nextQueryFieldChange}
+                        value={queryState.value}
+                        required={true}
+                        autoFocus={true}
+                        ref={queryInputReference}
+                    />
                 </button>
             )}
             {showQueryForm && (
@@ -192,6 +205,18 @@ export const FormTriggerArea: React.FunctionComponent<TriggerAreaProps> = ({
                             </button>
                         </div>
                     </div>
+                    <input
+                        type="text"
+                        className={classnames(
+                            'd-none create-monitor-page__query-input-field form-control my-2 test-trigger-input',
+                            deriveInputClassName(queryState)
+                        )}
+                        onChange={nextQueryFieldChange}
+                        value={queryState.value}
+                        required={true}
+                        autoFocus={true}
+                        ref={queryInputReference}
+                    />
                 </div>
             )}
             <small className="text-muted">

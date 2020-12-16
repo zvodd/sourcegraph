@@ -1,7 +1,7 @@
 .trigger-area {
     &__query-input {
         display: flex;
-        align-items: center;
+        align-items: flex-start;
 
         &-preview-link {
             white-space: nowrap;

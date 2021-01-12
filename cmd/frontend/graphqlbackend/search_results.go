@@ -1614,6 +1614,7 @@ func (a *aggregator) doSymbolSearch(ctx context.Context, args *search.TextParame
 		a.commonMu.Unlock()
 	}
 }
+
 func (a *aggregator) doFilePathSearch(ctx context.Context, args *search.TextParameters) {
 	tr, ctx := trace.New(ctx, "doFilePathSearch", "")
 	defer func() {
@@ -1638,6 +1639,42 @@ func (a *aggregator) doFilePathSearch(ctx context.Context, args *search.TextPara
 				fileCommon.limitHit = false // Ensure we don't display "Show more".
 			}
 		}
+	}
+	for _, r := range fileResults {
+		key := r.uri
+		a.fileMatchesMu.Lock()
+		m, ok := a.fileMatches[key]
+		if ok {
+			// TODO(keegan) This looks broken? It isn't merging.
+			// merge line match results with an existing symbol result
+			m.JLimitHit = m.JLimitHit || r.JLimitHit
+			m.JLineMatches = r.JLineMatches
+		} else {
+			a.fileMatches[key] = r
+			a.resultsMu.Lock()
+			a.results = append(a.results, r)
+			a.resultsMu.Unlock()
+		}
+		a.fileMatchesMu.Unlock()
+	}
+	if fileCommon != nil {
+		a.commonMu.Lock()
+		a.common.update(*fileCommon)
+		a.commonMu.Unlock()
+	}
+}
+
+func (a *aggregator) doStructuralSearch(ctx context.Context, args *search.TextParameters) {
+	tr, ctx := trace.New(ctx, "doStructuralSearch", "")
+	defer func() {
+		tr.Finish()
+	}()
+	fileResults, fileCommon, err := searchFilesInReposStructural(ctx, args)
+	// Timeouts are reported through searchResultsCommon so don't report an error for them
+	if err != nil && !isContextError(ctx, err) {
+		a.multiErrMu.Lock()
+		a.multiErr = multierror.Append(a.multiErr, errors.Wrap(err, "structural search failed"))
+		a.multiErrMu.Unlock()
 	}
 	for _, r := range fileResults {
 		key := r.uri
@@ -1792,7 +1829,7 @@ func (r *searchResolver) doResults(ctx context.Context, forceOnlyResultType stri
 	options := &getPatternInfoOptions{}
 	if r.patternType == query.SearchTypeStructural {
 		options = &getPatternInfoOptions{performStructuralSearch: true}
-		forceOnlyResultType = "file"
+		forceOnlyResultType = "structural"
 	}
 	if r.patternType == query.SearchTypeLiteral {
 		options = &getPatternInfoOptions{performLiteralSearch: true}
@@ -1938,6 +1975,13 @@ func (r *searchResolver) doResults(ctx context.Context, forceOnlyResultType stri
 			goroutine.Go(func() {
 				defer wg.Done()
 				agg.doFilePathSearch(ctx, &args)
+			})
+		case "structural":
+			wg := waitGroup(true)
+			wg.Add(1)
+			goroutine.Go(func() {
+				defer wg.Done()
+				agg.doStructuralSearch(ctx, &args)
 			})
 		case "diff":
 			wg := waitGroup(len(resultTypes) == 1)

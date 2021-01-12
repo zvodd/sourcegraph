@@ -309,33 +309,20 @@ func searchFilesInRepos(ctx context.Context, args *search.TextParameters) (res [
 
 	common = &searchResultsCommon{partial: make(map[api.RepoName]struct{})}
 
-	indexedTyp := textRequest
-	if args.PatternInfo.IsStructuralPat {
-		// Structural Patterns queries zoekt just file files to reduce the set
-		// of files it searches.
-		indexedTyp = fileRequest
-	}
-
 	// performance: for global searches, we avoid calling newIndexedSearchRequest
 	// because zoekt will anyway have to search all its shards.
 	var indexed *indexedSearchRequest
 	if args.Mode == search.ZoektGlobalSearch {
 		indexed = &indexedSearchRequest{
 			args:  args,
-			typ:   indexedTyp,
+			typ:   textRequest,
 			repos: &indexedRepoRevs{},
 		}
 	} else {
-		indexed, err = newIndexedSearchRequest(ctx, args, indexedTyp)
+		indexed, err = newIndexedSearchRequest(ctx, args, textRequest)
 		if err != nil {
 			return nil, nil, err
 		}
-	}
-
-	// if there are no indexed repos and this is a structural search
-	// query, there will be no results. Raise a friendly alert.
-	if args.PatternInfo.IsStructuralPat && len(indexed.Repos()) == 0 {
-		return nil, nil, errors.New("no indexed repositories for structural search")
 	}
 
 	if args.PatternInfo.IsEmpty() {
@@ -395,14 +382,8 @@ func searchFilesInRepos(ctx context.Context, args *search.TextParameters) (res [
 		}
 	}
 
-	// callSearcherOverRepos calls searcher on a set of repos.
-	// searcherReposFilteredFiles is an optional map of {repo name => file list}
-	// that forces the searcher to only include the file list in the
-	// search. It is currently only set when Zoekt restricts the file list for structural search.
-	callSearcherOverRepos := func(
-		searcherRepos []*search.RepositoryRevisions,
-		searcherReposFilteredFiles map[string][]string,
-	) error {
+	// This function calls searcher on a set of repos.
+	callSearcherOverRepos := func(searcherRepos []*search.RepositoryRevisions) error {
 		var fetchTimeout time.Duration
 		if len(searcherRepos) == 1 || args.UseFullDeadline {
 			// When searching a single repo or when an explicit timeout was specified, give it the remaining deadline to fetch the archive.
@@ -451,17 +432,6 @@ func searchFilesInRepos(ctx context.Context, args *search.TextParameters) (res [
 
 				// Make a new repoRev for just the operation of searching this revspec.
 				repoRev := &search.RepositoryRevisions{Repo: repoAllRevs.Repo, Revs: []search.RevisionSpecifier{{RevSpec: rev}}}
-
-				args := *args
-				if args.PatternInfo.IsStructuralPat && searcherReposFilteredFiles != nil {
-					// Modify the search query to only run for the filtered files
-					if v, ok := searcherReposFilteredFiles[string(repoRev.Repo.Name)]; ok {
-						patternCopy := *args.PatternInfo
-						args.PatternInfo = &patternCopy
-						includePatternsCopy := []string{}
-						args.PatternInfo.IncludePatterns = append(includePatternsCopy, v...)
-					}
-				}
 
 				wg.Add(1)
 				go func(ctx context.Context, done context.CancelFunc) {
@@ -541,55 +511,14 @@ func searchFilesInRepos(ctx context.Context, args *search.TextParameters) (res [
 				tr.LazyPrintf("cancel indexed search due to error: %v", err)
 				cancel()
 			}
-
-			if args.PatternInfo.IsStructuralPat {
-				// A partition of {repo name => file list} that we will build from Zoekt matches
-				partition := make(map[string][]string)
-				var repos []*search.RepositoryRevisions
-
-				for _, m := range matches {
-					name := string(m.Repo.Name())
-					partition[name] = append(partition[name], m.JPath)
-				}
-
-				// Filter Zoekt repos that didn't contain matches
-				for _, repo := range indexed.Repos() {
-					for key := range partition {
-						if string(repo.Repo.Name) == key {
-							repos = append(repos, repo)
-						}
-					}
-				}
-
-				// For structural search, we run callSearcherOverRepos
-				// over the set of repos and files known to contain
-				// parts of the pattern as determined by Zoekt.
-				// callSearcherOverRepos must acquire the lock, so we
-				// must release the lock held by Zoekt at this point.
-				// The Zoekt part of the search is done here as far as
-				// structural search is concerned, so the lock can be
-				// freely released.
-				mu.Unlock()
-				err := callSearcherOverRepos(repos, partition)
-				mu.Lock()
-				if err != nil {
-					searchErr = err
-				}
-			} else {
-				addMatches(matches)
-			}
+			addMatches(matches)
 		}()
 	}
 
-	// This guard disables
-	// - unindexed structural search
-	// - unindexed search of negated content
-	if !args.PatternInfo.IsStructuralPat {
-		if err := callSearcherOverRepos(searcherRepos, nil); err != nil {
-			mu.Lock()
-			searchErr = err
-			mu.Unlock()
-		}
+	if err := callSearcherOverRepos(searcherRepos); err != nil {
+		mu.Lock()
+		searchErr = err
+		mu.Unlock()
 	}
 
 	wg.Wait()

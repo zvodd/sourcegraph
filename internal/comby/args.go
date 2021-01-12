@@ -12,7 +12,6 @@ func (args Args) String() string {
 	s := []string{
 		args.MatchTemplate,
 		args.RewriteTemplate,
-		fmt.Sprintf("-f (%d file patterns)", len(args.FilePatterns)),
 		"-json-lines",
 	}
 	if args.MatchOnly {
@@ -31,6 +30,11 @@ func (args Args) String() string {
 		s = append(s, "-matcher", args.Matcher)
 	}
 
+	if len(args.FilePatterns) != 0 {
+		s = append(s, fmt.Sprintf(`-rg "-g '%s'"`, strings.Join(args.FilePatterns, "|")))
+	} else {
+		s = append(s, `-rg "-g '*'"`)
+	}
 	switch i := args.Input.(type) {
 	case ZipPath:
 		s = append(s, "-zip", string(i))

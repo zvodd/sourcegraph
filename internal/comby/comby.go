@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"os"
 	"os/exec"
 	"strconv"
 	"strings"
@@ -32,9 +33,6 @@ func rawArgs(args Args) (rawArgs []string) {
 		rawArgs = append(rawArgs, "-rule", args.Rule)
 	}
 
-	if len(args.FilePatterns) > 0 {
-		rawArgs = append(rawArgs, "-f", strings.Join(args.FilePatterns, ","))
-	}
 	rawArgs = append(rawArgs, "-json-lines")
 
 	if args.MatchOnly {
@@ -53,6 +51,12 @@ func rawArgs(args Args) (rawArgs []string) {
 		rawArgs = append(rawArgs, "-matcher", args.Matcher)
 	}
 
+	if len(args.FilePatterns) == 0 {
+		rawArgs = append(rawArgs, "-rg", `-g '*'`)
+	} else {
+		rawArgs = append(rawArgs, "-rg", fmt.Sprintf(`-g '*%s'`, strings.Join(args.FilePatterns, "|")))
+	}
+
 	switch i := args.Input.(type) {
 	case ZipPath:
 		rawArgs = append(rawArgs, "-zip", string(i))
@@ -62,7 +66,7 @@ func rawArgs(args Args) (rawArgs []string) {
 		log15.Error("unrecognized input type", "type", i)
 		panic("unreachable")
 	}
-
+	rawArgs = append(rawArgs, "-bound-count", "30")
 	return rawArgs
 }
 
@@ -85,12 +89,14 @@ func waitForCompletion(cmd *exec.Cmd, stdout, stderr io.ReadCloser, w io.Writer)
 
 	if err := cmd.Wait(); err != nil {
 		if len(stderrMsg) > 0 {
-			log15.Error("failed to execute comby command", "error", string(stderrMsg))
-			msg := fmt.Sprintf("failed to wait for executing comby command: comby error: %s", stderrMsg)
-			return errors.Wrap(err, msg)
+			log15.Error("failed to execute comby command or EXIT CODE 1 RG", "error", string(stderrMsg))
+			/*
+				msg := fmt.Sprintf("failed to wait for executing comby command: comby error: %s", stderrMsg)
+				return errors.Wrap(err, msg)
+			*/
 		}
 		log15.Error("failed to wait for executing comby command", "error", string(err.(*exec.ExitError).Stderr))
-		return errors.Wrap(err, "failed to wait for executing comby command")
+		return nil
 	}
 	return nil
 }
@@ -115,6 +121,12 @@ func PipeTo(ctx context.Context, args Args, w io.Writer) (err error) {
 	rawArgs := rawArgs(args)
 	log15.Info("running comby", "args", args.String())
 
+	if dirPath, ok := args.Input.(DirPath); ok {
+		err := os.Chdir(string(dirPath))
+		if err != nil {
+			return err
+		}
+	}
 	cmd := exec.Command(combyPath, rawArgs...)
 	// Ensure forked child processes are killed
 	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
@@ -182,6 +194,10 @@ func Matches(ctx context.Context, args Args) (matches []FileMatch, err error) {
 			// warn on decode errors and skip
 			log15.Warn("comby error: skipping unmarshaling error", "err", err.Error())
 			continue
+		}
+
+		if dirPath, ok := args.Input.(DirPath); ok {
+			m.URI = strings.TrimPrefix(m.URI, string(dirPath))
 		}
 		matches = append(matches, *m)
 	}

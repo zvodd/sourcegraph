@@ -87,6 +87,9 @@ FROM
 		churnedUsers     int
 		retainedUsers    int
 	)
+
+	// First additional wild dbconn.Global appears!
+
 	if err := dbconn.Global.QueryRowContext(ctx, q).Scan(
 		&createdUsers,
 		&deletedUsers,
@@ -96,6 +99,8 @@ FROM
 	); err != nil {
 		return nil, err
 	}
+
+	// Second additional wild dbconn.Global appears!
 
 	return &types.GrowthStatistics{
 		DeletedUsers:     int32(deletedUsers),

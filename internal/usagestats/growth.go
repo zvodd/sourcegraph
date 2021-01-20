@@ -109,4 +109,6 @@ FROM
 		ChurnedUsers:     int32(churnedUsers),
 		RetainedUsers:    int32(retainedUsers),
 	}, nil
+
+	// Third additional wild dbconn.Global appears!
 }

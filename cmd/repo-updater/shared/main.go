@@ -180,7 +180,7 @@ func Main(enterpriseInit EnterpriseInit) {
 		}
 
 		if server.GitLabDotComSource == nil {
-			log.Fatalf("No gitlab.com external service configured with a token")
+			log.Printf("No gitlab.com external service configured with a token")
 		}
 	}
 

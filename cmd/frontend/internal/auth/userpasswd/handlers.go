@@ -29,7 +29,7 @@ type credentials struct {
 	Email           string `json:"email"`
 	Username        string `json:"username"`
 	Password        string `json:"password"`
-	AnonymousUserID string `json:"anonymous_user_id"`
+	AnonymousUserID string `json:"anonymousUserId"`
 }
 
 // HandleSignUp handles submission of the user signup form.

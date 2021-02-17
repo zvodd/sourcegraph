@@ -2,10 +2,15 @@ package backend
 
 import (
 	"context"
+	"strings"
+
+	"github.com/google/zoekt/rpc"
 
 	"github.com/google/zoekt"
 	"github.com/google/zoekt/query"
 	zoektstream "github.com/google/zoekt/stream"
+
+	"github.com/sourcegraph/sourcegraph/internal/httpcli"
 )
 
 // ZoektStreamFunc is a convenience function to create a stream receiver from a
@@ -16,15 +21,18 @@ func (f ZoektStreamFunc) Send(event *zoekt.SearchResult) {
 	f(event)
 }
 
+type Streamer interface {
+	// StreamSearch returns a channel which needs to be read until closed.
+	StreamSearch(ctx context.Context, q query.Q, opts *zoekt.SearchOptions, c zoektstream.Streamer) error
+}
+
 // StreamSearcher is an optional interface which sends results over a channel
 // as they are found.
 //
 // This is a Sourcegraph extension.
 type StreamSearcher interface {
 	zoekt.Searcher
-
-	// StreamSearch returns a channel which needs to be read until closed.
-	StreamSearch(ctx context.Context, q query.Q, opts *zoekt.SearchOptions, c zoektstream.Streamer) error
+	Streamer
 }
 
 // StreamSearchEvent has fields optionally set representing events that happen
@@ -54,4 +62,25 @@ func (s *StreamSearchAdapter) StreamSearch(ctx context.Context, q query.Q, opts 
 
 func (s *StreamSearchAdapter) String() string {
 	return "streamSearchAdapter{" + s.Searcher.String() + "}"
+}
+
+func NewZoektStream(address string) StreamSearcher {
+	cli, err := httpcli.NewExternalHTTPClientFactory().Client()
+	if err != nil {
+		panic(err)
+	}
+	// TODO: this should probably go in the client constructor.
+	addressWithScheme := address
+	if !strings.HasPrefix(addressWithScheme, "http://") {
+		addressWithScheme = "http://" + addressWithScheme
+	}
+	return &zoektStream{
+		rpc.Client(address),
+		zoektstream.NewClient(addressWithScheme, cli),
+	}
+}
+
+type zoektStream struct {
+	zoekt.Searcher
+	Streamer
 }

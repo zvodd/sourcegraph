@@ -4,10 +4,9 @@ import (
 	"context"
 	"strings"
 
-	"github.com/google/zoekt/rpc"
-
 	"github.com/google/zoekt"
 	"github.com/google/zoekt/query"
+	"github.com/google/zoekt/rpc"
 	zoektstream "github.com/google/zoekt/stream"
 
 	"github.com/sourcegraph/sourcegraph/internal/httpcli"
@@ -64,19 +63,27 @@ func (s *StreamSearchAdapter) String() string {
 	return "streamSearchAdapter{" + s.Searcher.String() + "}"
 }
 
-func NewZoektStream(address string) StreamSearcher {
-	cli, err := httpcli.NewExternalHTTPClientFactory().Client()
+// NewZoektStream returns a StreamSearcher. For cf == nil, we call
+// httpcli.NewExternalHTTPClientFactory to create a http.Client.
+func NewZoektStream(address string, cf *httpcli.Factory) StreamSearcher {
+	if cf == nil {
+		cf = httpcli.NewExternalHTTPClientFactory()
+	}
+	c, err := cf.Client()
 	if err != nil {
+		// We cannot recover if we cannot get a client.
 		panic(err)
 	}
-	// TODO: this should probably go in the client constructor.
+
+	// TODO (stefan): this should go in the client constructor.
 	addressWithScheme := address
-	if !strings.HasPrefix(addressWithScheme, "http://") {
+	if !strings.HasPrefix(addressWithScheme, "http") {
 		addressWithScheme = "http://" + addressWithScheme
 	}
+
 	return &zoektStream{
 		rpc.Client(address),
-		zoektstream.NewClient(addressWithScheme, cli),
+		zoektstream.NewClient(addressWithScheme, c),
 	}
 }
 

@@ -59,7 +59,7 @@ func limitOrDefault(first *int32) int {
 // repository at a specific commit. If it has it returns the branch name (for
 // use when querying zoekt). Otherwise an empty string is returned.
 func indexedSymbolsBranch(ctx context.Context, repository, commit string) string {
-	z := search.Indexed()
+	z := search.Indexed(cf)
 	if !z.Enabled() {
 		return ""
 	}
@@ -125,7 +125,7 @@ func searchZoektSymbols(ctx context.Context, db dbutil.DB, commit *GitCommitReso
 
 	final := zoektquery.Simplify(zoektquery.NewAnd(ands...))
 	match := limitOrDefault(first) + 1
-	resp, err := search.Indexed().Client.Search(ctx, final, &zoekt.SearchOptions{
+	resp, err := search.Indexed(cf).Client.Search(ctx, final, &zoekt.SearchOptions{
 		Trace:                  ot.ShouldTrace(ctx),
 		MaxWallTime:            3 * time.Second,
 		ShardMaxMatchCount:     match * 25,

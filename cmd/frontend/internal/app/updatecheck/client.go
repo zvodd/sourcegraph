@@ -160,7 +160,7 @@ func getAndMarshalHomepagePanelsJSON(ctx context.Context) (_ json.RawMessage, er
 func getAndMarshalRepositoriesJSON(ctx context.Context) (_ json.RawMessage, err error) {
 	defer recordOperation("getAndMarshalRepositoriesJSON")(&err)
 
-	repos, err := usagestats.GetRepositories(ctx, nil)
+	repos, err := usagestats.GetRepositories(ctx)
 	if err != nil {
 		return nil, err
 	}

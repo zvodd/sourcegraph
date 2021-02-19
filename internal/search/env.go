@@ -13,7 +13,6 @@ import (
 	"github.com/sourcegraph/sourcegraph/internal/conf"
 	"github.com/sourcegraph/sourcegraph/internal/endpoint"
 	"github.com/sourcegraph/sourcegraph/internal/env"
-	"github.com/sourcegraph/sourcegraph/internal/httpcli"
 	"github.com/sourcegraph/sourcegraph/internal/search/backend"
 )
 
@@ -41,10 +40,10 @@ func SearcherURLs() *endpoint.Map {
 	return searcherURLs
 }
 
-func Indexed(cf *httpcli.Factory) *backend.Zoekt {
+func Indexed() *backend.Zoekt {
 	indexedSearchOnce.Do(func() {
 		dial := func(endpoint string) backend.StreamSearcher {
-			return backend.NewMeteredSearcher(endpoint, backend.NewZoektStream(endpoint, cf))
+			return backend.NewMeteredSearcher(endpoint, backend.NewZoektStream(endpoint))
 		}
 
 		var client backend.StreamSearcher

@@ -26,7 +26,7 @@ func (r *schemaResolver) RepositoryStats(ctx context.Context) (*repositoryStatsR
 		return nil, err
 	}
 
-	stats, err := usagestats.GetRepositories(ctx, cf)
+	stats, err := usagestats.GetRepositories(ctx)
 	if err != nil {
 		return nil, err
 	}

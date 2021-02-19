@@ -112,7 +112,7 @@ func (r *repositoryConnectionResolver) compute(ctx context.Context) ([]*types.Re
 		}
 
 		var indexed map[string]*zoekt.Repository
-		searchIndexEnabled := search.Indexed(cf).Enabled()
+		searchIndexEnabled := search.Indexed().Enabled()
 		isIndexed := func(repo api.RepoName) bool {
 			if !searchIndexEnabled {
 				return true // do not need index
@@ -124,7 +124,7 @@ func (r *repositoryConnectionResolver) compute(ctx context.Context) ([]*types.Re
 			listCtx, cancel := context.WithTimeout(ctx, 2*time.Second)
 			defer cancel()
 			var err error
-			indexed, err = search.Indexed(cf).ListAll(listCtx)
+			indexed, err = search.Indexed().ListAll(listCtx)
 			if err != nil {
 				r.err = err
 				return

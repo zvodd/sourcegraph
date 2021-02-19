@@ -147,7 +147,7 @@ func NewSearchImplementer(ctx context.Context, db dbutil.DB, args *SearchArgs) (
 
 		stream: args.Stream,
 
-		zoekt:        search.Indexed(cf),
+		zoekt:        search.Indexed(),
 		searcherURLs: search.SearcherURLs(),
 		reposMu:      &sync.Mutex{},
 		resolved:     &searchrepos.Resolved{},

@@ -2,16 +2,22 @@ package backend
 
 import (
 	"context"
+	"net/http"
 	"strings"
-
-	"github.com/google/zoekt/rpc"
 
 	"github.com/google/zoekt"
 	"github.com/google/zoekt/query"
+	"github.com/google/zoekt/rpc"
 	zoektstream "github.com/google/zoekt/stream"
 
-	"github.com/sourcegraph/sourcegraph/internal/httpcli"
+	"github.com/sourcegraph/sourcegraph/internal/trace/ot"
 )
+
+var zoektHTTPClient = &http.Client{
+	Transport: &ot.Transport{
+		RoundTripper: http.DefaultTransport,
+	},
+}
 
 // ZoektStreamFunc is a convenience function to create a stream receiver from a
 // function.
@@ -64,18 +70,13 @@ func (s *StreamSearchAdapter) String() string {
 }
 
 func NewZoektStream(address string) StreamSearcher {
-	cli, err := httpcli.NewExternalHTTPClientFactory().Client()
-	if err != nil {
-		panic(err)
-	}
-	// TODO: this should probably go in the client constructor.
 	addressWithScheme := address
 	if !strings.HasPrefix(addressWithScheme, "http://") {
 		addressWithScheme = "http://" + addressWithScheme
 	}
 	return &zoektStream{
 		rpc.Client(address),
-		zoektstream.NewClient(addressWithScheme, cli),
+		zoektstream.NewClient(addressWithScheme, zoektHTTPClient),
 	}
 }
 

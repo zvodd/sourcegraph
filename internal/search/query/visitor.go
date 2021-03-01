@@ -118,3 +118,35 @@ func VisitField(nodes []Node, field string, callback func(value string, negated 
 	visitor := &FieldVisitor{callback: callback, field: field}
 	visitor.VisitNodes(visitor, nodes)
 }
+
+// TODO: implement proper finder.
+func FindFields(nodes []Node, field string) ([]string, []string) {
+	var includeValues []string
+	var excludeValues []string
+	VisitField(nodes, field, func(value string, negated bool, _ Annotation) {
+		if negated {
+			excludeValues = append(excludeValues, value)
+			return
+		}
+		includeValues = append(includeValues, value)
+	})
+	return includeValues, excludeValues
+}
+
+func FindField(nodes []Node, field string) (string, bool) {
+	var foundValue string
+	var foundNegated bool
+	VisitField(nodes, field, func(value string, negated bool, _ Annotation) {
+		foundValue = value
+		foundNegated = negated
+	})
+	return foundValue, foundNegated
+}
+
+func FindPositiveField(nodes []Node, field string) string {
+	var foundValue string
+	VisitField(nodes, field, func(value string, _ bool, _ Annotation) {
+		foundValue = value
+	})
+	return foundValue
+}

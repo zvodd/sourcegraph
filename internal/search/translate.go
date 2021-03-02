@@ -83,6 +83,20 @@ func removeNegatedLabel(labels []RepoLabel, wantName RepoLabelName) []RepoLabel 
 	})
 }
 
+/*
+
+compare:
+
+https://sourcegraph.com/github.com/sourcegraph/sourcegraph/-/blob/cmd/frontend/graphqlbackend/search.go#L430
+
+
+https://sourcegraph.com/github.com/sourcegraph/sourcegraph@4454858dce1207a06542e51de875a2c3bdea50fe/-/blob/internal/database/repos.go#L1158-1180
+
+
+https://sourcegraph.com/github.com/sourcegraph/sourcegraph@4454858dce1207a06542e51de875a2c3bdea50fe/-/blob/cmd/frontend/internal/search/repos/repos.go#L118
+
+*/
+
 func toRepoOptions(q query.Q) *RepoOptions {
 	defaults := []RepoLabel{
 		RepoLabel{name: UniversalLabel, negated: false},

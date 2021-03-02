@@ -1,26 +1,21 @@
-package query
+package search
+
+import "github.com/sourcegraph/sourcegraph/internal/search/query"
 
 type RepoVisibility string
 
 const (
-	AnyPrivacy RepoVisibility = "anyPrivacy"
-	Private    RepoVisibility = "private"
-	Public     RepoVisibility = "public"
-)
-
-type RepoState string
-
-const (
-	Indexed    RepoState = "indexed"
-	NotIndexed RepoState = "notIndexed"
+	UniversalVisibility RepoVisibility = "UniversalVisibility"
+	Private             RepoVisibility = "private"
+	Public              RepoVisibility = "public"
 )
 
 type RepoLabelName string
 
 const (
-	AnyLabel RepoLabelName = "anyLabel"
-	Fork     RepoLabelName = "fork"
-	Archive  RepoLabelName = "archive"
+	UniversalLabel RepoLabelName = "UniversalLabel"
+	Fork           RepoLabelName = "fork"
+	Archive        RepoLabelName = "archive"
 )
 
 type RepoLabel struct {
@@ -29,11 +24,11 @@ type RepoLabel struct {
 }
 
 type RepoOptions struct {
-	visibility      []RepoVisibility
-	state           []RepoState
-	label           []RepoLabel
-	includePatterns []string
-	excludePattern  string
+	includeRepos     []string
+	includeRepoGroup string
+	excludeRepos     string
+	visibility       []RepoVisibility
+	labels           []RepoLabel
 }
 
 /* RepoSetID variants */
@@ -61,6 +56,7 @@ func (DotComDefault) RepoSetValue() {}
 func (GlobalSet) RepoSetValue()     {}
 func (LabeledSubset) RepoSetValue() {}
 func (Subset) RepoSetValue()        {}
+func (Single) RepoSetValue()        {}
 
 type DotComDefault struct {
 	RepoOptions
@@ -79,6 +75,10 @@ type Subset struct {
 	RepoOptions
 }
 
+type Single struct {
+	RepoOptions
+}
+
 /* Internal Query */
 type InternalQuery interface {
 	internalQueryValue()
@@ -92,5 +92,5 @@ type RepoQuery struct {
 }
 
 type GenericQuery struct {
-	Q
+	query.Q
 }

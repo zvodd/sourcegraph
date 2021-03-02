@@ -1,4 +1,4 @@
-package query
+package search
 
 import "strings"
 
@@ -9,6 +9,6 @@ func ParseVisibility(s string) RepoVisibility {
 	case "public":
 		return Public
 	default:
-		return AnyPrivacy
+		return UniversalVisibility
 	}
 }

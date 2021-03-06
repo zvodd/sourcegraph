@@ -1,5 +1,5 @@
 import { scanSearchQuery } from './scanner'
-import { PatternKind, Token, KeywordKind } from './token'
+import { PatternKind, Token, KeywordKind, CharacterRange } from './token'
 
 export interface Pattern {
     type: 'pattern'
@@ -7,6 +7,7 @@ export interface Pattern {
     value: string
     quoted: boolean
     negated: boolean
+    range: CharacterRange
 }
 
 export interface Parameter {
@@ -14,6 +15,7 @@ export interface Parameter {
     field: string
     value: string
     negated: boolean
+    range: CharacterRange
 }
 
 export enum OperatorKind {
@@ -28,6 +30,7 @@ export interface Operator {
     type: 'operator'
     operands: Node[]
     kind: OperatorKind
+    range: CharacterRange
 }
 
 export type Node = Operator | Parameter | Pattern
@@ -54,22 +57,34 @@ interface State {
 
 const createNodes = (nodes: Node[]): ParseSuccess => ({ type: 'success', nodes })
 
-const createPattern = (value: string, kind: PatternKind, quoted: boolean, negated: boolean): ParseSuccess =>
-    createNodes([{ type: 'pattern', kind, value, quoted, negated }])
+const createPattern = (
+    value: string,
+    kind: PatternKind,
+    quoted: boolean,
+    negated: boolean,
+    range: CharacterRange
+): ParseSuccess => createNodes([{ type: 'pattern', kind, value, quoted, negated, range }])
 
-const createParameter = (field: string, value: string, negated: boolean): ParseSuccess =>
-    createNodes([{ type: 'parameter', field, value, negated }])
+const createParameter = (field: string, value: string, negated: boolean, range: CharacterRange): ParseSuccess =>
+    createNodes([{ type: 'parameter', field, value, negated, range }])
 
 const createOperator = (nodes: Node[], kind: OperatorKind): ParseSuccess =>
-    createNodes([{ type: 'operator', operands: nodes, kind }])
+    createNodes([
+        {
+            type: 'operator',
+            operands: nodes,
+            kind,
+            range: { start: nodes[0].range.start, end: nodes[nodes.length - 1].range.end }, // Invariant: nodes.length > 0.
+        },
+    ])
 
 const tokenToLeafNode = (token: Token): ParseResult => {
     if (token.type === 'pattern') {
-        return createPattern(token.value, token.kind, false, false)
+        return createPattern(token.value, token.kind, false, false, token.range)
     }
     if (token.type === 'filter') {
         const filterValue = token.value ? token.value.value : ''
-        return createParameter(token.field.value, filterValue, token.negated)
+        return createParameter(token.field.value, filterValue, token.negated, token.range)
     }
     return { type: 'error', expected: 'a convertable token to tree node' }
 }
@@ -174,4 +189,27 @@ export const parseSearchQuery = (input: string): ParseResult => {
         }
     }
     return parseOr(result.term.filter(token => token.type !== 'whitespace')).result
+}
+
+export const toString = (nodes: Node[]): string => {
+    const result: string[] = []
+    for (const node of nodes) {
+        switch (node.type) {
+            case 'pattern':
+                result.push(node.negated ? `(not ${node.value})` : node.value)
+                break
+            case 'parameter':
+                result.push(node.negated ? `-${node.field}:${node.value}` : `${node.field}:${node.value}`)
+                break
+            case 'operator': {
+                const nested: string[] = []
+                for (const operand of node.operands) {
+                    nested.push(toString([operand]))
+                }
+                const operator = node.kind === OperatorKind.Or ? ' or ' : ' and '
+                result.push(`(${nested.join(operator)})`)
+            }
+        }
+    }
+    return result.join(' ')
 }

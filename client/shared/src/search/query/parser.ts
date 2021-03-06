@@ -177,6 +177,9 @@ export const parseOr = (tokens: Token[]): State => {
     }
 }
 
+export const parse = (tokens: Token[]): ParseResult =>
+    parseOr(tokens.filter(token => token.type !== 'whitespace')).result
+
 /**
  * Produces a parse tree from a search query.
  */
@@ -188,7 +191,7 @@ export const parseSearchQuery = (input: string): ParseResult => {
             expected: result.expected,
         }
     }
-    return parseOr(result.term.filter(token => token.type !== 'whitespace')).result
+    return parse(result.term)
 }
 
 export const toString = (nodes: Node[]): string => {

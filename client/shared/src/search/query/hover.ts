@@ -1,5 +1,5 @@
 import * as Monaco from 'monaco-editor'
-import { Token } from './token'
+import { KeywordKind, Token } from './token'
 import {
     decorate,
     toMonacoRange,
@@ -15,6 +15,8 @@ import {
     MetaSelectorKind,
 } from './decoratedToken'
 import { resolveFilter } from './filters'
+import { ParseResult, Node, parse, toString } from './parser'
+import { Visitors, visit } from './visitor'
 
 const toRegexpHover = (token: MetaRegexp): string => {
     switch (token.kind) {
@@ -218,6 +220,38 @@ export const getHoverResult = (
                     // Add 1 to end of range to include the ':'.
                     range = toMonacoRange({ start: token.range.start, end: token.range.end + 1 })
                 }
+                break
+            }
+            case 'keyword': {
+                if (token.kind === KeywordKind.Not) {
+                    break
+                }
+                console.log(`Go parse ${JSON.stringify(tokens)}`)
+                const result: ParseResult = parse(tokens)
+                console.log(`Keyword hover: ${JSON.stringify(result)}`)
+                console.log(`Result type: ${result.type}`)
+                if (result.type === 'error') {
+                    break
+                }
+                const nodes: Node[] = []
+                const visitor: Visitors = {
+                    visitOperator(operands, kind, range) {
+                        console.log(`Got operator range ${range.start} - ${range.end}`)
+                        console.log(`Got keyword  range ${token.range.start} - ${token.range.end}`)
+                        if (token.range.start >= range.start && token.range.end <= range.end) {
+                            // is inside
+                            if (nodes.length === 0) {
+                                // only collect up to one--multiple not handled yet
+                                nodes.push({ type: 'operator', operands, kind, range })
+                            }
+                        }
+                    },
+                }
+                console.log(`Visiting ${JSON.stringify(result.nodes)}`)
+                visit(result.nodes, visitor)
+                console.log(`Collected ${toString(nodes)}`)
+                values.push(toString(nodes))
+                range = toMonacoRange(nodes[0].range) // group range
                 break
             }
             case 'pattern':

@@ -978,6 +978,24 @@ func searchResultsToRepoNodes(srs []SearchResultResolver) ([]query.Node, error) 
 	return nodes, nil
 }
 
+func searchResultsToFileNodes(srs []SearchResultResolver) ([]query.Node, error) {
+	nodes := make([]query.Node, 0, len(srs))
+	for _, rs := range srs {
+		result, ok := rs.(*FileMatchResolver)
+		if !ok {
+			return nil, fmt.Errorf("don't care")
+		}
+
+		log15.Info("tofilenodes", "f", result.Path)
+		nodes = append(nodes, query.Parameter{
+			Field: query.FieldFile, // yuck
+			Value: "^" + regexp.QuoteMeta(result.Path) + "$",
+		})
+	}
+
+	return nodes, nil
+}
+
 // resultsWithTimeoutSuggestion calls doResults, and in case of deadline
 // exceeded returns a search alert with a did-you-mean link for the same
 // query with a longer timeout.
@@ -1047,6 +1065,12 @@ func substitutePredicates(q query.Basic, evaluate func(query.Predicate) (*Search
 		switch predicate.Field() {
 		case query.FieldRepo:
 			nodes, err = searchResultsToRepoNodes(srr.SearchResults)
+			if err != nil {
+				topErr = err
+				return nil
+			}
+		case query.FieldFile:
+			nodes, err = searchResultsToFileNodes(srr.SearchResults)
 			if err != nil {
 				topErr = err
 				return nil

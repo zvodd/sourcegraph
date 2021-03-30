@@ -31,6 +31,11 @@ var DefaultPredicateRegistry = predicateRegistry{
 			return &RepoContainsPredicate{}
 		},
 	},
+	FieldFile: {
+		"fuzzy": func() Predicate {
+			return &Fuzzy{}
+		},
+	},
 }
 
 type predicateRegistry map[string]map[string]func() Predicate

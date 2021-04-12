@@ -40,7 +40,7 @@ interface SearchConsolePageProps
     location: H.Location
 }
 
-const options: Monaco.editor.IEditorOptions = {
+const options: Monaco.editor.IStandaloneEditorConstructionOptions = {
     readOnly: false,
     minimap: {
         enabled: false,

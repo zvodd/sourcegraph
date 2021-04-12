@@ -246,7 +246,9 @@ export async function getCompletionItems(
         // the suggestions widget.
         if (
             token.type === 'pattern' &&
-            staticSuggestions.some(({ label }) => label.startsWith(token.value.toLowerCase()))
+            staticSuggestions.some(
+                ({ label }) => typeof label === 'string' && label.startsWith(token.value.toLowerCase())
+            )
         ) {
             return { suggestions: staticSuggestions }
         }

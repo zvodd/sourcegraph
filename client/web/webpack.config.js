@@ -182,6 +182,12 @@ const config = {
         use: ['style-loader', 'css-loader'],
       },
       {
+        // TTF rule for monaco-editor
+        test: /\.ttf$/,
+        include: monacoEditorPaths,
+        use: ['file-loader'],
+      },
+      {
         test: extensionHostWorker,
         use: [{ loader: 'worker-loader', options: { inline: 'no-fallback' } }, babelLoader],
       },

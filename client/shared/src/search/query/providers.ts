@@ -85,23 +85,19 @@ export function getProviders(
         completion: {
             // An explicit list of trigger characters is needed for the Monaco editor to show completions.
             triggerCharacters: [...printable, ...latin1Alpha],
-            provideCompletionItems: (textModel, position, context, token) =>
-                scannedQueries
-                    .pipe(
-                        first(),
-                        switchMap(scannedQuery =>
-                            scannedQuery.scanned.type === 'error'
-                                ? of(null)
-                                : getCompletionItems(
-                                      scannedQuery.scanned.term,
-                                      position,
-                                      debouncedDynamicSuggestions,
-                                      options.globbing
-                                  )
-                        ),
-                        takeUntil(fromEventPattern(handler => token.onCancellationRequested(handler)))
-                    )
-                    .toPromise(),
+            provideCompletionItems: async (textModel, position, context, token) => {
+                const { scanned } = await scannedQueries.pipe(first()).toPromise()
+                if (scanned.type === 'error') {
+                    return null
+                }
+                return getCompletionItems(
+                    scanned.term,
+                    position,
+                    debouncedDynamicSuggestions,
+                    options.globbing
+                )
+
+            }
         },
         diagnostics: scannedQueries.pipe(
             map(({ scanned }) => (scanned.type === 'success' ? getDiagnostics(scanned.term, options.patternType) : []))

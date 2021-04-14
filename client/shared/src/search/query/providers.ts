@@ -1,5 +1,5 @@
 import * as Monaco from 'monaco-editor'
-import { Observable, fromEventPattern, of, asyncScheduler } from 'rxjs'
+import { Observable, fromEventPattern, of, asyncScheduler, from, asapScheduler } from 'rxjs'
 import { map, first, takeUntil, publishReplay, refCount, switchMap, debounceTime, share, observeOn } from 'rxjs/operators'
 
 import { SearchPatternType } from '../../graphql-operations'
@@ -28,6 +28,8 @@ const SCANNER_STATE: Monaco.languages.IState = {
 
 const printable = ' !"#$%&\'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~'
 const latin1Alpha = 'ÀÁÂÃÄÅÆÇÈÉÊËÌÍÎÏÐÑÒÓÔÕÖ×ØÙÚÛÜÝÞßàáâãäåæçèéêëìíîïðñòóôõö÷øùúûüýþÿ'
+
+let completionCalls = 0
 
 /**
  * Returns the providers used by the Monaco query input to provide syntax highlighting,
@@ -85,24 +87,30 @@ export function getProviders(
         completion: {
             // An explicit list of trigger characters is needed for the Monaco editor to show completions.
             triggerCharacters: [...printable, ...latin1Alpha],
-            provideCompletionItems: (textModel, position, context, token) =>
-                scannedQueries
-                    .pipe(
-                        first(),
-                        switchMap(scannedQuery =>
-                            scannedQuery.scanned.type === 'error'
-                                ? of(null)
-                                : getCompletionItems(
-                                      scannedQuery.scanned.term,
-                                      position,
-                                      debouncedDynamicSuggestions,
-                                      options.globbing
-                                  )
-                        ),
-                        observeOn(asyncScheduler),
-                        map(completions => token.isCancellationRequested ? undefined : completions)
+            provideCompletionItems: async (textModel, position, context, token) => {
+                const call = ++completionCalls
+                console.log(`${call} provider called`)
+                const { scanned } = await scannedQueries.pipe(first()).toPromise()
+                if (scanned.type === 'error') {
+                    return null
+                }
+                const completions = await getCompletionItems(
+                    scanned.term,
+                    position,
+                    debouncedDynamicSuggestions,
+                    options.globbing
                     )
-                    .toPromise(),
+                // Yield to event loop before checking if cancellation token is cancelled
+                // (assuming cancellation is async)
+                await new Promise(resolve => setTimeout(resolve, 0))
+                if (token.isCancellationRequested) {
+                    console.log(`${call} provider cancelled`)
+                    return undefined
+                }
+                console.log(`${call} provider returning`, completions)
+                return completions
+
+            }
         },
         diagnostics: scannedQueries.pipe(
             map(({ scanned }) => (scanned.type === 'success' ? getDiagnostics(scanned.term, options.patternType) : []))

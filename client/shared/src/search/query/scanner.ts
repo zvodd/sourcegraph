@@ -11,7 +11,8 @@ import {
     Comment,
     Literal,
     Pattern,
-    Filter,
+    Field,
+    Separator,
     KeywordKind,
     PatternKind,
     CharacterRange,
@@ -332,7 +333,15 @@ const comment = scanToken(
     (value, { start, end }): Comment => ({ type: 'comment', value, range: { start, end } })
 )
 
-const filterField = scanToken(new RegExp(`-?(${filterTypeKeysWithAliases.join('|')})+(?=:)`, 'i'))
+const filterField = scanToken(
+    new RegExp(`-?(${filterTypeKeysWithAliases.join('|')})+(?=:)`, 'i'),
+    (value, { start, end }): Field => ({
+        type: 'field',
+        range: { start, end },
+        value,
+        negated: value.startsWith('-'),
+    })
+)
 
 const filterValue = oneOf<Literal>(quoted('"'), quoted("'"), scanBalancedLiteral, literal)
 
@@ -344,15 +353,24 @@ const closingParen = scanToken(/\)/, (_input, range): ClosingParen => ({ type: '
  * Returns a {@link Scanner} that succeeds if a token scanned by `scanToken`,
  * followed by whitespace or EOF, is found in the search query.
  */
-const followedBy = (scanToken: Scanner<Token>, scanNext: Scanner<Token>): Scanner<Token[]> => (input, start) => {
-    const tokens: Token[] = []
-    const tokenResult = scanToken(input, start)
-    if (tokenResult.type === 'error') {
-        return tokenResult
+const followedBy = (scanTerm: Scanner<Term>, scanNext: Scanner<Token>): Scanner<Token[]> => (input, start) => {
+    const result = scanTerm(input, start)
+    if (result.type === 'error') {
+        return result
     }
-    tokens.push(tokenResult.term)
-    let { end } = tokenResult.term.range
-    if (input[end] !== undefined) {
+    let end: number | undefined
+    const tokens: Token[] = []
+    if (Array.isArray(result.term)) {
+        for (const token of result.term) {
+            tokens.push(token)
+            end = token.range.end
+        }
+    } else {
+        tokens.push(result.term)
+        end = result.term.range.end
+    }
+    // invariant: end is defined.
+    if (end && input[end] !== undefined) {
         const next = scanNext(input, end)
         if (next.type === 'error') {
             return next
@@ -371,36 +389,32 @@ const followedBy = (scanToken: Scanner<Token>, scanNext: Scanner<Token>): Scanne
  * (consisting a of a filter type and a filter value, separated by a colon)
  * in a search query.
  */
-const filter: Scanner<Filter> = (input, start) => {
-    const scannedField = filterField(input, start)
-    if (scannedField.type === 'error') {
-        return scannedField
-    }
-    const scannedSeparator = filterSeparator(input, scannedField.term.range.end)
-    if (scannedSeparator.type === 'error') {
-        return scannedSeparator
+/**
+ * A {@link Scanner} that will attempt to scan a {@link Field} token followed
+ * by a {@link Separator} token followed by a {@link Literal} value in a query.
+ */
+const filter: Scanner<Term> = (input, start) => {
+    const scanField = followedBy(filterField, filterSeparator)
+    const result = scanField(input, start)
+    if (result.type === 'error') {
+        return result
     }
     let scannedValue: ScanResult<Literal> | undefined
-    if (input[scannedSeparator.term.range.end] === undefined) {
-        scannedValue = undefined
-    } else {
-        scannedValue = scanPredicateValue(input, scannedSeparator.term.range.end, scannedField.term)
-        if (scannedValue.type === 'error') {
-            scannedValue = filterValue(input, scannedSeparator.term.range.end)
-        }
+    if (input[result.term[1].range.end] === undefined) {
+        // if the separator is at the end (?)
+        return result
     }
+    scannedValue = scanPredicateValue(input, result.term[1].range.end, result.term[0] as Literal)
+    if (scannedValue.type === 'error') {
+        scannedValue = filterValue(input, result.term[1].range.end)
+    }
+
     if (scannedValue && scannedValue.type === 'error') {
-        return scannedValue
+        return scannedValue // make this return empty string literal
     }
     return {
         type: 'success',
-        term: {
-            type: 'filter',
-            range: { start, end: scannedValue ? scannedValue.term.range.end : scannedSeparator.term.range.end },
-            field: scannedField.term,
-            value: scannedValue?.term,
-            negated: scannedField.term.value.startsWith('-'),
-        },
+        term: result.term.concat(scannedValue.term),
     }
 }
 
@@ -414,7 +428,7 @@ const createPattern = (value: string, range: CharacterRange, kind: PatternKind):
     },
 })
 
-const scanFilterOrKeyword = oneOf<Literal | Token[]>(filterField, followedBy(keyword, whitespace))
+const scanFilterOrKeyword = oneOf<Field | Token[]>(filterField, followedBy(keyword, whitespace))
 const keepScanning = (input: string, start: number): boolean => scanFilterOrKeyword(input, start).type !== 'success'
 
 /**
@@ -446,7 +460,7 @@ const createScanner = (kind: PatternKind, interpretComments?: boolean): Scanner<
     const quotedScanner = kind === PatternKind.Regexp ? [quoted('/'), ...baseQuotedScanner] : baseQuotedScanner
 
     const baseScanner = [keyword, filter, ...quotedScanner, scanPattern(kind)]
-    const tokenScanner: Scanner<Token>[] = interpretComments ? [comment, ...baseScanner] : baseScanner
+    const tokenScanner: Scanner<Term>[] = interpretComments ? [comment, ...baseScanner] : baseScanner
 
     const baseEarlyPatternScanner = [...quotedScanner, toPatternResult(scanBalancedLiteral, kind)]
     const earlyPatternScanner = interpretComments ? [comment, ...baseEarlyPatternScanner] : baseEarlyPatternScanner

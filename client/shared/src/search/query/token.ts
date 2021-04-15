@@ -19,7 +19,7 @@ export interface BaseToken {
 /**
  * All recognized tokens.
  */
-export type Token = Whitespace | OpeningParen | ClosingParen | Keyword | Comment | Literal | Pattern | Filter
+export type Token = Whitespace | OpeningParen | ClosingParen | Keyword | Comment | Literal | Pattern | Field | Separator
 
 /**
  * A label associated with a pattern token. We don't use SearchPatternType because
@@ -52,16 +52,20 @@ export interface Literal extends BaseToken {
     quoted: boolean
 }
 
-/**
- * Represents a filter in a search query.
- *
- * Example: `repo:^github\.com\/sourcegraph\/sourcegraph$`.
+/*
+ * Represents a recognized field in a search query, e.g., the `repo` part of `repo:<literal>`
  */
-export interface Filter extends BaseToken {
-    type: 'filter'
-    field: Literal
-    value: Literal | undefined
+export interface Field extends BaseToken {
+    type: 'field'
+    value: string
     negated: boolean
+}
+
+/**
+ * Represents the separator after a field in a search query, e.g., the `:` part of `repo:<literal>`
+ */
+export interface Separator extends BaseToken {
+    type: 'separator'
 }
 
 export enum KeywordKind {

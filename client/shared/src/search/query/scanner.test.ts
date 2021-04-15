@@ -92,29 +92,29 @@ describe('scanSearchQuery() for literal search', () => {
 
     test('filter', () =>
         expect(scanSearchQuery('f:b')).toMatchInlineSnapshot(
-            '{"type":"success","term":[{"type":"filter","range":{"start":0,"end":3},"field":{"type":"literal","value":"f","range":{"start":0,"end":1}},"value":{"type":"literal","value":"b","range":{"start":2,"end":3},"quoted":false},"negated":false}]}'
+            '{"type":"success","term":[{"type":"field","range":{"start":0,"end":1},"value":"f","negated":false},{"type":"literal","value":":","range":{"start":1,"end":2},"quoted":false},{"type":"literal","value":"b","range":{"start":2,"end":3},"quoted":false}]}'
         ))
 
     test('negated filter', () =>
         expect(scanSearchQuery('-f:b')).toMatchInlineSnapshot(
-            '{"type":"success","term":[{"type":"filter","range":{"start":0,"end":4},"field":{"type":"literal","value":"-f","range":{"start":0,"end":2}},"value":{"type":"literal","value":"b","range":{"start":3,"end":4},"quoted":false},"negated":true}]}'
+            '{"type":"success","term":[{"type":"field","range":{"start":0,"end":2},"value":"-f","negated":true},{"type":"literal","value":":","range":{"start":2,"end":3},"quoted":false},{"type":"literal","value":"b","range":{"start":3,"end":4},"quoted":false}]}'
         ))
 
     test('filter with quoted value', () => {
         expect(scanSearchQuery('f:"b"')).toMatchInlineSnapshot(
-            '{"type":"success","term":[{"type":"filter","range":{"start":0,"end":5},"field":{"type":"literal","value":"f","range":{"start":0,"end":1}},"value":{"type":"literal","value":"b","range":{"start":2,"end":5},"quoted":true},"negated":false}]}'
+            '{"type":"success","term":[{"type":"field","range":{"start":0,"end":1},"value":"f","negated":false},{"type":"literal","value":":","range":{"start":1,"end":2},"quoted":false},{"type":"literal","value":"b","range":{"start":2,"end":5},"quoted":true}]}'
         )
     })
 
     test('filter with a value ending with a colon', () => {
         expect(scanSearchQuery('f:a:')).toMatchInlineSnapshot(
-            '{"type":"success","term":[{"type":"filter","range":{"start":0,"end":4},"field":{"type":"literal","value":"f","range":{"start":0,"end":1}},"value":{"type":"literal","value":"a:","range":{"start":2,"end":4},"quoted":false},"negated":false}]}'
+            '{"type":"success","term":[{"type":"field","range":{"start":0,"end":1},"value":"f","negated":false},{"type":"literal","value":":","range":{"start":1,"end":2},"quoted":false},{"type":"literal","value":"a:","range":{"start":2,"end":4},"quoted":false}]}'
         )
     })
 
     test('filter where the value is a colon', () => {
         expect(scanSearchQuery('f:a:')).toMatchInlineSnapshot(
-            '{"type":"success","term":[{"type":"filter","range":{"start":0,"end":4},"field":{"type":"literal","value":"f","range":{"start":0,"end":1}},"value":{"type":"literal","value":"a:","range":{"start":2,"end":4},"quoted":false},"negated":false}]}'
+            '{"type":"success","term":[{"type":"field","range":{"start":0,"end":1},"value":"f","negated":false},{"type":"literal","value":":","range":{"start":1,"end":2},"quoted":false},{"type":"literal","value":"a:","range":{"start":2,"end":4},"quoted":false}]}'
         )
     })
 
@@ -135,12 +135,12 @@ describe('scanSearchQuery() for literal search', () => {
 
     test('complex query', () =>
         expect(scanSearchQuery('repo:^github\\.com/gorilla/mux$ lang:go -file:mux.go Router')).toMatchInlineSnapshot(
-            '{"type":"success","term":[{"type":"filter","range":{"start":0,"end":30},"field":{"type":"literal","value":"repo","range":{"start":0,"end":4}},"value":{"type":"literal","value":"^github\\\\.com/gorilla/mux$","range":{"start":5,"end":30},"quoted":false},"negated":false},{"type":"whitespace","range":{"start":30,"end":31}},{"type":"filter","range":{"start":31,"end":38},"field":{"type":"literal","value":"lang","range":{"start":31,"end":35}},"value":{"type":"literal","value":"go","range":{"start":36,"end":38},"quoted":false},"negated":false},{"type":"whitespace","range":{"start":38,"end":39}},{"type":"filter","range":{"start":39,"end":51},"field":{"type":"literal","value":"-file","range":{"start":39,"end":44}},"value":{"type":"literal","value":"mux.go","range":{"start":45,"end":51},"quoted":false},"negated":true},{"type":"whitespace","range":{"start":51,"end":52}},{"type":"pattern","range":{"start":52,"end":58},"kind":1,"value":"Router"}]}'
+            '{"type":"success","term":[{"type":"field","range":{"start":0,"end":4},"value":"repo","negated":false},{"type":"literal","value":":","range":{"start":4,"end":5},"quoted":false},{"type":"literal","value":"^github\\\\.com/gorilla/mux$","range":{"start":5,"end":30},"quoted":false},{"type":"whitespace","range":{"start":30,"end":31}},{"type":"field","range":{"start":31,"end":35},"value":"lang","negated":false},{"type":"literal","value":":","range":{"start":35,"end":36},"quoted":false},{"type":"literal","value":"go","range":{"start":36,"end":38},"quoted":false},{"type":"whitespace","range":{"start":38,"end":39}},{"type":"field","range":{"start":39,"end":44},"value":"-file","negated":true},{"type":"literal","value":":","range":{"start":44,"end":45},"quoted":false},{"type":"literal","value":"mux.go","range":{"start":45,"end":51},"quoted":false},{"type":"whitespace","range":{"start":51,"end":52}},{"type":"pattern","range":{"start":52,"end":58},"kind":1,"value":"Router"}]}'
         ))
 
     test('parenthesized parameters', () => {
         expect(scanSearchQuery('repo:a (file:b and c)')).toMatchInlineSnapshot(
-            '{"type":"success","term":[{"type":"filter","range":{"start":0,"end":6},"field":{"type":"literal","value":"repo","range":{"start":0,"end":4}},"value":{"type":"literal","value":"a","range":{"start":5,"end":6},"quoted":false},"negated":false},{"type":"whitespace","range":{"start":6,"end":7}},{"type":"openingParen","range":{"start":7,"end":8}},{"type":"filter","range":{"start":8,"end":14},"field":{"type":"literal","value":"file","range":{"start":8,"end":12}},"value":{"type":"literal","value":"b","range":{"start":13,"end":14},"quoted":false},"negated":false},{"type":"whitespace","range":{"start":14,"end":15}},{"type":"keyword","value":"and","range":{"start":15,"end":18},"kind":"and"},{"type":"whitespace","range":{"start":18,"end":19}},{"type":"pattern","range":{"start":19,"end":20},"kind":1,"value":"c"},{"type":"closingParen","range":{"start":20,"end":21}}]}'
+            '{"type":"success","term":[{"type":"field","range":{"start":0,"end":4},"value":"repo","negated":false},{"type":"literal","value":":","range":{"start":4,"end":5},"quoted":false},{"type":"literal","value":"a","range":{"start":5,"end":6},"quoted":false},{"type":"whitespace","range":{"start":6,"end":7}},{"type":"openingParen","range":{"start":7,"end":8}},{"type":"field","range":{"start":8,"end":12},"value":"file","negated":false},{"type":"literal","value":":","range":{"start":12,"end":13},"quoted":false},{"type":"literal","value":"b","range":{"start":13,"end":14},"quoted":false},{"type":"whitespace","range":{"start":14,"end":15}},{"type":"keyword","value":"and","range":{"start":15,"end":18},"kind":"and"},{"type":"whitespace","range":{"start":18,"end":19}},{"type":"pattern","range":{"start":19,"end":20},"kind":1,"value":"c"},{"type":"closingParen","range":{"start":20,"end":21}}]}'
         )
     })
 
@@ -152,7 +152,7 @@ describe('scanSearchQuery() for literal search', () => {
 
     test('do not treat links as filters', () => {
         expect(scanSearchQuery('http://example.com repo:a')).toMatchInlineSnapshot(
-            '{"type":"success","term":[{"type":"pattern","range":{"start":0,"end":18},"kind":1,"value":"http://example.com"},{"type":"whitespace","range":{"start":18,"end":19}},{"type":"filter","range":{"start":19,"end":25},"field":{"type":"literal","value":"repo","range":{"start":19,"end":23}},"value":{"type":"literal","value":"a","range":{"start":24,"end":25},"quoted":false},"negated":false}]}'
+            '{"type":"success","term":[{"type":"pattern","range":{"start":0,"end":18},"kind":1,"value":"http://example.com"},{"type":"whitespace","range":{"start":18,"end":19}},{"type":"field","range":{"start":19,"end":23},"value":"repo","negated":false},{"type":"literal","value":":","range":{"start":23,"end":24},"quoted":false},{"type":"literal","value":"a","range":{"start":24,"end":25},"quoted":false}]}'
         )
     })
 })
@@ -176,7 +176,7 @@ describe('scanSearchQuery() for regexp', () => {
 
     test('interpret regexp slash quotes', () => {
         expect(scanSearchQuery('r:a /a regexp \\ pattern/', false, SearchPatternType.regexp)).toMatchInlineSnapshot(
-            '{"type":"success","term":[{"type":"filter","range":{"start":0,"end":3},"field":{"type":"literal","value":"r","range":{"start":0,"end":1}},"value":{"type":"literal","value":"a","range":{"start":2,"end":3},"quoted":false},"negated":false},{"type":"whitespace","range":{"start":3,"end":4}},{"type":"literal","value":"a regexp \\\\ pattern","range":{"start":4,"end":24},"quoted":true}]}'
+            '{"type":"success","term":[{"type":"field","range":{"start":0,"end":1},"value":"r","negated":false},{"type":"literal","value":":","range":{"start":1,"end":2},"quoted":false},{"type":"literal","value":"a","range":{"start":2,"end":3},"quoted":false},{"type":"whitespace","range":{"start":3,"end":4}},{"type":"literal","value":"a regexp \\\\ pattern","range":{"start":4,"end":24},"quoted":true}]}'
         )
     })
 })
@@ -188,7 +188,7 @@ repo:sourcegraph
 // search for thing
 thing`
         expect(scanSearchQuery(query, true)).toMatchInlineSnapshot(
-            '{"type":"success","term":[{"type":"comment","value":"// saucegraph is best graph","range":{"start":0,"end":27}},{"type":"whitespace","range":{"start":27,"end":28}},{"type":"filter","range":{"start":28,"end":44},"field":{"type":"literal","value":"repo","range":{"start":28,"end":32}},"value":{"type":"literal","value":"sourcegraph","range":{"start":33,"end":44},"quoted":false},"negated":false},{"type":"whitespace","range":{"start":44,"end":45}},{"type":"comment","value":"// search for thing","range":{"start":45,"end":64}},{"type":"whitespace","range":{"start":64,"end":65}},{"type":"pattern","range":{"start":65,"end":70},"kind":1,"value":"thing"}]}'
+            '{"type":"success","term":[{"type":"comment","value":"// saucegraph is best graph","range":{"start":0,"end":27}},{"type":"whitespace","range":{"start":27,"end":28}},{"type":"field","range":{"start":28,"end":32},"value":"repo","negated":false},{"type":"literal","value":":","range":{"start":32,"end":33},"quoted":false},{"type":"literal","value":"sourcegraph","range":{"start":33,"end":44},"quoted":false},{"type":"whitespace","range":{"start":44,"end":45}},{"type":"comment","value":"// search for thing","range":{"start":45,"end":64}},{"type":"whitespace","range":{"start":64,"end":65}},{"type":"pattern","range":{"start":65,"end":70},"kind":1,"value":"thing"}]}'
         )
     })
 
@@ -202,13 +202,13 @@ thing`
 describe('scanSearchQuery() with predicate', () => {
     test('recognize predicate', () => {
         expect(scanSearchQuery('repo:contains(file:README.md)')).toMatchInlineSnapshot(
-            '{"type":"success","term":[{"type":"filter","range":{"start":0,"end":29},"field":{"type":"literal","value":"repo","range":{"start":0,"end":4}},"value":{"type":"literal","value":"contains(file:README.md)","range":{"start":5,"end":29},"quoted":false},"negated":false}]}'
+            '{"type":"success","term":[{"type":"field","range":{"start":0,"end":4},"value":"repo","negated":false},{"type":"literal","value":":","range":{"start":4,"end":5},"quoted":false},{"type":"literal","value":"contains(file:README.md)","range":{"start":5,"end":29},"quoted":false}]}'
         )
     })
 
     test('recognize multiple predicates over whitespace', () => {
         expect(scanSearchQuery('repo:contains(file:README.md)\n\nrepo:contains.file(foo)')).toMatchInlineSnapshot(
-            '{"type":"success","term":[{"type":"filter","range":{"start":0,"end":29},"field":{"type":"literal","value":"repo","range":{"start":0,"end":4}},"value":{"type":"literal","value":"contains(file:README.md)","range":{"start":5,"end":29},"quoted":false},"negated":false},{"type":"whitespace","range":{"start":29,"end":31}},{"type":"filter","range":{"start":31,"end":54},"field":{"type":"literal","value":"repo","range":{"start":31,"end":35}},"value":{"type":"literal","value":"contains.file(foo)","range":{"start":36,"end":54},"quoted":false},"negated":false}]}'
+            '{"type":"success","term":[{"type":"field","range":{"start":0,"end":4},"value":"repo","negated":false},{"type":"literal","value":":","range":{"start":4,"end":5},"quoted":false},{"type":"literal","value":"contains(file:README.md)","range":{"start":5,"end":29},"quoted":false},{"type":"whitespace","range":{"start":29,"end":31}},{"type":"field","range":{"start":31,"end":35},"value":"repo","negated":false},{"type":"literal","value":":","range":{"start":35,"end":36},"quoted":false},{"type":"literal","value":"contains.file(foo)","range":{"start":36,"end":54},"quoted":false}]}'
         )
     })
 })

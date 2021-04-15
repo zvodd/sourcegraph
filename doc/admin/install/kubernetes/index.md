@@ -98,13 +98,13 @@ The default installation has a few manifests that require cluster-admin privileg
 with a label indicating if they require cluster-admin privileges or not. This allows cluster admins to install the
 manifests that cannot be installed otherwise.
 
-- Manifests deployed by cluster-admin
+Manifests deployed by cluster-admin
 
     ```bash
     ./kubectl-apply-all.sh -l sourcegraph-resource-requires=cluster-admin
     ```
 
-- Manifests deployed by non-cluster-admin
+Manifests deployed by non-cluster-admin
 
     ```bash
     ./kubectl-apply-all.sh -l sourcegraph-resource-requires=no-cluster-admin

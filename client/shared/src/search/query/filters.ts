@@ -3,7 +3,7 @@ import { Omit } from 'utility-types'
 import { SearchSuggestion } from '../suggestions'
 
 import { selectorCompletion } from './selectFilter'
-import { Filter, Literal } from './token'
+import { Literal } from './token'
 
 export enum FilterType {
     after = 'after',
@@ -111,7 +111,7 @@ export const resolveNegatedFilter = (filter: NegatedFilters): NegatableFilter =>
 interface BaseFilterDefinition {
     alias?: string
     description: string
-    discreteValues?: (value: Literal | undefined) => string[]
+    discreteValues?: (value: string | undefined) => string[]
     suggestions?: SearchSuggestion['__typename'] | string[]
     default?: string
     /** Whether the filter may only be used 0 or 1 times in a query. */
@@ -334,7 +334,7 @@ export const resolveFilter = (
  */
 const isValidDiscreteValue = (
     definition: NegatableFilterDefinition | BaseFilterDefinition,
-    input: Literal,
+    input: string,
     value: string
 ): boolean => {
     if (!definition.discreteValues || definition.discreteValues(input).includes(value)) {
@@ -356,16 +356,13 @@ const isValidDiscreteValue = (
 /**
  * Validates a filter given its field and value.
  */
-export const validateFilter = (
-    field: string,
-    value: Filter['value']
-): { valid: true } | { valid: false; reason: string } => {
+export const validateFilter = (field: string, value: string): { valid: true } | { valid: false; reason: string } => {
     const typeAndDefinition = resolveFilter(field)
     if (!typeAndDefinition) {
         return { valid: false, reason: 'Invalid filter type.' }
     }
     const { definition } = typeAndDefinition
-    if (definition.discreteValues && (!value || !isValidDiscreteValue(definition, value, value.value))) {
+    if (definition.discreteValues && (!value || !isValidDiscreteValue(definition, field, value))) {
         return {
             valid: false,
             reason: `Invalid filter value, expected one of: ${definition.discreteValues(value).join(', ')}.`,

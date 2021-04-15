@@ -231,7 +231,14 @@ export async function getCompletionItems(
     const token = tokenAtColumn
     // When the token at column is labeled as a pattern or whitespace, and none of filter,
     // operator, nor quoted value, show static filter type suggestions, followed by dynamic suggestions.
-    if (token.type === 'pattern' || token.type === 'whitespace') {
+    if (
+        (token.type === 'literal' &&
+            (token.kind === 'pattern-regexp' ||
+                token.kind === 'pattern-literal' ||
+                token.kind === 'pattern-structural')) ||
+        token.type === 'whitespace'
+    ) {
+        // FIXME needs each pattern label
         // Offer autocompletion of filter values
         const staticSuggestions = FILTER_TYPE_COMPLETIONS.map(
             (suggestion): Monaco.languages.CompletionItem => ({
@@ -245,7 +252,10 @@ export async function getCompletionItems(
         // This avoids blocking on dynamic suggestions to display
         // the suggestions widget.
         if (
-            token.type === 'pattern' &&
+            token.type === 'literal' &&
+            (token.kind === 'pattern-regexp' ||
+                token.kind === 'pattern-literal' ||
+                token.kind === 'pattern-structural') &&
             staticSuggestions.some(({ label }) => label.startsWith(token.value.toLowerCase()))
         ) {
             return { suggestions: staticSuggestions }
@@ -268,13 +278,13 @@ export async function getCompletionItems(
             ],
         }
     }
-    if (token.type === 'filter') {
+    if (token.type === 'field') {
         const { value } = token
-        const completingValue = !value || value.range.start + 1 <= column
+        const completingValue = !value || token.range.start + 1 <= column
         if (!completingValue) {
             return null
         }
-        const resolvedFilter = resolveFilter(token.field.value)
+        const resolvedFilter = resolveFilter(token.value)
         if (!resolvedFilter) {
             return null
         }
@@ -285,7 +295,7 @@ export async function getCompletionItems(
                         label,
                         kind: Monaco.languages.CompletionItemKind.Text,
                         insertText: label + ' ',
-                        range: value ? toMonacoRange(value.range) : defaultRange,
+                        range: value ? toMonacoRange(token.range) : defaultRange,
                         command: COMPLETION_ITEM_SELECTED,
                     })),
                 }
@@ -303,8 +313,8 @@ export async function getCompletionItems(
                         // Set the current value as filterText, so that all dynamic suggestions
                         // returned by the server are displayed. otherwise, if the current filter value
                         // is a regex pattern, Monaco's filtering might hide some suggestions.
-                        filterText: value?.value,
-                        range: value ? toMonacoRange(value.range) : defaultRange,
+                        filterText: value, // FIXME this sems wrong?
+                        range: value ? toMonacoRange(token.range) : defaultRange,
                         command: COMPLETION_ITEM_SELECTED,
                     })),
             }
@@ -318,7 +328,7 @@ export async function getCompletionItems(
                         kind: Monaco.languages.CompletionItemKind.Value,
                         insertText: `${label} `,
                         filterText: label,
-                        range: value ? toMonacoRange(value.range) : defaultRange,
+                        range: value ? toMonacoRange(token.range) : defaultRange,
                         command: COMPLETION_ITEM_SELECTED,
                     })
                 ),

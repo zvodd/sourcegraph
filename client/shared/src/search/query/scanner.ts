@@ -10,11 +10,8 @@ import {
     Keyword,
     Comment,
     Literal,
-    Pattern,
     Field,
-    Separator,
     KeywordKind,
-    PatternKind,
     CharacterRange,
     createLiteral,
 } from './token'
@@ -125,7 +122,7 @@ const quoted = (delimiter: string): Scanner<Literal> => (input, start) => {
     return {
         type: 'success',
         // end + 1 as `end` is currently the index of the quote in the string.
-        term: createLiteral(input.slice(start + 1, end), { start, end: end + 1 }, true),
+        term: createLiteral(input.slice(start + 1, end), { start, end: end + 1 }, true, 'quoted'), // FIXME subsume quoted?
     }
 }
 
@@ -138,7 +135,7 @@ const filterSeparator = (input: string, start: number): ScanResult<Literal> => {
     }
     return {
         type: 'success',
-        term: createLiteral(':', { start, end: start + 1 }),
+        term: createLiteral(':', { start, end: start + 1 }, false, 'separator'), // FIXME no quoted for separator
     }
 }
 
@@ -274,7 +271,7 @@ export const scanBalancedLiteral: Scanner<Literal> = (input, start) => {
 
     return {
         type: 'success',
-        term: createLiteral(result.join(''), { start, end: adjustedStart }),
+        term: createLiteral(result.join(''), { start, end: adjustedStart }, false, 'balanced-literal'),
     }
 }
 
@@ -294,7 +291,7 @@ export const scanPredicateValue = (input: string, start: number, field: Literal)
     const value = `${result.path.join('.')}${result.parameters}`
     return {
         type: 'success',
-        term: createLiteral(value, { start, end: start + value.length }),
+        term: createLiteral(value, { start, end: start + value.length }, false, 'predicate'),
     }
 }
 
@@ -342,8 +339,6 @@ const filterField = scanToken(
         negated: value.startsWith('-'),
     })
 )
-
-const filterValue = oneOf<Literal>(quoted('"'), quoted("'"), scanBalancedLiteral, literal)
 
 const openingParen = scanToken(/\(/, (_input, range): OpeningParen => ({ type: 'openingParen', range }))
 
@@ -406,25 +401,27 @@ const filter: Scanner<Term> = (input, start) => {
     }
     scannedValue = scanPredicateValue(input, result.term[1].range.end, result.term[0] as Literal)
     if (scannedValue.type === 'error') {
+        const filterValue = oneOf<Literal>(quoted('"'), quoted("'"), scanBalancedLiteral, literal)
         scannedValue = filterValue(input, result.term[1].range.end)
     }
-
     if (scannedValue && scannedValue.type === 'error') {
         return scannedValue // make this return empty string literal
     }
+    scannedValue.term.kind = `${(result.term[0] as Literal).value}-${scannedValue.term.kind}`
     return {
         type: 'success',
         term: result.term.concat(scannedValue.term),
     }
 }
 
-const createPattern = (value: string, range: CharacterRange, kind: PatternKind): ScanSuccess<Pattern> => ({
+const createPattern = (value: string, range: CharacterRange, kind: string): ScanSuccess<Literal> => ({
     type: 'success',
     term: {
-        type: 'pattern',
+        type: 'literal',
         range,
         kind,
         value,
+        quoted: false, // TODO
     },
 })
 
@@ -437,7 +434,7 @@ const keepScanning = (input: string, start: number): boolean => scanFilterOrKeyw
  * @param scanner The literal scanner.
  * @param kind The {@link PatternKind} label to apply to the resulting pattern scanner.
  */
-export const toPatternResult = (scanner: Scanner<Literal>, kind: PatternKind): Scanner<Pattern> => (input, start) => {
+export const toPatternResult = (scanner: Scanner<Literal>, kind: string): Scanner<Literal> => (input, start) => {
     const result = scanner(input, start)
     if (result.type === 'success') {
         return createPattern(result.term.value, result.term.range, kind)
@@ -445,7 +442,7 @@ export const toPatternResult = (scanner: Scanner<Literal>, kind: PatternKind): S
     return result
 }
 
-const scanPattern = (kind: PatternKind): Scanner<Pattern> =>
+const scanPattern = (kind: string): Scanner<Literal> =>
     toPatternResult(oneOf<Literal>(scanBalancedLiteral, literal), kind)
 
 const whitespaceOrClosingParen = oneOf<Whitespace | ClosingParen>(whitespace, closingParen)
@@ -455,9 +452,9 @@ const whitespaceOrClosingParen = oneOf<Whitespace | ClosingParen>(whitespace, cl
  *
  * @param interpretComments Interpets C-style line comments for multiline queries.
  */
-const createScanner = (kind: PatternKind, interpretComments?: boolean): Scanner<Token[]> => {
+const createScanner = (kind: string, interpretComments?: boolean): Scanner<Token[]> => {
     const baseQuotedScanner = [quoted('"'), quoted("'")]
-    const quotedScanner = kind === PatternKind.Regexp ? [quoted('/'), ...baseQuotedScanner] : baseQuotedScanner
+    const quotedScanner = kind === 'pattern-regexp' ? [quoted('/'), ...baseQuotedScanner] : baseQuotedScanner
 
     const baseScanner = [keyword, filter, ...quotedScanner, scanPattern(kind)]
     const tokenScanner: Scanner<Term>[] = interpretComments ? [comment, ...baseScanner] : baseScanner
@@ -487,13 +484,13 @@ export const scanSearchQuery = (
     let patternKind
     switch (searchPatternType) {
         case SearchPatternType.literal:
-            patternKind = PatternKind.Literal
+            patternKind = 'pattern-literal'
             break
         case SearchPatternType.regexp:
-            patternKind = PatternKind.Regexp
+            patternKind = 'pattern-regexp'
             break
         case SearchPatternType.structural:
-            patternKind = PatternKind.Structural
+            patternKind = 'pattern-structural'
             break
     }
     const scanner = createScanner(patternKind, interpretComments)

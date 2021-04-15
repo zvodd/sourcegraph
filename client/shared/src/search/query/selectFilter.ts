@@ -68,14 +68,14 @@ export const selectDiscreteValues = (selectors: Selector[], depth: number): stri
     return paths
 }
 
-export const selectorCompletion = (value: Literal | undefined): string[] => {
+export const selectorCompletion = (value: string | undefined): string[] => {
     if (!value) {
         return selectDiscreteValues(SELECTORS, 0)
     }
 
-    if (value.value.endsWith('.') || value.value.split('.').length > 1) {
+    if (value.endsWith('.') || value.split('.').length > 1) {
         // Resolve completions to greater depth for `foo.` if the value is `foo.` or `foo.bar`.
-        const kind = value.value.split('.')[0]
+        const kind = value.split('.')[0]
         return selectDiscreteValues(
             SELECTORS.filter(value => value.kind === kind),
             1

@@ -19,27 +19,7 @@ export interface BaseToken {
 /**
  * All recognized tokens.
  */
-export type Token = Whitespace | OpeningParen | ClosingParen | Keyword | Comment | Literal | Pattern | Field | Separator
-
-/**
- * A label associated with a pattern token. We don't use SearchPatternType because
- * that is used as a global quantifier for all patterns in a query. PatternKind
- * allows to qualify multiple pattern tokens differently within a single query.
- */
-export enum PatternKind {
-    Literal = 1,
-    Regexp,
-    Structural,
-}
-
-/**
- * A value interpreted as a pattern of kind {@link PatternKind}.
- */
-export interface Pattern extends BaseToken {
-    type: 'pattern'
-    kind: PatternKind
-    value: string
-}
+export type Token = Whitespace | OpeningParen | ClosingParen | Keyword | Comment | Literal | Field
 
 /**
  * Represents a value in a search query. E.g., either a quoted or unquoted pattern or field value.
@@ -49,6 +29,7 @@ export interface Pattern extends BaseToken {
 export interface Literal extends BaseToken {
     type: 'literal'
     value: string
+    kind: string
     quoted: boolean
 }
 
@@ -59,13 +40,6 @@ export interface Field extends BaseToken {
     type: 'field'
     value: string
     negated: boolean
-}
-
-/**
- * Represents the separator after a field in a search query, e.g., the `:` part of `repo:<literal>`
- */
-export interface Separator extends BaseToken {
-    type: 'separator'
 }
 
 export enum KeywordKind {
@@ -107,9 +81,10 @@ export interface ClosingParen extends BaseToken {
     type: 'closingParen'
 }
 
-export const createLiteral = (value: string, range: CharacterRange, quoted = false): Literal => ({
+export const createLiteral = (value: string, range: CharacterRange, quoted = false, kind: string): Literal => ({
     type: 'literal',
     value,
     range,
     quoted,
+    kind,
 })

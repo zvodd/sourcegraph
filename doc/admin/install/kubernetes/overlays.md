@@ -4,7 +4,7 @@
   - [Overlay basic principles](#overlay-basic-principles)
   - [Handling overlays](#handling-overlays)
   - [Git Strategies when using overlays to reduce conflicts](#git-strategies-with-overlays)
-    - [Steps to setup overlay](#steps-to-setup-overlay)
+    - [Steps](#general-steps)
       - [Namespaced overlay](#namespaced-overlay)
       - [Non-root create cluster overlay](#non-root-create-cluster-overlay)
       - [Non-root overlay](#non-root-overlay)
@@ -81,7 +81,7 @@ One benefit of generating manifest from base instead of modifying base directly 
 [Bases and Overlays](https://kubernetes.io/docs/tasks/manage-kubernetes-objects/kustomization/#bases-and-overlays) allow you to separate your unique changes from the upstream bases. 
 
 
-## Steps to setup overlay
+## General Steps
 
 1. Create a new branch for the customizations from the current release branch
 
@@ -118,10 +118,18 @@ One benefit of generating manifest from base instead of modifying base directly 
 
 This overlay adds a namespace declaration to all the manifests. 
 
-1. Change the namespace by replacing `ns-sourcegraph` to name of your choice (`<EXAMPLE NAMESPACE>` in this example) in the
+1. Create a new branch for the customizations from the current release branch
+
+    ```
+    # EXAMPLE
+    git checkout 3.26
+    git checkout -b 3.26-kustomize   
+    ```
+
+1. Change the namespace by replacing `ns-sourcegraph` to the name of your choice (`<EXAMPLE NAMESPACE>` in this example) in the
 [overlays/namespaced/kustomization.yaml](https://github.com/sourcegraph/deploy-sourcegraph/blob/master/overlays/namespaced/kustomization.yaml) file.
 
-1. Execute this from the `root` directory of the repository to generate:
+1. Generate the overlay by running this command from the `root` directory:
 
     ```
     ./overlay-generate-cluster.sh namespaced generated-cluster
@@ -134,13 +142,17 @@ This overlay adds a namespace declaration to all the manifests.
     kubectl label namespace ns-<EXAMPLE NAMESPACE> name=ns-sourcegraph
     ```
 
-1. Execute this from the `root` directory of the repository to apply the generated manifests from the `generated-cluster` directory:
+1. Apply the generated manifests (from the `generated-cluster` directory) by running this command from the `root` directory:
 
   ```
   kubectl apply -n ns-<EXAMPLE NAMESPACE> --prune -l deploy=sourcegraph -f generated-cluster --recursive
   ```
 
-1. Run `kubectl get pods -A` to check for the namespaces and their status
+1. Check for the namespaces and their status with:
+
+  ```
+  kubectl get pods -A
+  ```
 
 
 ## Non-root create cluster overlay

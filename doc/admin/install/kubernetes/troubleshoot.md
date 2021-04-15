@@ -83,16 +83,16 @@ If one does exist, run `kubectl get storageclass default -o=yaml` and verify tha
 
 - Google Cloud Platform users may need to [request an increase in storage quota](https://cloud.google.com/compute/quotas).
 
-> error: error retrieving RESTMappings to prune: invalid resource networking.k8s.io/v1, Kind=Ingress, Namespaced=true: no matches for kind "Ingress" in version "networking.k8s.io/v1"
+> `error retrieving RESTMappings to prune: invalid resource networking.k8s.io/v1, Kind=Ingress, Namespaced=true: no matches for kind "Ingress" in version "networking.k8s.io/v1"`
 - Make sure the client version of your kubectl matches the one used by the server. Run `kubectl version` to check.
 - See the ["Configure network access"](configure.md#security-configure-network-access)
 - Check for duplicate `sourcegraph-frontend` using `kubectl get ingresses -A`
   - Delete duplicate using `kubectl delete ingress sourcegraph-frontend -n default`
 
-> Error from server (Invalid): error when creating "base/cadvisor/cadvisor.ClusterRoleBinding.yaml": ClusterRoleBinding.rbac.authorization.k8s.io "cadvisor" is invalid: subjects[0].namespace: Required value
+> `error when creating "base/cadvisor/cadvisor.ClusterRoleBinding.yaml": subjects[0].namespace: Required value`
 Add `namespace: default` to the [base/cadvisor/cadvisor.ClusterRoleBinding.yaml](https://github.com/sourcegraph/deploy-sourcegraph/blob/master/base/cadvisor/cadvisor.ClusterRoleBinding.yaml) file.
 
-> Error from server (Invalid): error when creating "base/prometheus/prometheus.ClusterRoleBinding.yaml": ClusterRoleBinding.rbac.authorization.k8s.io "prometheus" is invalid: subjects[0].namespace: Required value
+> `error when creating "base/prometheus/prometheus.ClusterRoleBinding.yaml": subjects[0].namespace: Required value`
 Add `namespace: default` to the [base/prometheus/prometheus.ClusterRoleBinding.yaml](https://github.com/sourcegraph/deploy-sourcegraph/blob/master/base/prometheus/prometheus.ClusterRoleBinding.yaml) file.
 
 > Many pods are stuck in Pending status. 

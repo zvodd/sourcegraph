@@ -9,7 +9,6 @@ import (
 	"github.com/derision-test/glock"
 	"github.com/inconshreveable/log15"
 
-	"github.com/sourcegraph/sourcegraph/internal/database/dbconn"
 	"github.com/sourcegraph/sourcegraph/internal/database/dbutil"
 	"github.com/sourcegraph/sourcegraph/internal/goroutine"
 )
@@ -34,7 +33,7 @@ type migratorAndOption struct {
 var _ goroutine.BackgroundRoutine = &Runner{}
 
 func NewRunnerWithDB(db dbutil.DB, refreshInterval time.Duration) *Runner {
-	return newRunner(NewStoreWithDB(dbconn.Global), glock.NewRealTicker(refreshInterval))
+	return newRunner(NewStoreWithDB(db), glock.NewRealTicker(refreshInterval))
 }
 
 func newRunner(store storeIface, refreshTicker glock.Ticker) *Runner {
@@ -244,6 +243,8 @@ func runMigrationFunction(ctx context.Context, store storeIface, migration *Migr
 	}
 
 	if migrationErr := migrationFunc(ctx); migrationErr != nil {
+		log15.Error("Failed to perform migration", "migrationID", migration.ID, "error", migrationErr)
+
 		// Migration resulted in an error. All we'll do here is add this error to the migration's error
 		// message list. Unless _that_ write to the database fails, we'll continue along the happy path
 		// in order to update the migration, which could have made additional progress before failing.

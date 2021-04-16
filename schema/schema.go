@@ -198,7 +198,7 @@ type BitbucketCloudConnection struct {
 type BitbucketCloudRateLimit struct {
 	// Enabled description: true if rate limiting is enabled.
 	Enabled bool `json:"enabled"`
-	// RequestsPerHour description: Requests per hour permitted. This is an average, calculated per second.
+	// RequestsPerHour description: Requests per hour permitted. This is an average, calculated per second. Internally, the burst limit is set to 500, which implies that for a requests per hour limit as low as 1, users will continue to be able to send a maximum of 500 requests immediately, provided that the complexity cost of each request is 1.
 	RequestsPerHour float64 `json:"requestsPerHour"`
 }
 
@@ -316,7 +316,7 @@ type BitbucketServerPluginWebhooks struct {
 type BitbucketServerRateLimit struct {
 	// Enabled description: true if rate limiting is enabled.
 	Enabled bool `json:"enabled"`
-	// RequestsPerHour description: Requests per hour permitted. This is an average, calculated per second.
+	// RequestsPerHour description: Requests per hour permitted. This is an average, calculated per second. Internally, the burst limit is set to 500, which implies that for a requests per hour limit as low as 1, users will continue to be able to send a maximum of 500 requests immediately, provided that the complexity cost of each request is 1.
 	RequestsPerHour float64 `json:"requestsPerHour"`
 }
 type BitbucketServerUsernameIdentity struct {
@@ -376,8 +376,9 @@ type CloneURLToRepositoryName struct {
 
 // CloudKMSEncryptionKey description: Google Cloud KMS Encryption Key, used to encrypt data in Google Cloud environments
 type CloudKMSEncryptionKey struct {
-	Keyname string `json:"keyname"`
-	Type    string `json:"type"`
+	CredentialsFile string `json:"credentialsFile,omitempty"`
+	Keyname         string `json:"keyname"`
+	Type            string `json:"type"`
 }
 
 // CustomGitFetchMapping description: Mapping from Git clone URl domain/path to git fetch command. The `domainPath` field contains the Git clone URL domain/path part. The `fetch` field contains the custom git fetch command.
@@ -513,6 +514,8 @@ type ExperimentalFeatures struct {
 	EventLogging string `json:"eventLogging,omitempty"`
 	// Perforce description: Allow adding Perforce code host connections
 	Perforce string `json:"perforce,omitempty"`
+	// RateLimitAnonymous description: Configures the hourly rate limits for anonymous calls to the GraphQL API. Setting limit to 0 disables the limiter. This is only relevant if unauthenticated calls to the API are permitted.
+	RateLimitAnonymous int `json:"rateLimitAnonymous,omitempty"`
 	// SearchIndexBranches description: A map from repository name to a list of extra revs (branch, ref, tag, commit sha, etc) to index for a repository. We always index the default branch ("HEAD") and revisions in version contexts. This allows specifying additional revisions. Sourcegraph can index up to 64 branches per repository.
 	SearchIndexBranches map[string][]string `json:"search.index.branches,omitempty"`
 	// SearchMultipleRevisionsPerRepository description: DEPRECATED. Always on. Will be removed in 3.19.
@@ -651,7 +654,7 @@ type GitHubConnection struct {
 type GitHubRateLimit struct {
 	// Enabled description: true if rate limiting is enabled.
 	Enabled bool `json:"enabled"`
-	// RequestsPerHour description: Requests per hour permitted. This is an average, calculated per second.
+	// RequestsPerHour description: Requests per hour permitted. This is an average, calculated per second. Internally, the burst limit is set to 100, which implies that for a requests per hour limit as low as 1, users will continue to be able to send a maximum of 100 requests immediately, provided that the complexity cost of each request is 1.
 	RequestsPerHour float64 `json:"requestsPerHour"`
 }
 type GitHubWebhook struct {
@@ -741,7 +744,7 @@ type GitLabProject struct {
 type GitLabRateLimit struct {
 	// Enabled description: true if rate limiting is enabled.
 	Enabled bool `json:"enabled"`
-	// RequestsPerHour description: Requests per hour permitted. This is an average, calculated per second.
+	// RequestsPerHour description: Requests per hour permitted. This is an average, calculated per second. Internally the burst limit is set to 100, which implies that for a requests per hour limit as low as 1, users will continue to be able to send a maximum of 100 requests immediately, provided that the complexity cost of each request is 1.
 	RequestsPerHour float64 `json:"requestsPerHour"`
 }
 type GitLabWebhook struct {
@@ -1075,7 +1078,7 @@ type PerforceConnection struct {
 type PerforceRateLimit struct {
 	// Enabled description: true if rate limiting is enabled.
 	Enabled bool `json:"enabled"`
-	// RequestsPerHour description: Requests per hour permitted. This is an average, calculated per second.
+	// RequestsPerHour description: Requests per hour permitted. This is an average, calculated per second. Internally, the burst limit is set to 100, which implies that for a requests per hour limit as low as 1, users will continue to be able to send a maximum of 100 requests immediately, provided that the complexity cost of each request is 1.
 	RequestsPerHour float64 `json:"requestsPerHour"`
 }
 

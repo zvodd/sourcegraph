@@ -3,7 +3,7 @@ import path from 'path'
 import { remove } from 'lodash'
 import MonacoWebpackPlugin from 'monaco-editor-webpack-plugin'
 import TerserPlugin from 'terser-webpack-plugin'
-import { Configuration, DefinePlugin, ProgressPlugin, RuleSetUseItem, RuleSetUse } from 'webpack'
+import { Configuration, DefinePlugin, ProgressPlugin, RuleSetUseItem, RuleSetUse, RuleSetRule } from 'webpack'
 
 const rootPath = path.resolve(__dirname, '../../../')
 const monacoEditorPaths = [path.resolve(rootPath, 'node_modules', 'monaco-editor')]
@@ -16,7 +16,6 @@ const storiesGlobs = directoriesWithStories.map(packageDirectory =>
 )
 
 const shouldMinify = !!process.env.MINIFY
-const isDevelopment = !shouldMinify
 
 const getCSSLoaders = (...loaders: RuleSetUseItem[]): RuleSetUse => [
     ...loaders,
@@ -43,6 +42,10 @@ const config = {
         './redesign-toggle-toolbar/register.ts',
     ],
 
+    core: {
+        builder: 'webpack5',
+    },
+
     features: {
         // Explicitly disable the deprecated, not used postCSS support,
         // so no warning is rendered on each start of storybook.
@@ -55,14 +58,18 @@ const config = {
     },
 
     webpackFinal: (config: Configuration) => {
-        config.mode = shouldMinify ? 'production' : 'development'
+        // config.mode = shouldMinify ? 'production' : 'development'
+        config.devtool = 'eval-cheap-module-source-map'
 
         // Check the default config is in an expected shape.
-        if (!config.module) {
+        if (!config.module || !config.module.rules) {
             throw new Error(
                 'The format of the default storybook webpack config changed, please check if the config in ./src/main.ts is still valid'
             )
         }
+
+        // Don't use default loaders for assets
+        config.module.rules.splice(6, 1)
 
         if (!config.plugins) {
             config.plugins = []
@@ -78,7 +85,7 @@ const config = {
             if (!config.optimization) {
                 throw new Error('The structure of the config changed, expected config.optimization to be not-null')
             }
-            config.optimization.namedModules = false
+            // config.optimization.moduleIds = false
             config.optimization.minimize = true
             config.optimization.minimizer = [
                 new TerserPlugin({
@@ -104,6 +111,7 @@ const config = {
             test: /\.tsx?$/,
             loader: require.resolve('babel-loader'),
             options: {
+                cacheDirectory: true,
                 configFile: path.resolve(rootPath, 'babel.config.js'),
             },
         })
@@ -145,7 +153,6 @@ const config = {
             use: getCSSLoaders('style-loader', {
                 loader: 'css-loader',
                 options: {
-                    sourceMap: isDevelopment,
                     modules: {
                         exportLocalsConvention: 'camelCase',
                         localIdentName: '[name]__[local]_[hash:base64:5]',
@@ -156,7 +163,9 @@ const config = {
         })
 
         // Make sure Storybook style loaders are only evaluated for Storybook styles.
-        const cssRule = config.module.rules.find(rule => rule.test?.toString() === /\.css$/.toString())
+        const cssRule = config.module.rules.find(
+            rule => rule !== '...' && rule.test?.toString() === /\.css$/.toString()
+        ) as RuleSetRule
         if (!cssRule) {
             throw new Error('Cannot find original CSS rule')
         }
@@ -181,7 +190,13 @@ const config = {
 
         config.module.rules.push({
             test: /\.ya?ml$/,
-            use: ['raw-loader'],
+            type: 'asset/source',
+        })
+
+        config.module.rules.push({
+            test: /\.ttf$/,
+            include: monacoEditorPaths,
+            type: 'asset/resource',
         })
 
         Object.assign(config.entry, {

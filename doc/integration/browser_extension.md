@@ -104,7 +104,7 @@ To grant these permissions:
 
 By default, the browser extension communicates with [sourcegraph.com](https://sourcegraph.com), which has only public code.
 
-To use the browser extension with your private repositories, you need to set up a private Sourcegraph instance and connect the extension to it.
+To use the browser extension with your private repositories, you need to set up a [private Sourcegraph instance](https://docs.sourcegraph.com/admin/install) and connect the extension to it.
 
 Follow these instructions:
 
@@ -142,12 +142,13 @@ If you are still experiencing issues, the next step is to inspect the browser ex
 
 ![Chrome extension console and network activity](https://sourcegraphstatic.com/ChromeExtensionConsoleNetworkActivity.gif)
 
-In Chrome:
+In **Chrome**:
 
 1. Right click the Sourcegraph browser extension icon
 2. Select Manage Extensions
-3. Under Inspect Views select background page, this will open a dev console to the extension background page
-4. In the developer console select the network tab
+3. Turn on Developer Mode in the upper right
+4. Under Inspect Views select background page, this will open a dev console to the extension background page
+5. In the developer console select the network tab
 
 In Safari:
 

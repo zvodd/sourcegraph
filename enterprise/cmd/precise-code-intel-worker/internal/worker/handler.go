@@ -18,6 +18,7 @@ import (
 	"github.com/sourcegraph/sourcegraph/enterprise/lib/codeintel/lsif/conversion"
 	"github.com/sourcegraph/sourcegraph/enterprise/lib/codeintel/semantic"
 	"github.com/sourcegraph/sourcegraph/internal/api"
+	"github.com/sourcegraph/sourcegraph/internal/honey"
 	"github.com/sourcegraph/sourcegraph/internal/vcs"
 	"github.com/sourcegraph/sourcegraph/internal/workerutil"
 	"github.com/sourcegraph/sourcegraph/internal/workerutil/dbworker"
@@ -56,7 +57,13 @@ func (h *handler) PreDequeue(ctx context.Context) (bool, interface{}, error) {
 }
 
 func (h *handler) PreHandle(ctx context.Context, record workerutil.Record) {
-	atomic.AddInt64(&h.budgetRemaining, -h.getSize(record))
+	recordSize := h.getSize(record)
+	event := honey.FromContext(ctx)
+
+	atomic.AddInt64(&h.budgetRemaining, -recordSize)
+
+	//event.AddField("budget_remaining", atomic.LoadInt64(&h.budgetRemaining))
+	event.AddField("record_size", recordSize)
 }
 
 func (h *handler) PostHandle(ctx context.Context, record workerutil.Record) {

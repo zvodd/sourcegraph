@@ -6,6 +6,8 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/sourcegraph/sourcegraph/internal/honey"
+
 	"github.com/inconshreveable/log15"
 	"github.com/opentracing/opentracing-go"
 	"github.com/prometheus/client_golang/prometheus"
@@ -42,6 +44,7 @@ func main() {
 		Logger:     log15.Root(),
 		Tracer:     &trace.Tracer{Tracer: opentracing.GlobalTracer()},
 		Registerer: prometheus.DefaultRegisterer,
+		Honeycomb:  honey.Builder("executor"),
 	}
 
 	// Ready immediately

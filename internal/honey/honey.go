@@ -3,6 +3,7 @@
 package honey
 
 import (
+	"context"
 	"log"
 	"os"
 
@@ -12,6 +13,8 @@ import (
 )
 
 var apiKey = env.Get("HONEYCOMB_TEAM", "", "The key used for Honeycomb event tracking.")
+
+var honeyKey = struct{}{}
 
 // Enabled returns true if honeycomb has been configured to run.
 func Enabled() bool {
@@ -33,12 +36,32 @@ func Builder(dataset string) *libhoney.Builder {
 	return b
 }
 
+// NewIntoContext creates a new event, places it into the context and returns both
+func NewIntoContext(ctx context.Context, builder *libhoney.Builder) (*libhoney.Event, context.Context) {
+	event := builder.NewEvent()
+	return event, IntoContext(ctx, event)
+}
+
+// IntoContext adds a *libhoney.Event into a context.Context, and returns the context.
+func IntoContext(ctx context.Context, event *libhoney.Event) context.Context {
+	return context.WithValue(ctx, honeyKey, event)
+}
+
+func FromContext(ctx context.Context) *libhoney.Event {
+	event := ctx.Value(honeyKey)
+	if event != nil {
+		return event.(*libhoney.Event)
+	}
+	return nil
+}
+
 func init() {
 	if apiKey == "" {
 		return
 	}
 	err := libhoney.Init(libhoney.Config{
 		APIKey: apiKey,
+		//Logger: &Logger{},
 	})
 	if err != nil {
 		log.Println("Failed to init libhoney:", err)

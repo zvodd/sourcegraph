@@ -71,7 +71,7 @@ func NewWorker(options Options, observationContext *observation.Context) gorouti
 		runnerFactory: command.NewRunner,
 	}
 
-	indexer := workerutil.NewWorker(context.Background(), store, handler, options.WorkerOptions)
+	indexer := workerutil.NewWorker(context.Background(), store, handler, options.WorkerOptions, observationContext)
 	heartbeat := goroutine.NewHandlerWithErrorMessage("heartbeat", func(ctx context.Context) error {
 		return queueStore.Heartbeat(ctx, idSet.Slice())
 	})

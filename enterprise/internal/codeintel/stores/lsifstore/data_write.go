@@ -11,6 +11,7 @@ import (
 	"github.com/sourcegraph/sourcegraph/internal/database/batch"
 	"github.com/sourcegraph/sourcegraph/internal/database/dbutil"
 	"github.com/sourcegraph/sourcegraph/internal/goroutine"
+	"github.com/sourcegraph/sourcegraph/internal/honey"
 	"github.com/sourcegraph/sourcegraph/internal/observation"
 )
 
@@ -39,6 +40,7 @@ func (s *Store) WriteDocuments(ctx context.Context, bundleID int, documents chan
 		log.Int("bundleID", bundleID),
 	}})
 	defer endObservation(1, observation.Args{})
+	event := honey.FromContext(ctx)
 
 	tx, err := s.Transact(ctx)
 	if err != nil {
@@ -97,6 +99,7 @@ func (s *Store) WriteDocuments(ctx context.Context, bundleID int, documents chan
 		return err
 	}
 	traceLog(log.Int("numDocumentRecords", int(count)))
+	event.AddField("num_documents", count)
 
 	// Insert the values from the temporary table into the target table. We select a
 	// parameterized dump id and schema version here since it is the same for all rows
@@ -130,6 +133,7 @@ func (s *Store) WriteResultChunks(ctx context.Context, bundleID int, resultChunk
 		log.Int("bundleID", bundleID),
 	}})
 	defer endObservation(1, observation.Args{})
+	event := honey.FromContext(ctx)
 
 	tx, err := s.Transact(ctx)
 	if err != nil {
@@ -171,6 +175,7 @@ func (s *Store) WriteResultChunks(ctx context.Context, bundleID int, resultChunk
 		return err
 	}
 	traceLog(log.Int("numResultChunkRecords", int(count)))
+	event.AddField("num_result_chunks", count)
 
 	// Insert the values from the temporary table into the target table. We select a
 	// parameterized dump id here since it is the same for all rows in this operation.
@@ -198,8 +203,18 @@ func (s *Store) WriteDefinitions(ctx context.Context, bundleID int, monikerLocat
 		log.Int("bundleID", bundleID),
 	}})
 	defer endObservation(1, observation.Args{})
+	event := honey.FromContext(ctx)
 
-	return s.writeDefinitionReferences(ctx, bundleID, "lsif_data_definitions", CurrentDefinitionsSchemaVersion, monikerLocations, traceLog)
+	return s.writeDefinitionReferences(
+		ctx,
+		bundleID,
+		"lsif_data_definitions",
+		CurrentDefinitionsSchemaVersion,
+		monikerLocations,
+		traceLog,
+		func(count uint32) {
+			event.AddField("num_definitions", count)
+		})
 }
 
 // WriteReferences is called (transactionally) from the precise-code-intel-worker.
@@ -208,11 +223,29 @@ func (s *Store) WriteReferences(ctx context.Context, bundleID int, monikerLocati
 		log.Int("bundleID", bundleID),
 	}})
 	defer endObservation(1, observation.Args{})
+	event := honey.FromContext(ctx)
 
-	return s.writeDefinitionReferences(ctx, bundleID, "lsif_data_references", CurrentReferencesSchemaVersion, monikerLocations, traceLog)
+	return s.writeDefinitionReferences(
+		ctx,
+		bundleID,
+		"lsif_data_references",
+		CurrentReferencesSchemaVersion,
+		monikerLocations,
+		traceLog,
+		func(count uint32) {
+			event.AddField("num_references", count)
+		})
 }
 
-func (s *Store) writeDefinitionReferences(ctx context.Context, bundleID int, tableName string, version int, monikerLocations chan semantic.MonikerLocations, traceLog observation.TraceLogger) (err error) {
+func (s *Store) writeDefinitionReferences(
+	ctx context.Context,
+	bundleID int,
+	tableName string,
+	version int,
+	monikerLocations chan semantic.MonikerLocations,
+	traceLog observation.TraceLogger,
+	countFunc func(uint32),
+) (err error) {
 	tx, err := s.Transact(ctx)
 	if err != nil {
 		return err
@@ -253,6 +286,7 @@ func (s *Store) writeDefinitionReferences(ctx context.Context, bundleID int, tab
 		return err
 	}
 	traceLog(log.Int("numRecords", int(count)))
+	countFunc(count)
 
 	// Insert the values from the temporary table into the target table. We select a
 	// parameterized dump id and schema version here since it is the same for all rows

@@ -55,9 +55,11 @@ import (
 	"context"
 	"time"
 
+	"github.com/honeycombio/libhoney-go"
 	"github.com/opentracing/opentracing-go/log"
 	"github.com/prometheus/client_golang/prometheus"
 
+	"github.com/sourcegraph/sourcegraph/internal/honey"
 	"github.com/sourcegraph/sourcegraph/internal/logging"
 	"github.com/sourcegraph/sourcegraph/internal/metrics"
 	"github.com/sourcegraph/sourcegraph/internal/trace"
@@ -70,6 +72,7 @@ type Context struct {
 	Logger     logging.ErrorLogger
 	Tracer     *trace.Tracer
 	Registerer prometheus.Registerer
+	Honeycomb  *libhoney.Builder
 }
 
 // TestContext is a behaviorless Context usable for unit tests.
@@ -160,6 +163,13 @@ func (op *Operation) WithAndLogger(ctx context.Context, err *error, args Args) (
 		logFields = func(fields ...log.Field) {}
 	}
 
+	event := honey.FromContext(ctx)
+	newEvent := event == nil && honey.Enabled()
+	if event == nil && honey.Enabled() {
+		event = op.context.Honeycomb.NewEvent()
+		ctx = honey.IntoContext(ctx, event)
+	}
+
 	return ctx, logFields, func(count float64, finishArgs Args) {
 		elapsed := time.Since(start).Seconds()
 		defaultFinishFields := []log.Field{log.Float64("count", count), log.Float64("elapsed", elapsed)}
@@ -167,6 +177,21 @@ func (op *Operation) WithAndLogger(ctx context.Context, err *error, args Args) (
 		metricLabels := mergeLabels(op.metricLabels, args.MetricLabels, finishArgs.MetricLabels)
 
 		err = op.applyErrorFilter(err)
+
+		if honey.Enabled() {
+			for _, field := range logFields {
+				event.AddField(field.Key(), field.Value())
+			}
+
+			if err != nil && *err != nil {
+				event.AddField("error", (*err).Error())
+			}
+		}
+
+		// if this is a new top level event, this function should be the only one to take care of sending
+		if newEvent {
+			event.Send()
+		}
 		op.emitErrorLogs(err, logFields)
 		op.emitMetrics(err, count, elapsed, metricLabels)
 		op.finishTrace(err, tr, logFields)

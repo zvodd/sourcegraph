@@ -10,6 +10,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/sourcegraph/sourcegraph/internal/errcode"
+	"github.com/sourcegraph/sourcegraph/internal/honey"
 	"github.com/sourcegraph/sourcegraph/internal/observation"
 )
 
@@ -24,6 +25,7 @@ type Worker struct {
 	cancel           func()          // cancels the root context
 	wg               sync.WaitGroup  // tracks active handler routines
 	finished         chan struct{}   // signals that Start has finished
+	observation      *observation.Context
 }
 
 type WorkerOptions struct {
@@ -44,11 +46,11 @@ type WorkerOptions struct {
 	Metrics WorkerMetrics
 }
 
-func NewWorker(ctx context.Context, store Store, handler Handler, options WorkerOptions) *Worker {
-	return newWorker(ctx, store, handler, options, glock.NewRealClock())
+func NewWorker(ctx context.Context, store Store, handler Handler, options WorkerOptions, observationContext *observation.Context) *Worker {
+	return newWorker(ctx, store, handler, options, glock.NewRealClock(), observationContext)
 }
 
-func newWorker(ctx context.Context, store Store, handler Handler, options WorkerOptions, clock glock.Clock) *Worker {
+func newWorker(ctx context.Context, store Store, handler Handler, options WorkerOptions, clock glock.Clock, observationContext *observation.Context) *Worker {
 	if options.Name == "" {
 		panic("no name supplied to github.com/sourcegraph/sourcegraph/internal/workerutil:newWorker")
 	}
@@ -69,6 +71,7 @@ func newWorker(ctx context.Context, store Store, handler Handler, options Worker
 		ctx:              ctx,
 		cancel:           cancel,
 		finished:         make(chan struct{}),
+		observation:      observationContext,
 	}
 }
 
@@ -120,6 +123,11 @@ func (w *Worker) Stop() {
 // can be dequeued and returns an error only on failure to dequeue a new record - no handler errors
 // will bubble up.
 func (w *Worker) dequeueAndHandle() (dequeued bool, err error) {
+	event, ctx := honey.NewIntoContext(w.ctx, w.observation.Honeycomb)
+	defer event.Send()
+
+	event.AddField("worker_name", w.options.Name)
+
 	select {
 	// If we block here we are waiting for a handler to exit so that we do not
 	// exceed our configured concurrency limit.
@@ -139,18 +147,24 @@ func (w *Worker) dequeueAndHandle() (dequeued bool, err error) {
 
 	dequeueable, extraDequeueArguments, err := w.preDequeueHook()
 	if err != nil {
-		return false, errors.Wrap(err, "Handler.PreDequeueHook")
+		err := errors.Wrap(err, "Handler.PreDequeueHook")
+		event.AddField("error", err.Error())
+		return false, err
 	}
+	event.AddField("dequeueable", dequeueable)
 	if !dequeueable {
 		// Hook declined to dequeue a record
 		return false, nil
 	}
 
 	// Select a queued record to process and the transaction that holds it
-	record, tx, dequeued, err := w.store.Dequeue(w.ctx, extraDequeueArguments)
+	record, tx, dequeued, err := w.store.Dequeue(ctx, extraDequeueArguments)
 	if err != nil {
-		return false, errors.Wrap(err, "store.Dequeue")
+		err := errors.Wrap(err, "store.Dequeue")
+		event.AddField("error", err.Error())
+		return false, err
 	}
+	event.AddField("dequeued", dequeued)
 	if !dequeued {
 		// Nothing to process
 		return false, nil
@@ -158,9 +172,10 @@ func (w *Worker) dequeueAndHandle() (dequeued bool, err error) {
 
 	w.options.Metrics.numJobs.Inc()
 	log15.Debug("Dequeued record for processing", "name", w.options.Name, "id", record.RecordID())
+	event.AddField("record_id", record.RecordID())
 
 	if hook, ok := w.handler.(WithHooks); ok {
-		hook.PreHandle(w.ctx, record)
+		hook.PreHandle(ctx, record)
 	}
 
 	w.wg.Add(1)
@@ -168,7 +183,7 @@ func (w *Worker) dequeueAndHandle() (dequeued bool, err error) {
 	go func() {
 		defer func() {
 			if hook, ok := w.handler.(WithHooks); ok {
-				hook.PostHandle(w.ctx, record)
+				hook.PostHandle(ctx, record)
 			}
 
 			w.options.Metrics.numJobs.Dec()
@@ -176,7 +191,8 @@ func (w *Worker) dequeueAndHandle() (dequeued bool, err error) {
 			w.wg.Done()
 		}()
 
-		if err := w.handle(tx, record); err != nil {
+		if err := w.handle(ctx, tx, record); err != nil {
+			event.AddField("error", err.Error())
 			log15.Error("Failed to finalize record", "name", w.options.Name, "err", err)
 		}
 	}()
@@ -187,8 +203,10 @@ func (w *Worker) dequeueAndHandle() (dequeued bool, err error) {
 // handle processes the given record locked by the given transaction. This method returns an
 // error only if there is an issue committing the transaction - no handler errors will bubble
 // up.
-func (w *Worker) handle(tx Store, record Record) (err error) {
-	ctx, endOperation := w.options.Metrics.operations.handle.With(w.ctx, &err, observation.Args{})
+func (w *Worker) handle(ctx context.Context, tx Store, record Record) (err error) {
+	// Enable tracing on the context and trace the remainder of the operation including the
+	// transaction commit call in the following deferred function.
+	ctx, endOperation := w.options.Metrics.operations.handle.With(ctx, &err, observation.Args{})
 	defer endOperation(1, observation.Args{})
 
 	defer func() {

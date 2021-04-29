@@ -36,7 +36,7 @@ func TestWorkerHandlerSuccess(t *testing.T) {
 	store.DequeueFunc.SetDefaultReturn(nil, nil, false, nil)
 	store.MarkCompleteFunc.SetDefaultReturn(true, nil)
 
-	worker := newWorker(context.Background(), store, handler, options, clock)
+	worker := newWorker(context.Background(), store, handler, options, clock, nil)
 	go func() { worker.Start() }()
 	clock.BlockingAdvance(time.Second)
 	worker.Stop()
@@ -76,7 +76,7 @@ func TestWorkerHandlerFailure(t *testing.T) {
 	store.MarkErroredFunc.SetDefaultReturn(true, nil)
 	handler.HandleFunc.SetDefaultReturn(fmt.Errorf("oops"))
 
-	worker := newWorker(context.Background(), store, handler, options, clock)
+	worker := newWorker(context.Background(), store, handler, options, clock, nil)
 	go func() { worker.Start() }()
 	clock.BlockingAdvance(time.Second)
 	worker.Stop()
@@ -125,7 +125,7 @@ func TestWorkerHandlerNonRetryableFailure(t *testing.T) {
 	testErr := nonRetryableTestErr{}
 	handler.HandleFunc.SetDefaultReturn(testErr)
 
-	worker := newWorker(context.Background(), store, handler, options, clock)
+	worker := newWorker(context.Background(), store, handler, options, clock, nil)
 	go func() { worker.Start() }()
 	clock.BlockingAdvance(time.Second)
 	worker.Stop()
@@ -192,7 +192,7 @@ func TestWorkerConcurrent(t *testing.T) {
 				return nil
 			})
 
-			worker := newWorker(context.Background(), store, handler, options, clock)
+			worker := newWorker(context.Background(), store, handler, options, clock, nil)
 			go func() { worker.Start() }()
 			for i := 0; i < NumTestRecords; i++ {
 				clock.BlockingAdvance(time.Second)
@@ -259,7 +259,7 @@ func TestWorkerBlockingPreDequeueHook(t *testing.T) {
 	// Block all dequeues
 	handler.PreDequeueFunc.SetDefaultReturn(false, nil, nil)
 
-	worker := newWorker(context.Background(), store, handler, options, clock)
+	worker := newWorker(context.Background(), store, handler, options, clock, nil)
 	go func() { worker.Start() }()
 	clock.BlockingAdvance(time.Second)
 	worker.Stop()
@@ -290,7 +290,7 @@ func TestWorkerConditionalPreDequeueHook(t *testing.T) {
 	handler.PreDequeueFunc.PushReturn(true, "B", nil)
 	handler.PreDequeueFunc.PushReturn(true, "C", nil)
 
-	worker := newWorker(context.Background(), store, handler, options, clock)
+	worker := newWorker(context.Background(), store, handler, options, clock, nil)
 	go func() { worker.Start() }()
 	clock.BlockingAdvance(time.Second)
 	clock.BlockingAdvance(time.Second)

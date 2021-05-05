@@ -1,4 +1,4 @@
-# Quickstart step 3: (macOS) Start Docker
+# Quickstart step 2: (macOS) Start Docker
 
 ## Option A: Docker for Mac
 
@@ -15,4 +15,4 @@ docker-machine start default
 eval $(docker-machine env)
 ```
 
-[< Previous](quickstart_2_initialize_database.md) | [Next >](quickstart_4_clone_repository.md)
+[< Previous](quickstart_1_install_dependencies.md) | [Next >](quickstart_3_initialize_database.md)

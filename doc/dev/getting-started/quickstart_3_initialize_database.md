@@ -1,4 +1,4 @@
-# Quickstart step 2: Initialize your database
+# Quickstart step 3: Initialize your database
 
 ## Without Docker
 
@@ -103,4 +103,4 @@ For more information about data storage, [read our full PostgreSQL page](../back
 
 Migrations are applied automatically.
 
-[< Previous](quickstart_1_install_dependencies.md) | [Next >](quickstart_3_start_docker.md)
+[< Previous](quickstart_2_start_docker.md) | [Next >](quickstart_4_clone_repository.md)

@@ -208,4 +208,4 @@ Assuming the versions specified are all installed, `asdf` will automatically swi
     [dockerGroup]: https://stackoverflow.com/a/48957722
     [socketPermissions]: https://stackoverflow.com/a/51362528
 
-[< Previous](index.md) | [Next >](quickstart_2_initialize_database.md)
+[< Previous](index.md) | [Next >](quickstart_3_initialize_database.md)

@@ -17,9 +17,9 @@
 
         .monaco-editor-hover-content {
             padding: 0.25rem;
-            .status-bar {
-                display: none;
-            }
+            //            .status-bar {
+            //                display: none;
+            //            }
         }
         .minimap {
             // Minimap is disabled but will still be rendered and affect eg. visual tests, force hide to prevent this.

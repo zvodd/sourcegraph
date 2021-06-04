@@ -146,8 +146,9 @@ In Chrome:
 
 1. Right click the Sourcegraph browser extension icon
 2. Select Manage Extensions
-3. Under Inspect Views select background page, this will open a dev console to the extension background page
-4. In the developer console select the network tab
+3. Turn on `Developer Mode` in the upper right
+4. Under Inspect Views select background page, this will open a dev console to the extension background page
+5. In the developer console select the network tab
 
 In Safari:
 

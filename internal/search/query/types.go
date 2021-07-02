@@ -75,6 +75,10 @@ func (p Plan) ToParseTree() Q {
 	return Q(newOperator(nodes, Or))
 }
 
+type QualifiedQuery interface {
+	qualified()
+}
+
 // Basic represents a leaf expression to evaluate in our search engine. A basic
 // query comprises:
 //   (1) a single search pattern expression, which may contain

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 
+	zoektquery "github.com/google/zoekt/query"
 	"github.com/sourcegraph/sourcegraph/internal/api"
 	"github.com/sourcegraph/sourcegraph/internal/endpoint"
 	searchbackend "github.com/sourcegraph/sourcegraph/internal/search/backend"
@@ -12,14 +13,24 @@ import (
 	"github.com/sourcegraph/sourcegraph/internal/vcs/git"
 )
 
-type TypeParameters interface {
-	typeParametersValue()
+type SearchParameters interface {
+	searchParameters()
 }
 
-func (CommitParameters) typeParametersValue()  {}
-func (DiffParameters) typeParametersValue()    {}
-func (SymbolsParameters) typeParametersValue() {}
-func (TextParameters) typeParametersValue()    {}
+func (Generic) searchParameters() {}
+func (Zoekt) searchParameters()   {}
+
+// ZoektParameters represents all static inputs to evaluate a native Zoekt query.
+type Zoekt struct {
+	zoektquery.Q
+}
+
+// Generic represents a query that cannot be statically qualified
+// up front for evaluation on a particular backend yet. We rely on downstream
+// embedded logic to access the values it needs.
+type Generic struct {
+	TextParameters
+}
 
 type CommitParameters struct {
 	RepoRevs           *RepositoryRevisions

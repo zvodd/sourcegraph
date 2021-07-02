@@ -168,9 +168,10 @@ type IndexedSearchRequest struct {
 	// search should be used.
 	DisableUnindexedSearch bool
 
-	// inputs
-	Args *search.TextParameters
-	Typ  IndexedRequestType
+	// Inputs.
+	Args    *search.TextParameters
+	Typ     IndexedRequestType
+	Runtime *search.Runtime
 
 	// RepoRevs is the repository revisions that are indexed and will be
 	// searched.
@@ -203,25 +204,25 @@ func (s *IndexedSearchRequest) Search(ctx context.Context, c streaming.Sender) e
 		since = s.since
 	}
 
-	return zoektSearch(ctx, s.Args, s.RepoRevs, s.Typ, since, c)
+	return zoektSearch(ctx, s.Args, s.Runtime, s.RepoRevs, s.Typ, since, c)
 }
 
 const maxUnindexedRepoRevSearchesPerQuery = 200
 
-func NewIndexedSearchRequest(ctx context.Context, args *search.TextParameters, typ IndexedRequestType, stream streaming.Sender) (_ *IndexedSearchRequest, err error) {
+func NewIndexedSearchRequest(ctx context.Context, args *search.TextParameters, rt *search.Runtime, typ IndexedRequestType, stream streaming.Sender) (_ *IndexedSearchRequest, err error) {
 	tr, ctx := trace.New(ctx, "newIndexedSearchRequest", string(typ))
 	tr.LogFields(trace.Stringer("global_search_mode", args.Mode))
 	defer func() {
 		tr.SetError(err)
 		tr.Finish()
 	}()
-	repos, err := args.RepoPromise.Get(ctx)
+	repos, err := rt.RepoPromise.Get(ctx)
 	if err != nil {
 		return nil, err
 	}
 
 	// If Zoekt is disabled just fallback to Unindexed.
-	if !args.Zoekt.Enabled() {
+	if !rt.Zoekt.Enabled() {
 		if args.PatternInfo.Index == query.Only {
 			return nil, fmt.Errorf("invalid index:%q (indexed search is not enabled)", args.PatternInfo.Index)
 		}
@@ -260,7 +261,7 @@ func NewIndexedSearchRequest(ctx context.Context, args *search.TextParameters, t
 	// Consult Zoekt to find out which repository revisions can be searched.
 	ctx, cancel := context.WithTimeout(ctx, time.Second)
 	defer cancel()
-	indexedSet, err := args.Zoekt.ListAll(ctx)
+	indexedSet, err := rt.Zoekt.ListAll(ctx)
 	if err != nil {
 		if ctx.Err() == nil {
 			// Only hard fail if the user specified index:only
@@ -308,7 +309,7 @@ func NewIndexedSearchRequest(ctx context.Context, args *search.TextParameters, t
 // Timeouts are reported through the context, and as a special case errNoResultsInTimeout
 // is returned if no results are found in the given timeout (instead of the more common
 // case of finding partial or full results in the given timeout).
-func zoektSearch(ctx context.Context, args *search.TextParameters, repos *IndexedRepoRevs, typ IndexedRequestType, since func(t time.Time) time.Duration, c streaming.Sender) error {
+func zoektSearch(ctx context.Context, args *search.TextParameters, rt *search.Runtime, repos *IndexedRepoRevs, typ IndexedRequestType, since func(t time.Time) time.Duration, c streaming.Sender) error {
 	if args == nil {
 		return nil
 	}
@@ -353,7 +354,7 @@ func zoektSearch(ctx context.Context, args *search.TextParameters, repos *Indexe
 	g.Go(func() error {
 		defer close(reposResolved)
 		if args.Mode == search.ZoektGlobalSearch || args.PatternInfo.Select.Root() == filter.Repository {
-			repos, err := args.RepoPromise.Get(ctx)
+			repos, err := rt.RepoPromise.Get(ctx)
 			if err != nil {
 				return err
 			}
@@ -399,7 +400,7 @@ func zoektSearch(ctx context.Context, args *search.TextParameters, repos *Indexe
 		// PERF: if we are going to be selecting to repo results only anyways, we can just ask
 		// zoekt for only results of type repo.
 		if args.PatternInfo.Select.Root() == filter.Repository {
-			return zoektSearchReposOnly(ctx, args.Zoekt.Client, finalQuery, c, func() map[string]*search.RepositoryRevisions {
+			return zoektSearchReposOnly(ctx, rt.Zoekt.Client, finalQuery, c, func() map[string]*search.RepositoryRevisions {
 				<-reposResolved
 				// getRepoInputRev is nil only if we encountered an error during repo resolution.
 				if getRepoInputRev == nil {
@@ -477,7 +478,7 @@ func zoektSearch(ctx context.Context, args *search.TextParameters, repos *Indexe
 		}))
 		defer cleanup()
 
-		return args.Zoekt.Client.StreamSearch(ctx, finalQuery, &searchOpts, bufSender)
+		return rt.Zoekt.Client.StreamSearch(ctx, finalQuery, &searchOpts, bufSender)
 	})
 
 	if err := g.Wait(); err != nil {

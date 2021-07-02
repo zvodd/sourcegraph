@@ -395,17 +395,19 @@ func (r *searchResolver) suggestFilePaths(ctx context.Context, limit int) ([]Sea
 
 	args := search.TextParameters{
 		PatternInfo:     p,
-		RepoPromise:     (&search.RepoPromise{}).Resolve(resolved.RepoRevs),
 		Query:           r.Query,
 		UseFullDeadline: r.searchTimeoutFieldSet(),
-		Zoekt:           r.zoekt,
-		SearcherURLs:    r.searcherURLs,
+	}
+	rt := search.Runtime{
+		RepoPromise:  (&search.RepoPromise{}).Resolve(resolved.RepoRevs),
+		Zoekt:        r.zoekt,
+		SearcherURLs: r.searcherURLs,
 	}
 	if err := args.PatternInfo.Validate(); err != nil {
 		return nil, err
 	}
 
-	fileMatches, _, err := unindexed.SearchFilesInReposBatch(ctx, &args)
+	fileMatches, _, err := unindexed.SearchFilesInReposBatch(ctx, &args, &rt)
 	if err != nil {
 		return nil, err
 	}

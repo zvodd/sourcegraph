@@ -1338,7 +1338,8 @@ func (r *searchResolver) doResults(ctx context.Context, forceResultTypes result.
 
 		// UseFullDeadline if timeout: set or we are streaming.
 		UseFullDeadline: r.searchTimeoutFieldSet() || r.stream != nil,
-
+	}
+	rt := search.Runtime{
 		Zoekt:        r.zoekt,
 		SearcherURLs: r.searcherURLs,
 		RepoPromise:  &search.RepoPromise{},
@@ -1402,7 +1403,7 @@ func (r *searchResolver) doResults(ctx context.Context, forceResultTypes result.
 		wg.Add(1)
 		goroutine.Go(func() {
 			defer wg.Done()
-			_ = agg.DoFilePathSearch(ctx, &argsIndexed)
+			_ = agg.DoFilePathSearch(ctx, &argsIndexed, &rt)
 		})
 		// On sourcegraph.com and for unscoped queries, determineRepos returns the subset
 		// of indexed default searchrepos. No need to call searcher, because
@@ -1444,14 +1445,14 @@ func (r *searchResolver) doResults(ctx context.Context, forceResultTypes result.
 	// Resolve repo promise so searches waiting on it can proceed. We do this
 	// after reporting the above progress to ensure we don't get search
 	// results before the above reporting.
-	args.RepoPromise.Resolve(resolved.RepoRevs)
+	rt.RepoPromise.Resolve(resolved.RepoRevs)
 
 	if resultTypes.Has(result.TypeRepo) {
 		wg := waitGroup(true)
 		wg.Add(1)
 		goroutine.Go(func() {
 			defer wg.Done()
-			_ = agg.DoRepoSearch(ctx, &args, int32(limit))
+			_ = agg.DoRepoSearch(ctx, &args, &rt, int32(limit))
 		})
 
 	}
@@ -1461,7 +1462,7 @@ func (r *searchResolver) doResults(ctx context.Context, forceResultTypes result.
 		wg.Add(1)
 		goroutine.Go(func() {
 			defer wg.Done()
-			_ = agg.DoSymbolSearch(ctx, &args, limit)
+			_ = agg.DoSymbolSearch(ctx, &args, &rt, limit)
 		})
 	}
 
@@ -1471,7 +1472,7 @@ func (r *searchResolver) doResults(ctx context.Context, forceResultTypes result.
 			wg.Add(1)
 			goroutine.Go(func() {
 				defer wg.Done()
-				_ = agg.DoFilePathSearch(ctx, &args)
+				_ = agg.DoFilePathSearch(ctx, &args, &rt)
 			})
 		}
 	}
@@ -1481,7 +1482,7 @@ func (r *searchResolver) doResults(ctx context.Context, forceResultTypes result.
 		wg.Add(1)
 		goroutine.Go(func() {
 			defer wg.Done()
-			_ = agg.DoDiffSearch(ctx, &args)
+			_ = agg.DoDiffSearch(ctx, &args, &rt)
 		})
 	}
 
@@ -1490,7 +1491,7 @@ func (r *searchResolver) doResults(ctx context.Context, forceResultTypes result.
 		wg.Add(1)
 		goroutine.Go(func() {
 			defer wg.Done()
-			_ = agg.DoCommitSearch(ctx, &args)
+			_ = agg.DoCommitSearch(ctx, &args, &rt)
 		})
 
 	}

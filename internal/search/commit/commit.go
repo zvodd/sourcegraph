@@ -60,9 +60,9 @@ func SearchCommitLogInRepos(ctx context.Context, db dbutil.DB, args *search.Text
 	})
 }
 
-// ResolveCommitParameters creates parameters for commit search from tp. It
-// will wait for the list of repos to be resolved.
-func ResolveCommitParameters(ctx context.Context, tp *search.TextParameters) (*search.TextParametersForCommitParameters, error) {
+// ResolveCommitParameters creates parameters for commit search from runtime and
+// query inputs. It will wait for the list of repos to be resolved.
+func ResolveCommitParameters(ctx context.Context, tp *search.TextParameters, rt *search.Runtime) (*search.TextParametersForCommitParameters, error) {
 	old := tp.PatternInfo
 	patternInfo := &search.CommitPatternInfo{
 		Pattern:                      old.Pattern,
@@ -74,7 +74,7 @@ func ResolveCommitParameters(ctx context.Context, tp *search.TextParameters) (*s
 		PathPatternsAreRegExps:       true,
 		PathPatternsAreCaseSensitive: old.PathPatternsAreCaseSensitive,
 	}
-	repos, err := tp.RepoPromise.Get(ctx)
+	repos, err := rt.RepoPromise.Get(ctx)
 	if err != nil {
 		return nil, err
 	}

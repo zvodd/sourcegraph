@@ -120,21 +120,19 @@ func (m GlobalSearchMode) String() string {
 	return "None"
 }
 
-// TextParameters are the parameters passed to a search backend. It contains the Pattern
-// to search for, as well as the hydrated list of repository revisions to
-// search. It defines behavior for text search on repository names, file names, and file content.
+// TextParameters are static values that drive search backend evaluation. This
+// data structure is the output of query planning. It defines values for text
+// search over, e.g., repository names, file names, and file content.
 type TextParameters struct {
 	PatternInfo *TextPatternInfo
-
-	// Performance optimization: For global queries, resolving repositories and
-	// querying zoekt happens concurrently.
-	RepoPromise *RepoPromise
-	Mode        GlobalSearchMode
 
 	// Query is the parsed query from the user. You should be using Pattern
 	// instead, but Query is useful for checking extra fields that are set and
 	// ignored by Pattern, such as index:no
 	Query query.Q
+
+	// Mode indicates whether we can optimize evaluation up front based on query shape.
+	Mode GlobalSearchMode
 
 	// UseFullDeadline indicates that the search should try do as much work as
 	// it can within context.Deadline. If false the search should try and be
@@ -144,7 +142,14 @@ type TextParameters struct {
 	// repository if this field is true. Another example is we set this field
 	// to true if the user requests a specific timeout or maximum result size.
 	UseFullDeadline bool
+}
 
+// Runtime represents values resolved at runtime during search evaluation. I.e.,
+// these values are not an outcome of query planning.
+type Runtime struct {
+	// Performance optimization: For global queries, resolving repositories and
+	// querying zoekt happens concurrently.
+	RepoPromise  *RepoPromise
 	Zoekt        *searchbackend.Zoekt
 	SearcherURLs *endpoint.Map
 }

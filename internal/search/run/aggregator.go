@@ -67,7 +67,7 @@ func (a *Aggregator) Error(err error) {
 	a.mu.Unlock()
 }
 
-func (a *Aggregator) DoRepoSearch(ctx context.Context, args *search.TextParameters, limit int32) (err error) {
+func (a *Aggregator) DoRepoSearch(ctx context.Context, args *search.TextParameters, rt *search.Runtime, limit int32) (err error) {
 	tr, ctx := trace.New(ctx, "doRepoSearch", "")
 	defer func() {
 		a.Error(err)
@@ -75,11 +75,11 @@ func (a *Aggregator) DoRepoSearch(ctx context.Context, args *search.TextParamete
 		tr.Finish()
 	}()
 
-	err = SearchRepositories(ctx, args, limit, a)
+	err = SearchRepositories(ctx, args, rt, limit, a)
 	return errors.Wrap(err, "repository search failed")
 }
 
-func (a *Aggregator) DoSymbolSearch(ctx context.Context, args *search.TextParameters, limit int) (err error) {
+func (a *Aggregator) DoSymbolSearch(ctx context.Context, args *search.TextParameters, rt *search.Runtime, limit int) (err error) {
 	tr, ctx := trace.New(ctx, "doSymbolSearch", "")
 	defer func() {
 		a.Error(err)
@@ -87,11 +87,11 @@ func (a *Aggregator) DoSymbolSearch(ctx context.Context, args *search.TextParame
 		tr.Finish()
 	}()
 
-	err = symbol.Search(ctx, args, limit, a)
+	err = symbol.Search(ctx, args, rt, limit, a)
 	return errors.Wrap(err, "symbol search failed")
 }
 
-func (a *Aggregator) DoFilePathSearch(ctx context.Context, args *search.TextParameters) (err error) {
+func (a *Aggregator) DoFilePathSearch(ctx context.Context, args *search.TextParameters, rt *search.Runtime) (err error) {
 	tr, ctx := trace.New(ctx, "doFilePathSearch", "")
 	tr.LogFields(trace.Stringer("global_search_mode", args.Mode))
 	defer func() {
@@ -103,12 +103,12 @@ func (a *Aggregator) DoFilePathSearch(ctx context.Context, args *search.TextPara
 	isDefaultStructuralSearch := args.PatternInfo.IsStructuralPat && args.PatternInfo.FileMatchLimit == search.DefaultMaxSearchResults
 
 	if !isDefaultStructuralSearch {
-		return unindexed.SearchFilesInRepos(ctx, args, a)
+		return unindexed.SearchFilesInRepos(ctx, args, rt, a)
 	}
 
 	// For structural search with default limits we retry if we get no results.
 
-	fileMatches, stats, err := unindexed.SearchFilesInReposBatch(ctx, args)
+	fileMatches, stats, err := unindexed.SearchFilesInReposBatch(ctx, args, rt)
 
 	if len(fileMatches) == 0 && err == nil {
 		// No results for structural search? Automatically search again and force Zoekt
@@ -119,7 +119,7 @@ func (a *Aggregator) DoFilePathSearch(ctx context.Context, args *search.TextPara
 		argsCopy.PatternInfo = &patternCopy
 		args = &argsCopy
 
-		fileMatches, stats, err = unindexed.SearchFilesInReposBatch(ctx, args)
+		fileMatches, stats, err = unindexed.SearchFilesInReposBatch(ctx, args, rt)
 
 		if len(fileMatches) == 0 {
 			// Still no results? Give up.
@@ -140,7 +140,7 @@ func (a *Aggregator) DoFilePathSearch(ctx context.Context, args *search.TextPara
 	return err
 }
 
-func (a *Aggregator) DoDiffSearch(ctx context.Context, tp *search.TextParameters) (err error) {
+func (a *Aggregator) DoDiffSearch(ctx context.Context, tp *search.TextParameters, rt *search.Runtime) (err error) {
 	tr, ctx := trace.New(ctx, "doDiffSearch", "")
 	defer func() {
 		a.Error(err)
@@ -148,11 +148,11 @@ func (a *Aggregator) DoDiffSearch(ctx context.Context, tp *search.TextParameters
 		tr.Finish()
 	}()
 
-	if err := checkDiffCommitSearchLimits(ctx, tp, "diff"); err != nil {
+	if err := checkDiffCommitSearchLimits(ctx, tp, rt, "diff"); err != nil {
 		return err
 	}
 
-	args, err := commit.ResolveCommitParameters(ctx, tp)
+	args, err := commit.ResolveCommitParameters(ctx, tp, rt)
 	if err != nil {
 		log15.Warn("doDiffSearch: error while resolving commit parameters", "error", err)
 		return nil
@@ -161,7 +161,7 @@ func (a *Aggregator) DoDiffSearch(ctx context.Context, tp *search.TextParameters
 	return commit.SearchCommitDiffsInRepos(ctx, a.db, args, a)
 }
 
-func (a *Aggregator) DoCommitSearch(ctx context.Context, tp *search.TextParameters) (err error) {
+func (a *Aggregator) DoCommitSearch(ctx context.Context, tp *search.TextParameters, rt *search.Runtime) (err error) {
 	tr, ctx := trace.New(ctx, "doCommitSearch", "")
 	defer func() {
 		a.Error(err)
@@ -169,11 +169,11 @@ func (a *Aggregator) DoCommitSearch(ctx context.Context, tp *search.TextParamete
 		tr.Finish()
 	}()
 
-	if err := checkDiffCommitSearchLimits(ctx, tp, "commit"); err != nil {
+	if err := checkDiffCommitSearchLimits(ctx, tp, rt, "commit"); err != nil {
 		return err
 	}
 
-	args, err := commit.ResolveCommitParameters(ctx, tp)
+	args, err := commit.ResolveCommitParameters(ctx, tp, rt)
 	if err != nil {
 		log15.Warn("doCommitSearch: error while resolving commit parameters", "error", err)
 		return nil
@@ -182,8 +182,8 @@ func (a *Aggregator) DoCommitSearch(ctx context.Context, tp *search.TextParamete
 	return commit.SearchCommitLogInRepos(ctx, a.db, args, a)
 }
 
-func checkDiffCommitSearchLimits(ctx context.Context, args *search.TextParameters, resultType string) error {
-	repos, err := args.RepoPromise.Get(ctx)
+func checkDiffCommitSearchLimits(ctx context.Context, args *search.TextParameters, rt *search.Runtime, resultType string) error {
+	repos, err := rt.RepoPromise.Get(ctx)
 	if err != nil {
 		return err
 	}

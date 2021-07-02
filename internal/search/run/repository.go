@@ -23,7 +23,7 @@ var MockSearchRepositories func(args *search.TextParameters) ([]result.Match, *s
 //
 // For a repository to match a query, the repository's name must match all of the repo: patterns AND the
 // default patterns (i.e., the patterns that are not prefixed with any search field).
-func SearchRepositories(ctx context.Context, args *search.TextParameters, limit int32, stream streaming.Sender) (err error) {
+func SearchRepositories(ctx context.Context, args *search.TextParameters, rt *search.Runtime, limit int32, stream streaming.Sender) (err error) {
 	if MockSearchRepositories != nil {
 		results, stats, err := MockSearchRepositories(args)
 		stream.Send(streaming.SearchEvent{
@@ -84,7 +84,7 @@ func SearchRepositories(ctx context.Context, args *search.TextParameters, limit 
 	}
 
 	// Filter args.Repos by matching their names against the query pattern.
-	resolved, err := args.RepoPromise.Get(ctx)
+	resolved, err := rt.RepoPromise.Get(ctx)
 	if err != nil {
 		return err
 	}
@@ -104,7 +104,7 @@ func SearchRepositories(ctx context.Context, args *search.TextParameters, limit 
 		for matched := range results {
 			repos = append(repos, matched...)
 		}
-		repos, err = reposToAdd(ctx, args, repos)
+		repos, err = reposToAdd(ctx, args, rt, repos)
 		if err != nil {
 			return err
 		}
@@ -201,7 +201,7 @@ func matchRepos(pattern *regexp.Regexp, resolved []*search.RepositoryRevisions, 
 
 // reposToAdd determines which repositories should be included in the result set based on whether they fit in the subset
 // of repostiories specified in the query's `repohasfile` and `-repohasfile` fields if they exist.
-func reposToAdd(ctx context.Context, args *search.TextParameters, repos []*search.RepositoryRevisions) ([]*search.RepositoryRevisions, error) {
+func reposToAdd(ctx context.Context, args *search.TextParameters, rt *search.Runtime, repos []*search.RepositoryRevisions) ([]*search.RepositoryRevisions, error) {
 	// matchCounts will contain the count of repohasfile patterns that matched.
 	// For negations, we will explicitly set this to -1 if it matches.
 	matchCounts := make(map[api.RepoID]int)
@@ -217,10 +217,11 @@ func reposToAdd(ctx context.Context, args *search.TextParameters, repos []*searc
 			}
 			newArgs := *args
 			newArgs.PatternInfo = &p
-			newArgs.RepoPromise = (&search.RepoPromise{}).Resolve(repos)
 			newArgs.Query = q
 			newArgs.UseFullDeadline = true
-			matches, _, err := unindexed.SearchFilesInReposBatch(ctx, &newArgs)
+			rt := *rt
+			rt.RepoPromise = (&search.RepoPromise{}).Resolve(repos)
+			matches, _, err := unindexed.SearchFilesInReposBatch(ctx, &newArgs, &rt)
 			if err != nil {
 				return nil, err
 			}
@@ -252,11 +253,12 @@ func reposToAdd(ctx context.Context, args *search.TextParameters, repos []*searc
 			}
 			newArgs := *args
 			newArgs.PatternInfo = &p
-			rp := (&search.RepoPromise{}).Resolve(repos)
-			newArgs.RepoPromise = rp
 			newArgs.Query = q
 			newArgs.UseFullDeadline = true
-			matches, _, err := unindexed.SearchFilesInReposBatch(ctx, &newArgs)
+			rt := *rt
+			rp := (&search.RepoPromise{}).Resolve(repos)
+			rt.RepoPromise = rp
+			matches, _, err := unindexed.SearchFilesInReposBatch(ctx, &newArgs, &rt)
 			if err != nil {
 				return nil, err
 			}

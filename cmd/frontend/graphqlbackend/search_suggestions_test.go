@@ -156,7 +156,7 @@ func TestSearchSuggestions(t *testing.T) {
 			mu.Lock()
 			defer mu.Unlock()
 			calledSearchFilesInRepos.Store(true)
-			repos, err := args.RepoPromise.Get(context.Background())
+			repos, err := rt.RepoPromise.Get(context.Background())
 			if err != nil {
 				t.Error(err)
 			}

@@ -34,7 +34,7 @@ var textSearchLimiter = mutablelimiter.New(32)
 var MockSearchFilesInRepos func(args *search.TextParameters) ([]result.Match, *streaming.Stats, error)
 
 // SearchFilesInRepos searches a set of repos for a pattern.
-func SearchFilesInRepos(ctx context.Context, args *search.TextParameters, stream streaming.Sender) (err error) {
+func SearchFilesInRepos(ctx context.Context, args *search.TextParameters, rt *search.Runtime, stream streaming.Sender) (err error) {
 	if MockSearchFilesInRepos != nil {
 		matches, mockStats, err := MockSearchFilesInRepos(args)
 		stream.Send(streaming.SearchEvent{
@@ -68,7 +68,7 @@ func SearchFilesInRepos(ctx context.Context, args *search.TextParameters, stream
 			RepoRevs: &zoektutil.IndexedRepoRevs{},
 		}
 	} else {
-		indexed, err = zoektutil.NewIndexedSearchRequest(ctx, args, zoektutil.TextRequest, stream)
+		indexed, err = zoektutil.NewIndexedSearchRequest(ctx, args, rt, zoektutil.TextRequest, stream)
 		if err != nil {
 			return err
 		}
@@ -96,14 +96,14 @@ func SearchFilesInRepos(ctx context.Context, args *search.TextParameters, stream
 				for _, repo := range indexed.Repos() {
 					repos = append(repos, repo)
 				}
-				return callSearcherOverRepos(ctx, args, stream, repos, true)
+				return callSearcherOverRepos(ctx, args, rt, stream, repos, true)
 			})
 		}
 	}
 
 	// Concurrently run searcher for all unindexed repos regardless whether text, regexp, or structural search.
 	g.Go(func() error {
-		return callSearcherOverRepos(ctx, args, stream, indexed.Unindexed, false)
+		return callSearcherOverRepos(ctx, args, rt, stream, indexed.Unindexed, false)
 	})
 
 	return g.Wait()
@@ -111,9 +111,9 @@ func SearchFilesInRepos(ctx context.Context, args *search.TextParameters, stream
 
 // SearchFilesInRepoBatch is a convenience function around searchFilesInRepos
 // which collects the results from the stream.
-func SearchFilesInReposBatch(ctx context.Context, args *search.TextParameters) ([]*result.FileMatch, streaming.Stats, error) {
+func SearchFilesInReposBatch(ctx context.Context, args *search.TextParameters, rt *search.Runtime) ([]*result.FileMatch, streaming.Stats, error) {
 	matches, stats, err := streaming.CollectStream(func(stream streaming.Sender) error {
-		return SearchFilesInRepos(ctx, args, stream)
+		return SearchFilesInRepos(ctx, args, rt, stream)
 	})
 
 	fms, fmErr := matchesToFileMatches(matches)
@@ -248,6 +248,7 @@ func matchesToFileMatches(matches []result.Match) ([]*result.FileMatch, error) {
 func callSearcherOverRepos(
 	ctx context.Context,
 	args *search.TextParameters,
+	rt *search.Runtime,
 	stream streaming.Sender,
 	searcherRepos []*search.RepositoryRevisions,
 	index bool,
@@ -286,7 +287,7 @@ func callSearcherOverRepos(
 	// The number of searcher endpoints can change over time. Inform our
 	// limiter of the new limit, which is a multiple of the number of
 	// searchers.
-	eps, err := args.SearcherURLs.Endpoints()
+	eps, err := rt.SearcherURLs.Endpoints()
 	if err != nil {
 		return err
 	}
@@ -316,7 +317,7 @@ func callSearcherOverRepos(
 					ctx, done := limitCtx, limitDone
 					defer done()
 
-					matches, repoLimitHit, err := searchFilesInRepo(ctx, args.SearcherURLs, repoRev.Repo, repoRev.GitserverRepo(), repoRev.RevSpecs()[0], index, args.PatternInfo, fetchTimeout)
+					matches, repoLimitHit, err := searchFilesInRepo(ctx, rt.SearcherURLs, repoRev.Repo, repoRev.GitserverRepo(), repoRev.RevSpecs()[0], index, args.PatternInfo, fetchTimeout)
 					if err != nil {
 						tr.LogFields(otlog.String("repo", string(repoRev.Repo.Name)), otlog.Error(err), otlog.Bool("timeout", errcode.IsTimeout(err)), otlog.Bool("temporary", errcode.IsTemporary(err)))
 						log15.Warn("searchFilesInRepo failed", "error", err, "repo", repoRev.Repo.Name)

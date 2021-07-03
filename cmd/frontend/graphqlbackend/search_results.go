@@ -457,14 +457,14 @@ func LogSearchLatency(ctx context.Context, db dbutil.DB, si *run.SearchInputs, d
 
 // evaluateLeaf performs a single search operation and corresponds to the
 // evaluation of leaf expression in a query.
-func (r *searchResolver) evaluateLeaf(ctx context.Context) (_ *SearchResults, err error) {
+func (r *searchResolver) evaluateLeaf(ctx context.Context, p search.Parameters) (_ *SearchResults, err error) {
 	tr, ctx := trace.New(ctx, "evaluateLeaf", "")
 	defer func() {
 		tr.SetError(err)
 		tr.Finish()
 	}()
 
-	return r.resultsWithTimeoutSuggestion(ctx)
+	return r.resultsWithTimeoutSuggestion(ctx, p)
 }
 
 // unionMerge performs a merge of file match results, merging line matches when
@@ -708,11 +708,19 @@ func (r *searchResolver) evaluatePatternExpression(ctx context.Context, q query.
 			return r.evaluateOr(ctx, q)
 		case query.Concat:
 			r.setQuery(q.ToParseTree())
-			return r.evaluateLeaf(ctx)
+			p, err := toGenericSearchParameters(r.Query, r.protocol(), r.PatternType)
+			if err != nil {
+				return nil, err
+			}
+			return r.evaluateLeaf(ctx, p)
 		}
 	case query.Pattern:
 		r.setQuery(q.ToParseTree())
-		return r.evaluateLeaf(ctx)
+		p, err := toGenericSearchParameters(r.Query, r.protocol(), r.PatternType)
+		if err != nil {
+			return nil, err
+		}
+		return r.evaluateLeaf(ctx, p)
 	case query.Parameter:
 		// evaluatePatternExpression does not process Parameter nodes.
 		return &SearchResults{}, nil
@@ -721,11 +729,52 @@ func (r *searchResolver) evaluatePatternExpression(ctx context.Context, q query.
 	return nil, fmt.Errorf("unrecognized type %T in evaluatePatternExpression", q.Pattern)
 }
 
+func toSearchParameters(q query.Q) search.Parameters {
+	return nil
+}
+
+func toGenericSearchParameters(q query.Q, proto search.Protocol, patternType query.SearchType) (search.Parameters, error) {
+	b, err := query.ToBasicQuery(q)
+	if err != nil {
+		return nil, err
+	}
+	p := search.ToTextPatternInfo(b, proto, query.Identity)
+
+	// Fallback to literal search for searching repos and files if
+	// the structural search pattern is empty.
+	if patternType == query.SearchTypeStructural && p.Pattern == "" {
+		patternType = query.SearchTypeLiteral
+		p.IsStructuralPat = false
+		// forceResultTypes = result.Types(0) // ??
+	}
+
+	args := search.Generic{
+		TextParameters: search.TextParameters{
+			PatternInfo: p,
+			Query:       q,
+			// UseFullDeadline: r.searchTimeoutFieldSet() || proto != search.Streaming,
+			UseFullDeadline: proto != search.Streaming,
+		},
+		Types:      result.TypeEmpty,
+		SearchType: patternType,
+		// UseFullDeadline if timeout: set or we are streaming.
+	}
+	if err := args.PatternInfo.Validate(); err != nil {
+		return nil, &badRequestError{err}
+	}
+	return &args, nil
+}
+
 // evaluate evaluates all expressions of a search query.
 func (r *searchResolver) evaluate(ctx context.Context, q query.Basic) (*SearchResults, error) {
+	_p := toSearchParameters(r.Query) // try get a native shape. else don't
 	if q.Pattern == nil {
 		r.setQuery(query.ToNodes(q.Parameters))
-		return r.evaluateLeaf(ctx)
+		p, err := toGenericSearchParameters(r.Query, r.protocol(), r.PatternType)
+		if err != nil {
+			return nil, err
+		}
+		return r.evaluateLeaf(ctx, p)
 	}
 	return r.evaluatePatternExpression(ctx, q)
 }
@@ -978,9 +1027,9 @@ func searchResultsToRepoNodes(matches []result.Match) ([]query.Node, error) {
 // resultsWithTimeoutSuggestion calls doResults, and in case of deadline
 // exceeded returns a search alert with a did-you-mean link for the same
 // query with a longer timeout.
-func (r *searchResolver) resultsWithTimeoutSuggestion(ctx context.Context) (*SearchResults, error) {
+func (r *searchResolver) resultsWithTimeoutSuggestion(ctx context.Context, p search.Parameters) (*SearchResults, error) {
 	start := time.Now()
-	rr, err := r.doResults(ctx, result.TypeEmpty)
+	rr, err := r.doResults(ctx, p, result.TypeEmpty)
 
 	// If we encountered a context timeout, it indicates one of the many result
 	// type searchers (file, diff, symbol, etc) completely timed out and could not
@@ -1148,6 +1197,11 @@ func (r *searchResolver) Stats(ctx context.Context) (stats *searchResultsStats, 
 		return stats, nil
 	}
 
+	sp, err := toGenericSearchParameters(r.Query, r.protocol(), r.PatternType)
+	if err != nil {
+		return nil, err
+	}
+
 	// Calculate value from scratch.
 	searchResultsStatsCounter.WithLabelValues("miss").Inc()
 	attempts := 0
@@ -1155,7 +1209,7 @@ func (r *searchResolver) Stats(ctx context.Context) (stats *searchResultsStats, 
 	for {
 		// Query search results.
 		var err error
-		results, err := r.doResults(ctx, result.TypeEmpty)
+		results, err := r.doResults(ctx, sp, result.TypeEmpty)
 		if err != nil {
 			return nil, err // do not cache errors.
 		}
@@ -1232,7 +1286,7 @@ func (r *searchResolver) withTimeout(ctx context.Context) (context.Context, cont
 	return ctx, cancel, nil
 }
 
-func (r *searchResolver) determineResultTypes(args search.TextParameters, forceTypes result.Types) result.Types {
+func (r *searchResolver) determineResultTypes(args search.Generic, forceTypes result.Types) result.Types {
 	// Determine which types of results to return.
 	var rts result.Types
 	if forceTypes != 0 {
@@ -1298,7 +1352,7 @@ func (r *searchResolver) isGlobalSearch() bool {
 // regardless of what `type:` is specified in the query string.
 //
 // Partial results AND an error may be returned.
-func (r *searchResolver) doResults(ctx context.Context, forceResultTypes result.Types) (_ *SearchResults, err error) {
+func (r *searchResolver) doResults(ctx context.Context, sp search.Parameters, forceResultTypes result.Types) (_ *SearchResults, err error) {
 	tr, ctx := trace.New(ctx, "doResults", r.rawQuery())
 	defer func() {
 		tr.SetError(err)
@@ -1318,37 +1372,13 @@ func (r *searchResolver) doResults(ctx context.Context, forceResultTypes result.
 		forceResultTypes = result.TypeFile
 	}
 
-	q, err := query.ToBasicQuery(r.Query)
-	if err != nil {
-		return nil, err
-	}
-	p := search.ToTextPatternInfo(q, r.protocol(), query.Identity)
-
-	// Fallback to literal search for searching repos and files if
-	// the structural search pattern is empty.
-	if r.PatternType == query.SearchTypeStructural && p.Pattern == "" {
-		r.PatternType = query.SearchTypeLiteral
-		p.IsStructuralPat = false
-		forceResultTypes = result.Types(0)
-	}
-
-	args := search.TextParameters{
-		PatternInfo: p,
-		Query:       r.Query,
-
-		// UseFullDeadline if timeout: set or we are streaming.
-		UseFullDeadline: r.searchTimeoutFieldSet() || r.stream != nil,
-	}
 	rt := search.Runtime{
 		Zoekt:        r.zoekt,
 		SearcherURLs: r.searcherURLs,
 		RepoPromise:  &search.RepoPromise{},
 	}
-	if err := args.PatternInfo.Validate(); err != nil {
-		return nil, &badRequestError{err}
-	}
 
-	resultTypes := r.determineResultTypes(args, forceResultTypes)
+	resultTypes := r.determineResultTypes(sp.(search.Generic), forceResultTypes) // HACK Conversion
 	tr.LazyPrintf("resultTypes: %s", resultTypes)
 	var (
 		requiredWg sync.WaitGroup
@@ -1356,7 +1386,7 @@ func (r *searchResolver) doResults(ctx context.Context, forceResultTypes result.
 	)
 
 	waitGroup := func(required bool) *sync.WaitGroup {
-		if args.UseFullDeadline {
+		if sp.(search.Generic).UseFullDeadline { // awkward. Use shared, or put in runtime? HACK conversion
 			// When a custom timeout is specified, all searches are required and get the full timeout.
 			return &requiredWg
 		}
@@ -1392,18 +1422,18 @@ func (r *searchResolver) doResults(ctx context.Context, forceResultTypes result.
 	}()
 
 	isFileOrPath := resultTypes.Has(result.TypeFile) || resultTypes.Has(result.TypePath)
-	isIndexedSearch := args.PatternInfo.Index != query.No
+	isIndexedSearch := sp.(search.Generic).PatternInfo.Index != query.No
 
 	// performance optimization: call zoekt early, resolve repos concurrently, filter
 	// search results with resolved repos.
 	if r.isGlobalSearch() && isIndexedSearch && isFileOrPath {
-		argsIndexed := args
+		argsIndexed := sp.(search.Generic)
 		argsIndexed.Mode = search.ZoektGlobalSearch
 		wg := waitGroup(true)
 		wg.Add(1)
 		goroutine.Go(func() {
 			defer wg.Done()
-			_ = agg.DoFilePathSearch(ctx, &argsIndexed, &rt)
+			_ = agg.DoFilePathSearch(ctx, &argsIndexed.(search.Generic), &rt)
 		})
 		// On sourcegraph.com and for unscoped queries, determineRepos returns the subset
 		// of indexed default searchrepos. No need to call searcher, because

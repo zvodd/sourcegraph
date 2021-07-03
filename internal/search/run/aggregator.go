@@ -91,9 +91,9 @@ func (a *Aggregator) DoSymbolSearch(ctx context.Context, args *search.TextParame
 	return errors.Wrap(err, "symbol search failed")
 }
 
-func (a *Aggregator) DoFilePathSearch(ctx context.Context, args *search.TextParameters, rt *search.Runtime) (err error) {
+func (a *Aggregator) DoFilePathSearch(ctx context.Context, args search.Parameters, rt *search.Runtime) (err error) {
 	tr, ctx := trace.New(ctx, "doFilePathSearch", "")
-	tr.LogFields(trace.Stringer("global_search_mode", args.Mode))
+	tr.LogFields(trace.Stringer("global_search_mode", args.(search.Generic).Mode))
 	defer func() {
 		a.Error(err)
 		tr.SetErrorIfNotContext(err)

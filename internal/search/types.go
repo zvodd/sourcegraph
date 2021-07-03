@@ -10,10 +10,11 @@ import (
 	searchbackend "github.com/sourcegraph/sourcegraph/internal/search/backend"
 	"github.com/sourcegraph/sourcegraph/internal/search/filter"
 	"github.com/sourcegraph/sourcegraph/internal/search/query"
+	"github.com/sourcegraph/sourcegraph/internal/search/result"
 	"github.com/sourcegraph/sourcegraph/internal/vcs/git"
 )
 
-type SearchParameters interface {
+type Parameters interface {
 	searchParameters()
 }
 
@@ -21,6 +22,7 @@ func (Generic) searchParameters() {}
 func (Zoekt) searchParameters()   {}
 
 // ZoektParameters represents all static inputs to evaluate a native Zoekt query.
+// Must still encapsulate "global" mode (repo?) -> runtime?
 type Zoekt struct {
 	zoektquery.Q
 }
@@ -30,6 +32,8 @@ type Zoekt struct {
 // embedded logic to access the values it needs.
 type Generic struct {
 	TextParameters
+	result.Types
+	query.SearchType
 }
 
 type CommitParameters struct {

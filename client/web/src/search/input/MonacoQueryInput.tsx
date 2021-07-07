@@ -396,7 +396,7 @@ export const MonacoQueryInput: React.FunctionComponent<MonacoQueryInputProps> = 
         wordBasedSuggestions: false,
         quickSuggestions: true,
         fixedOverflowWidgets: true,
-        contextmenu: false,
+        contextmenu: true,
         links: false,
         // Match our monospace/code style from code.scss
         fontFamily: 'sfmono-regular, consolas, menlo, dejavu sans mono, monospace',

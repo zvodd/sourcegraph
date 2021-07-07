@@ -24,22 +24,40 @@ export const getActions = (
     console.log(`actions baby: markers ${JSON.stringify(context.markers)} readonly ${JSON.stringify(context.only)}`)
     const actions: Monaco.languages.CodeAction[] = []
     for (const marker of context.markers) {
-        actions.push({
-            title: 'Fix',
-            diagnostics: [marker],
-            edit: {
-                edits: [
-                    {
-                        resource: model.uri,
-                        edit: {
-                            range: new Monaco.Range(1, 1, 1, 9),
-                            text: '"Hello world!"',
+        actions.push(
+            {
+                title: 'Fix',
+                diagnostics: [marker],
+                edit: {
+                    edits: [
+                        {
+                            resource: model.uri,
+                            edit: {
+                                range: new Monaco.Range(1, 1, 1, 9),
+                                text: '"Hello world!"',
+                            },
                         },
-                    },
-                ],
+                    ],
+                },
+                kind: 'quickfix',
             },
-            kind: 'quickfix',
-        })
+            {
+                title: 'Derp',
+                diagnostics: [marker],
+                edit: {
+                    edits: [
+                        {
+                            resource: model.uri,
+                            edit: {
+                                range: new Monaco.Range(1, 1, 1, 9),
+                                text: '"Hello world!"',
+                            },
+                        },
+                    ],
+                },
+                kind: 'quickfix',
+            }
+        )
     }
     console.log(`Built action: ${JSON.stringify(actions)}`)
     return { actions, dispose: () => null }

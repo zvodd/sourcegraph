@@ -3,7 +3,6 @@
         // Disable stylelint for Monaco modifications
         // stylelint-disable
 
-        /*
         // None of this has any effect, shadow dom; https://stackoverflow.com/questions/66672303/ability-to-not-use-shadowdom-in-monaco-editor
         .action-menu-item {
             background-color: red !important;
@@ -32,7 +31,6 @@
         .monaco-menu > .monaco-action-bar.vertical {
             color: red !important;
         }
-        */
 
         .decorationsOverviewRuler {
             display: none;

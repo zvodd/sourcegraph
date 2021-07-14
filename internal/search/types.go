@@ -2,6 +2,7 @@ package search
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 	"time"
 
@@ -12,6 +13,7 @@ import (
 	"github.com/sourcegraph/sourcegraph/internal/search/query"
 	"github.com/sourcegraph/sourcegraph/internal/search/result"
 	"github.com/sourcegraph/sourcegraph/internal/vcs/git"
+	"github.com/sourcegraph/sourcegraph/schema"
 )
 
 type TypeParameters interface {
@@ -120,6 +122,72 @@ func (m GlobalSearchMode) String() string {
 		return s
 	}
 	return "None"
+}
+
+type RepoParameters struct {
+	RepoFilters        []string
+	MinusRepoFilters   []string
+	RepoGroupFilters   []string
+	SearchContextSpec  string
+	VersionContextName string
+	UserSettings       *schema.Settings
+	NoForks            bool
+	OnlyForks          bool
+	NoArchived         bool
+	OnlyArchived       bool
+	CommitAfter        string
+	OnlyPrivate        bool
+	OnlyPublic         bool
+	Ranked             bool // Return results ordered by rank
+	Limit              int
+	Query              query.Q
+}
+
+func (rq *RepoParameters) String() string {
+	var b strings.Builder
+	if len(rq.RepoFilters) == 0 {
+		b.WriteString("r=[]")
+	}
+	for i, r := range rq.RepoFilters {
+		if i != 0 {
+			b.WriteByte(' ')
+		}
+		b.WriteString(strconv.Quote(r))
+	}
+
+	if len(rq.MinusRepoFilters) > 0 {
+		_, _ = fmt.Fprintf(&b, " -r=%v", rq.MinusRepoFilters)
+	}
+	if len(rq.RepoGroupFilters) > 0 {
+		_, _ = fmt.Fprintf(&b, " groups=%v", rq.RepoGroupFilters)
+	}
+	if rq.VersionContextName != "" {
+		_, _ = fmt.Fprintf(&b, " versionContext=%q", rq.VersionContextName)
+	}
+	if rq.CommitAfter != "" {
+		_, _ = fmt.Fprintf(&b, " CommitAfter=%q", rq.CommitAfter)
+	}
+
+	if rq.NoForks {
+		b.WriteString(" NoForks")
+	}
+	if rq.OnlyForks {
+		b.WriteString(" OnlyForks")
+	}
+	if rq.NoArchived {
+		b.WriteString(" NoArchived")
+	}
+	if rq.OnlyArchived {
+		b.WriteString(" OnlyArchived")
+	}
+	if rq.OnlyPrivate {
+		b.WriteString(" OnlyPrivate")
+	}
+	if rq.OnlyPublic {
+		b.WriteString(" OnlyPublic")
+	}
+
+	return b.String()
 }
 
 // TextParameters are the parameters passed to a search backend. It contains the Pattern

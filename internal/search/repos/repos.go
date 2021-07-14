@@ -6,7 +6,6 @@ import (
 	"regexp"
 	regexpsyntax "regexp/syntax"
 	"sort"
-	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -52,23 +51,23 @@ type Resolver struct {
 	SearchableReposFunc searchableReposFunc
 }
 
-func (r *Resolver) Resolve(ctx context.Context, op Options) (Resolved, error) {
+func (r *Resolver) Resolve(ctx context.Context, p search.RepoParameters) (Resolved, error) {
 	var err error
-	tr, ctx := trace.New(ctx, "resolveRepositories", op.String())
+	tr, ctx := trace.New(ctx, "resolveRepositories", p.String())
 	defer func() {
 		tr.SetError(err)
 		tr.Finish()
 	}()
 
-	includePatterns := op.RepoFilters
+	includePatterns := p.RepoFilters
 	if includePatterns != nil {
 		// Copy to avoid race condition.
 		includePatterns = append([]string{}, includePatterns...)
 	}
 
-	excludePatterns := op.MinusRepoFilters
+	excludePatterns := p.MinusRepoFilters
 
-	limit := op.Limit
+	limit := p.Limit
 	if limit == 0 {
 		limit = search.SearchLimits().MaxRepos
 	}
@@ -76,8 +75,8 @@ func (r *Resolver) Resolve(ctx context.Context, op Options) (Resolved, error) {
 	// If any repo groups are specified, take the intersection of the repo
 	// groups and the set of repos specified with repo:. (If none are specified
 	// with repo:, then include all from the group.)
-	if groupNames := op.RepoGroupFilters; len(groupNames) > 0 {
-		groups, err := ResolveRepoGroups(ctx, op.UserSettings)
+	if groupNames := p.RepoGroupFilters; len(groupNames) > 0 {
+		groups, err := ResolveRepoGroups(ctx, p.UserSettings)
 		if err != nil {
 			return Resolved{}, err
 		}
@@ -106,8 +105,8 @@ func (r *Resolver) Resolve(ctx context.Context, op Options) (Resolved, error) {
 	var versionContextRepositories []string
 	var versionContext *schema.VersionContext
 	// If a ref is specified we skip using version contexts.
-	if len(includePatternRevs) == 0 && op.VersionContextName != "" {
-		versionContext, err = resolveVersionContext(op.VersionContextName)
+	if len(includePatternRevs) == 0 && p.VersionContextName != "" {
+		versionContext, err = resolveVersionContext(p.VersionContextName)
 		if err != nil {
 			return Resolved{}, err
 		}
@@ -117,14 +116,14 @@ func (r *Resolver) Resolve(ctx context.Context, op Options) (Resolved, error) {
 		}
 	}
 
-	searchContext, err := searchcontexts.ResolveSearchContextSpec(ctx, r.DB, op.SearchContextSpec)
+	searchContext, err := searchcontexts.ResolveSearchContextSpec(ctx, r.DB, p.SearchContextSpec)
 	if err != nil {
 		return Resolved{}, err
 	}
 
 	var searchableRepos []types.RepoName
 
-	if envvar.SourcegraphDotComMode() && len(includePatterns) == 0 && !query.HasTypeRepo(op.Query) && searchcontexts.IsGlobalSearchContext(searchContext) {
+	if envvar.SourcegraphDotComMode() && len(includePatterns) == 0 && !query.HasTypeRepo(p.Query) && searchcontexts.IsGlobalSearchContext(searchContext) {
 		start := time.Now()
 		searchableRepos, err = searchableRepositories(ctx, r.SearchableReposFunc, r.Zoekt, excludePatterns)
 		if err != nil {
@@ -154,12 +153,12 @@ func (r *Resolver) Resolve(ctx context.Context, op Options) (Resolved, error) {
 			ExcludePattern:  UnionRegExps(excludePatterns),
 			// List N+1 repos so we can see if there are repos omitted due to our repo limit.
 			LimitOffset:  &database.LimitOffset{Limit: limit + 1},
-			NoForks:      op.NoForks,
-			OnlyForks:    op.OnlyForks,
-			NoArchived:   op.NoArchived,
-			OnlyArchived: op.OnlyArchived,
-			NoPrivate:    op.OnlyPublic,
-			OnlyPrivate:  op.OnlyPrivate,
+			NoForks:      p.NoForks,
+			OnlyForks:    p.OnlyForks,
+			NoArchived:   p.NoArchived,
+			OnlyArchived: p.OnlyArchived,
+			NoPrivate:    p.OnlyPublic,
+			OnlyPrivate:  p.OnlyPrivate,
 		}
 
 		if searchContext.ID != 0 {
@@ -169,7 +168,7 @@ func (r *Resolver) Resolve(ctx context.Context, op Options) (Resolved, error) {
 			options.IncludeUserPublicRepos = true
 		}
 
-		if op.Ranked {
+		if p.Ranked {
 			options.OrderBy = database.RepoListOrderBy{
 				{
 					Field:      database.RepoListStars,
@@ -183,7 +182,7 @@ func (r *Resolver) Resolve(ctx context.Context, op Options) (Resolved, error) {
 		// on Sourcegraph.com (100ms+).
 		excludedC := make(chan ExcludedRepos)
 		go func() {
-			excludedC <- computeExcludedRepositories(ctx, r.DB, op.Query, options)
+			excludedC <- computeExcludedRepositories(ctx, r.DB, p.Query, options)
 		}()
 
 		repos, err = database.Repos(r.DB).ListRepoNames(ctx, options)
@@ -301,10 +300,10 @@ func (r *Resolver) Resolve(ctx context.Context, op Options) (Resolved, error) {
 
 	tr.LazyPrintf("Associate/validate revs - done")
 
-	if op.CommitAfter != "" {
+	if p.CommitAfter != "" {
 		start := time.Now()
 		before := len(repoRevs)
-		repoRevs, err = filterRepoHasCommitAfter(ctx, repoRevs, op.CommitAfter)
+		repoRevs, err = filterRepoHasCommitAfter(ctx, repoRevs, p.CommitAfter)
 		tr.LazyPrintf("repohascommitafter removed %d repos in %s", before-len(repoRevs), time.Since(start))
 	}
 
@@ -314,72 +313,6 @@ func (r *Resolver) Resolve(ctx context.Context, op Options) (Resolved, error) {
 		ExcludedRepos:   excluded,
 		OverLimit:       overLimit,
 	}, err
-}
-
-type Options struct {
-	RepoFilters        []string
-	MinusRepoFilters   []string
-	RepoGroupFilters   []string
-	SearchContextSpec  string
-	VersionContextName string
-	UserSettings       *schema.Settings
-	NoForks            bool
-	OnlyForks          bool
-	NoArchived         bool
-	OnlyArchived       bool
-	CommitAfter        string
-	OnlyPrivate        bool
-	OnlyPublic         bool
-	Ranked             bool // Return results ordered by rank
-	Limit              int
-	Query              query.Q
-}
-
-func (op *Options) String() string {
-	var b strings.Builder
-	if len(op.RepoFilters) == 0 {
-		b.WriteString("r=[]")
-	}
-	for i, r := range op.RepoFilters {
-		if i != 0 {
-			b.WriteByte(' ')
-		}
-		b.WriteString(strconv.Quote(r))
-	}
-
-	if len(op.MinusRepoFilters) > 0 {
-		_, _ = fmt.Fprintf(&b, " -r=%v", op.MinusRepoFilters)
-	}
-	if len(op.RepoGroupFilters) > 0 {
-		_, _ = fmt.Fprintf(&b, " groups=%v", op.RepoGroupFilters)
-	}
-	if op.VersionContextName != "" {
-		_, _ = fmt.Fprintf(&b, " versionContext=%q", op.VersionContextName)
-	}
-	if op.CommitAfter != "" {
-		_, _ = fmt.Fprintf(&b, " CommitAfter=%q", op.CommitAfter)
-	}
-
-	if op.NoForks {
-		b.WriteString(" NoForks")
-	}
-	if op.OnlyForks {
-		b.WriteString(" OnlyForks")
-	}
-	if op.NoArchived {
-		b.WriteString(" NoArchived")
-	}
-	if op.OnlyArchived {
-		b.WriteString(" OnlyArchived")
-	}
-	if op.OnlyPrivate {
-		b.WriteString(" OnlyPrivate")
-	}
-	if op.OnlyPublic {
-		b.WriteString(" OnlyPublic")
-	}
-
-	return b.String()
 }
 
 // ExactlyOneRepo returns whether exactly one repo: literal field is specified and

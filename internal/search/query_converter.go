@@ -88,6 +88,11 @@ const (
 	Batch
 )
 
+/*
+func ToRepoQuery() query.RepoQuery {
+}
+*/
+
 // ToTextPatternInfo converts a an atomic query to internal values that drive
 // text search. An atomic query is a Basic query where the Pattern is either
 // nil, or comprises only one Pattern node (hence, an atom, and not an

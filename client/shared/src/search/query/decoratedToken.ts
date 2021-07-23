@@ -1085,8 +1085,11 @@ const decoratedToMonaco = (token: DecoratedToken): Monaco.languages.IToken => {
 /**
  * Decorates tokens for contextual highlighting (e.g. for regexp metasyntax) and returns the tokens converted to Monaco token types.
  */
-export const getMonacoTokens = (tokens: Token[]): Monaco.languages.IToken[] =>
-    tokens.flatMap(token => decorate(token).map(decoratedToMonaco))
+export const getMonacoTokens = (tokens: Token[]): Monaco.languages.IToken[] => {
+    const result = tokens.flatMap(token => decorate(token).map(decoratedToMonaco))
+    console.log(`result: ${JSON.stringify(result)}`)
+    return result
+}
 
 /**
  * Converts a zero-indexed, single-line {@link CharacterRange} to a Monaco {@link IRange}.

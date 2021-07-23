@@ -1,4 +1,5 @@
 import * as Monaco from 'monaco-editor'
+import { string } from 'prop-types'
 import { Observable, fromEventPattern, of, asyncScheduler, Subject } from 'rxjs'
 import { map, takeUntil, switchMap, debounceTime, share, observeOn } from 'rxjs/operators'
 
@@ -9,6 +10,7 @@ import { getCompletionItems } from './completion'
 import { getMonacoTokens } from './decoratedToken'
 import { getHoverResult } from './hover'
 import { scanSearchQuery } from './scanner'
+import { Token } from './token'
 
 interface SearchFieldProviders {
     tokens: Monaco.languages.TokensProvider
@@ -16,10 +18,15 @@ interface SearchFieldProviders {
     completion: Monaco.languages.CompletionItemProvider
 }
 
+interface MyState extends Monaco.languages.IState {
+    prefix: Token[]
+}
+
 /**
  * A dummy scanner state, required for the token provider.
  */
-const SCANNER_STATE: Monaco.languages.IState = {
+const SCANNER_STATE: MyState = {
+    prefix: [],
     clone: () => ({ ...SCANNER_STATE }),
     equals: () => false,
 }
@@ -49,15 +56,18 @@ export function getProviders(
     return {
         tokens: {
             getInitialState: () => SCANNER_STATE,
-            tokenize: line => {
+            // https://stackoverflow.com/questions/48508973/programmatically-reset-tokenization-state-in-monaco-editor
+            tokenize: (line, state: MyState) => {
+                console.log(`STATE: ${JSON.stringify(state)}`)
                 const result = scanSearchQuery(line, options.interpretComments ?? false, options.patternType)
                 if (result.type === 'success') {
+                    state.prefix.push(...result.term)
                     return {
                         tokens: getMonacoTokens(result.term),
-                        endState: SCANNER_STATE,
+                        endState: state,
                     }
                 }
-                return { endState: SCANNER_STATE, tokens: [] }
+                return { endState: state, tokens: [] }
             },
         },
         hover: {

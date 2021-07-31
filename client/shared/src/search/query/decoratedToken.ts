@@ -34,6 +34,7 @@ export type DecoratedToken = Token | MetaToken
 export type MetaToken =
     | MetaRegexp
     | MetaStructural
+    | MetaGlob
     | MetaField
     | MetaRepoRevisionSeparator
     | MetaRevision
@@ -94,6 +95,25 @@ export enum MetaStructuralKind {
     RegexpHole = 'RegexpHole',
     Variable = 'Variable',
     RegexpSeparator = 'RegexpSeparator',
+}
+
+/**
+ * A token that is labeled and interpreted as glob syntax.
+ */
+export interface MetaGlob extends BaseMetaToken {
+    type: 'metaGlob'
+    groupRange?: CharacterRange
+    kind: MetaGlobKind
+}
+
+export enum MetaGlobKind {
+    WildcardStar = 'WildcardStar', // '*'
+    WildcardDoubleStar = 'WildcardDoubleStar', // '**'
+    WildcardQuestionMark = 'WildcardQuestionMark', // ?
+    CharacterClass = 'CharacterClass', // like [a-z]
+    CharacterClassRange = 'CharacterClassRange', // the a-z part in [a-z]
+    CharacterClassRangeHyphen = 'CharacterClassRangeHyphen', // the - part in [a-z]
+    CharacterClassMember = 'CharacterClassMember', // a character inside a charcter class like [abcd]
 }
 
 /**
@@ -529,6 +549,98 @@ const mapPathMetaForRegexp = (token: Literal): DecoratedToken[] => {
     return patterns
 }
 
+const mapGlobMeta = (pattern: Pattern): DecoratedToken[] => {
+    const offset = pattern.range.start
+
+    const decorated: DecoratedToken[] = []
+    let current = ''
+    let start = 0
+    let token: string[] = []
+
+    const nextChar = (): string => {
+        current = pattern.value[start]
+        start = start + 1
+        return current
+    }
+
+    const appendDecoratedToken = (endIndex: number, kind: PatternKind.Literal | MetaGlobKind): void => {
+        const value = token.join('')
+        const range = { start: offset + endIndex - value.length, end: offset + endIndex }
+        if (kind === PatternKind.Literal) {
+            console.log(`append pattern ${value}`)
+            decorated.push({ type: 'pattern', kind, value, range })
+        } else {
+            decorated.push({ type: 'metaGlob', kind, range, value })
+        }
+        token = []
+    }
+
+    while (pattern.value[start] !== undefined) {
+        current = nextChar()
+        switch (current) {
+            case '*':
+                // Look ahead and see if this is a '**'.
+                if (pattern.value.slice(start, start + 1) === '*') {
+                    if (token.length > 0) {
+                        // Append the running value before we encountered this metasyntax.
+                        appendDecoratedToken(start - 1, PatternKind.Literal)
+                    }
+                    start = start + 1
+                    token.push('**')
+                    appendDecoratedToken(start, MetaGlobKind.WildcardDoubleStar)
+                    continue
+                }
+                if (token.length > 0) {
+                    // Append the running value before we encountered this metasyntax.
+                    appendDecoratedToken(start - 1, PatternKind.Literal)
+                }
+                token.push('*')
+                appendDecoratedToken(start, MetaGlobKind.WildcardStar)
+                continue
+            case '?':
+                if (token.length > 0) {
+                    // Append the running value before we encountered this metasyntax.
+                    appendDecoratedToken(start - 1, PatternKind.Literal)
+                }
+                token.push('?')
+                appendDecoratedToken(start, MetaGlobKind.WildcardQuestionMark)
+                continue
+            default:
+                token.push(current)
+        }
+    }
+    if (token.length > 0) {
+        console.log('Token append greater zero')
+        appendDecoratedToken(start, PatternKind.Literal)
+    }
+    return decorated
+}
+
+const tryMapLiteralsToGlob = (tokens: DecoratedToken[]): DecoratedToken[] | undefined => {
+    const decorated: DecoratedToken[] = []
+    for (const token of tokens) {
+        if (token.type === 'literal') {
+            const parsedGlob = mapGlobMeta(toPattern(token)) // FIXME always suceeds.
+            if (!parsedGlob) {
+                return undefined
+            }
+            decorated.push(...parsedGlob)
+            continue
+        }
+        decorated.push(token)
+    }
+    return decorated
+}
+
+const mapPathMetaForGlob = (token: Literal): DecoratedToken[] => {
+    const patterns = tryMapLiteralsToGlob(mapPathMeta(token))
+    console.log(`Token: ${JSON.stringify(patterns)}`)
+    if (!patterns) {
+        return [] // FIXME not needed
+    }
+    return patterns
+}
+
 const mapRevisionMeta = (token: Literal): DecoratedToken[] => {
     const offset = token.range.start
 
@@ -936,6 +1048,20 @@ const decoratePredicateBody = (path: string[], body: string, offset: number): De
                 value: body,
                 kind: PatternKind.Regexp,
             })
+        case 'glob':
+            return mapPathMetaForGlob({
+                type: 'literal',
+                range: { start: offset, end: body.length },
+                value: body,
+                quoted: false,
+            })
+        case 'regexp':
+            return mapRegexpMetaSucceed({
+                type: 'pattern',
+                range: { start: offset, end: body.length },
+                value: body,
+                kind: PatternKind.Regexp,
+            })
     }
     decorated.push({
         type: 'literal',
@@ -1049,6 +1175,7 @@ export const decorate = (token: Token): DecoratedToken[] => {
 }
 
 const decoratedToMonaco = (token: DecoratedToken): Monaco.languages.IToken => {
+    console.log(`Token ${JSON.stringify(token)}`)
     switch (token.type) {
         case 'field':
         case 'whitespace':
@@ -1066,6 +1193,7 @@ const decoratedToMonaco = (token: DecoratedToken): Monaco.languages.IToken => {
         case 'metaRevision':
         case 'metaRegexp':
         case 'metaStructural':
+        case 'metaGlob':
         case 'metaPredicate':
             // The scopes value is derived from the token type and its kind.
             // E.g., regexpMetaDelimited derives from {@link RegexpMeta} and {@link RegexpMetaKind}.

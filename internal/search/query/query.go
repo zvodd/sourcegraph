@@ -1,5 +1,10 @@
 package query
 
+import (
+	"github.com/cockroachdb/errors"
+	"github.com/inconshreveable/log15"
+)
+
 /*
 Query processing involves multiple steps to produce a query to evaluate.
 
@@ -103,6 +108,9 @@ func Validate(disjuncts [][]Node) error {
 // A BasicPass is a transformation on Basic queries.
 type BasicPass func(Basic) Basic
 
+// A BasicStep is a BasicPass that may fail.
+type BasicStep func(Basic) (Basic, error)
+
 // MapPlan applies a conversion to all Basic queries in a plan. It expects a
 // valid plan. guarantee transformation succeeds.
 func MapPlan(plan Plan, pass BasicPass) Plan {
@@ -111,6 +119,20 @@ func MapPlan(plan Plan, pass BasicPass) Plan {
 		updated = append(updated, pass(query))
 	}
 	return Plan(updated)
+}
+
+// MapPlanOrError applies a conversion to all Basic queries in a plan. It may fail.
+func MapPlanOrError(plan Plan, step BasicStep) (Plan, error) {
+	updated := make([]Basic, 0, len(plan))
+	for _, query := range plan {
+		var err error
+		query, err = step(query)
+		if err != nil {
+			return nil, err
+		}
+		updated = append(updated, query)
+	}
+	return Plan(updated), nil
 }
 
 func ToPlan(disjuncts [][]Node) (Plan, error) {
@@ -123,6 +145,20 @@ func ToPlan(disjuncts [][]Node) (Plan, error) {
 		plan = append(plan, basic)
 	}
 	return plan, nil
+}
+
+func MapPredicates(plan Plan, pred Predicate) (Plan, error) {
+	step := func(b Basic) (Basic, error) {
+		newPlan, err := pred.Plan(b)
+		if err != nil {
+			return Basic{}, err
+		}
+		if len(newPlan) != 1 {
+			return Basic{}, errors.New("Cannot evaluate: expected predicate to yield a basic query")
+		}
+		return newPlan[0], nil
+	}
+	return MapPlanOrError(plan, step)
 }
 
 // Pipeline processes zero or more steps to produce a query. The first step must
@@ -142,6 +178,13 @@ func Pipeline(steps ...step) (Plan, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	plan, err = MapPredicates(plan, &FileGlobPredicate{})
+	if err != nil {
+		return nil, err
+	}
+
 	plan = MapPlan(plan, ConcatRevFilters)
+	log15.Info("generated", "plan", plan.ToParseTree().String())
 	return plan, nil
 }

@@ -16,6 +16,9 @@ type Predicate interface {
 	// For example, with `file:contains()`, Name returns "contains".
 	Name() string
 
+	// The kind of predicate that directs logic for evaluating this predicate.
+	Kind() PredicateKind
+
 	// ParseParams parses the contents of the predicate arguments
 	// into the predicate object.
 	ParseParams(string) error
@@ -24,6 +27,16 @@ type Predicate interface {
 	// behavior of a predicate in a query Q.
 	Plan(parent Basic) (Plan, error)
 }
+
+// Kinds associate an evaluation behavior (semantics) with a predicate. E.g.,
+// some predicates require a static substitution (e.g., convert regexp values to
+// globbing) while others require evaluation of a subquery.
+type PredicateKind uint8
+
+const (
+	Subquery     PredicateKind = 0
+	Substitution PredicateKind = 1 << (iota - 1)
+)
 
 var DefaultPredicateRegistry = predicateRegistry{
 	FieldRepo: {
@@ -35,6 +48,7 @@ var DefaultPredicateRegistry = predicateRegistry{
 	FieldFile: {
 		"contains.content": func() Predicate { return &FileContainsContentPredicate{} },
 		"contains":         func() Predicate { return &FileContainsContentPredicate{} },
+		"glob":             func() Predicate { return &FileGlobPredicate{} },
 	},
 }
 
@@ -136,8 +150,9 @@ func (f *RepoContainsPredicate) parseNode(n Node) error {
 	return nil
 }
 
-func (f *RepoContainsPredicate) Field() string { return FieldRepo }
-func (f *RepoContainsPredicate) Name() string  { return "contains" }
+func (f *RepoContainsPredicate) Kind() PredicateKind { return Subquery }
+func (f *RepoContainsPredicate) Field() string       { return FieldRepo }
+func (f *RepoContainsPredicate) Name() string        { return "contains" }
 func (f *RepoContainsPredicate) Plan(parent Basic) (Plan, error) {
 	nodes := make([]Node, 0, 3)
 	nodes = append(nodes, Parameter{
@@ -183,8 +198,9 @@ func (f *RepoContainsContentPredicate) ParseParams(params string) error {
 	return nil
 }
 
-func (f *RepoContainsContentPredicate) Field() string { return FieldRepo }
-func (f *RepoContainsContentPredicate) Name() string  { return "contains.content" }
+func (f *RepoContainsContentPredicate) Kind() PredicateKind { return Subquery }
+func (f *RepoContainsContentPredicate) Field() string       { return FieldRepo }
+func (f *RepoContainsContentPredicate) Name() string        { return "contains.content" }
 func (f *RepoContainsContentPredicate) Plan(parent Basic) (Plan, error) {
 	contains := RepoContainsPredicate{File: "", Content: f.Pattern}
 	return contains.Plan(parent)
@@ -207,8 +223,9 @@ func (f *RepoContainsFilePredicate) ParseParams(params string) error {
 	return nil
 }
 
-func (f *RepoContainsFilePredicate) Field() string { return FieldRepo }
-func (f *RepoContainsFilePredicate) Name() string  { return "contains.file" }
+func (f *RepoContainsFilePredicate) Kind() PredicateKind { return Subquery }
+func (f *RepoContainsFilePredicate) Field() string       { return FieldRepo }
+func (f *RepoContainsFilePredicate) Name() string        { return "contains.file" }
 func (f *RepoContainsFilePredicate) Plan(parent Basic) (Plan, error) {
 	contains := RepoContainsPredicate{File: f.Pattern, Content: ""}
 	return contains.Plan(parent)
@@ -225,7 +242,8 @@ func (f *RepoContainsCommitAfterPredicate) ParseParams(params string) error {
 	return nil
 }
 
-func (f RepoContainsCommitAfterPredicate) Field() string { return FieldRepo }
+func (f RepoContainsCommitAfterPredicate) Kind() PredicateKind { return Subquery }
+func (f RepoContainsCommitAfterPredicate) Field() string       { return FieldRepo }
 func (f RepoContainsCommitAfterPredicate) Name() string {
 	return "contains.commit.after"
 }
@@ -258,8 +276,9 @@ func (f *FileContainsContentPredicate) ParseParams(params string) error {
 	return nil
 }
 
-func (f FileContainsContentPredicate) Field() string { return FieldFile }
-func (f FileContainsContentPredicate) Name() string  { return "contains.content" }
+func (f FileContainsContentPredicate) Kind() PredicateKind { return Subquery }
+func (f FileContainsContentPredicate) Field() string       { return FieldFile }
+func (f FileContainsContentPredicate) Name() string        { return "contains.content" }
 
 func (f *FileContainsContentPredicate) Plan(parent Basic) (Plan, error) {
 	nodes := make([]Node, 0, 3)
@@ -306,4 +325,39 @@ func nonPredicateRepos(q Basic) []Node {
 		}
 	})
 	return res
+}
+
+type FileGlobPredicate struct{}
+
+func (f *FileGlobPredicate) ParseParams(params string) error {
+	if params == "" {
+		return errors.Errorf("glob(...) argument should not be empty")
+	}
+	return nil
+}
+
+func (f FileGlobPredicate) Kind() PredicateKind { return Substitution }
+func (f FileGlobPredicate) Field() string       { return FieldFile }
+func (f FileGlobPredicate) Name() string        { return "glob" }
+
+func (f *FileGlobPredicate) Plan(b Basic) (Plan, error) {
+	for i, p := range b.Parameters {
+		if p.Field == FieldFile && p.Annotation.Labels.IsSet(IsPredicate) {
+			name, pattern := ParseAsPredicate(p.Value)
+			if name != f.Name() {
+				continue
+			}
+			var value string
+			if ContainsNoGlobSyntax(pattern) {
+				value = fuzzifyGlobPattern(pattern)
+			}
+			value, err := globToRegex(pattern)
+			if err != nil {
+				return nil, err
+			}
+			b.Parameters[i].Value = value
+			b.Parameters[i].Annotation.Labels.unset(IsPredicate)
+		}
+	}
+	return []Basic{b}, nil
 }

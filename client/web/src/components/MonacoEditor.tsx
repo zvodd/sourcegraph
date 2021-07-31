@@ -78,6 +78,10 @@ const darkRules: monaco.editor.ITokenThemeRule[] = [
     { token: 'metaRevisionWildcard', foreground: '#3bc9db' }, // --oc-cyan-4
     // Path-like highlighting
     { token: 'metaPathSeparator', foreground: '#868e96' }, // --oc-gray-6
+    // Glob highlighting
+    { token: 'metaGlobWildcardStar', foreground: '#3bc9db' }, // --oc-cyan-4
+    { token: 'metaGlobWildcardDoubleStar', foreground: '#ff6b6b' }, // --oc-red-5
+    { token: 'metaGlobWildcardQuestionMark', foreground: '#3bc9db' }, // --oc-cyan-4
 ]
 
 const lightColors: monaco.editor.IColors = {
@@ -138,6 +142,10 @@ const lightRules: monaco.editor.ITokenThemeRule[] = [
     { token: 'metaRevisionWildcard', foreground: '#1098ad' }, // --oc-cyan-7
     // Path-like highlighting
     { token: 'metaPathSeparator', foreground: '#868e96' }, // --oc-gray-6
+    // Glob highlighting
+    { token: 'metaGlobWildcardStar', foreground: '#1098ad' }, // --oc-cyan-7
+    { token: 'metaGlobWildcardDoubleStar', foreground: '#d9480f' }, // --oc-red-9
+    { token: 'metaGlobWildcardQuestionMark', foreground: '#1098ad' }, // --oc-cyan-7
 ]
 
 monaco.editor.defineTheme(SOURCEGRAPH_DARK, {

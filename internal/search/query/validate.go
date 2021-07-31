@@ -429,12 +429,12 @@ func validatePredicates(nodes []Node) error {
 			return
 		}
 		if annotation.Labels.IsSet(IsPredicate) {
-			if negated {
-				err = errors.New("predicates do not currently support negation")
-				return
-			}
 			name, params := ParseAsPredicate(value)                // guaranteed to succeed
 			predicate := DefaultPredicateRegistry.Get(field, name) // guaranteed to succeed
+			if negated && name != "glob" {                         // FIXME HACK.
+				err = errors.New("predicate" + name + " does not currently support negation")
+				return
+			}
 			if parseErr := predicate.ParseParams(params); parseErr != nil {
 				err = errors.Errorf("invalid predicate value: %s", parseErr)
 			}
@@ -488,7 +488,11 @@ func validatePureLiteralPattern(nodes []Node, balanced bool) error {
 func validateParameters(nodes []Node) error {
 	var err error
 	seen := map[string]struct{}{}
-	VisitParameter(nodes, func(field, value string, negated bool, _ Annotation) {
+	VisitParameter(nodes, func(field, value string, negated bool, ann Annotation) {
+		if ann.Labels.IsSet(IsPredicate) {
+			// Predicates are validated separately.
+			return
+		}
 		if err != nil {
 			return
 		}

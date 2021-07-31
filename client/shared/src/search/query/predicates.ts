@@ -16,6 +16,9 @@ export const PREDICATES: Access[] = [
         name: 'repo',
         fields: [
             {
+                name: 'regexp',
+            },
+            {
                 name: 'contains',
                 fields: [
                     { name: 'file' },
@@ -34,6 +37,9 @@ export const PREDICATES: Access[] = [
             {
                 name: 'contains',
                 fields: [{ name: 'content' }],
+            },
+            {
+                name: 'glob',
             },
         ],
     },

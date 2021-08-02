@@ -85,6 +85,9 @@ export function addSourcegraphSearchCodeIntelligence(
     subscriptions.add(
         toUnsubscribable(monaco.languages.registerCompletionItemProvider(SOURCEGRAPH_SEARCH, providers.completion))
     )
+    subscriptions.add(
+        toUnsubscribable(monaco.languages.registerCodeActionProvider(SOURCEGRAPH_SEARCH, providers.actions))
+    )
 
     subscriptions.add(
         providers.diagnostics.subscribe(markers => {
@@ -391,7 +394,7 @@ export const MonacoQueryInput: React.FunctionComponent<MonacoQueryInputProps> = 
         rulers: [],
         overviewRulerLanes: 0,
         wordBasedSuggestions: false,
-        quickSuggestions: false,
+        quickSuggestions: true,
         fixedOverflowWidgets: true,
         contextmenu: false,
         links: false,
@@ -400,6 +403,8 @@ export const MonacoQueryInput: React.FunctionComponent<MonacoQueryInputProps> = 
         // Display the cursor as a 1px line.
         cursorStyle: 'line',
         cursorWidth: 1,
+        lightbulb: { enabled: true },
+        useShadowDOM: false,
     }
     return (
         <div

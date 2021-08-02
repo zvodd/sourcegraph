@@ -18,8 +18,6 @@ import { Predicate, scanPredicate } from './predicates'
 import { scanSearchQuery } from './scanner'
 import { Token, Pattern, Literal, PatternKind, CharacterRange, createLiteral } from './token'
 
-/* eslint-disable unicorn/better-regex */
-
 /**
  * A DecoratedToken is a type of token used for syntax highlighting, hovers, and diagnostics. All
  * standard Token types are compatible where DecoratedTokens are used. A DecoratedToken extends
@@ -631,9 +629,9 @@ const mapStructuralMeta = (pattern: Pattern): DecoratedToken[] => {
         const range = { start: offset + endIndex - value.length, end: offset + endIndex }
         if (kind === PatternKind.Literal) {
             decorated.push({ type: 'pattern', kind, value, range })
-        } else if (value.match(/^:\[(\w*)~(.*)\]$/)) {
+        } else if (value.match(/^:\[(\w*)~(.*)]$/)) {
             // Handle regexp hole.
-            const [, variable, pattern] = value.match(/^:\[(\w*)~(.*)\]$/)!
+            const [, variable, pattern] = value.match(/^:\[(\w*)~(.*)]$/)!
             const variableStart = range.start + 2 /* :[ */
             const variableRange = { start: variableStart, end: variableStart + variable.length }
             const patternStart = variableRange.end + 1 /* ~ */

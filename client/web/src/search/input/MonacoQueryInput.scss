@@ -3,6 +3,35 @@
         // Disable stylelint for Monaco modifications
         // stylelint-disable
 
+        // None of this has any effect, shadow dom; https://stackoverflow.com/questions/66672303/ability-to-not-use-shadowdom-in-monaco-editor
+        .action-menu-item {
+            background-color: red !important;
+            color: yellow !important;
+        }
+
+        .monaco-menu .monaco-action-bar.vertical {
+            font-size: 20px;
+            background-color: red !important;
+            color: yellow !important;
+        }
+
+        .monaco-menu-container {
+            background-color: red !important;
+        }
+
+        .monaco-menu .monaco-action-bar .action-item {
+            background-color: red !important;
+        }
+
+        .action-label {
+            background-color: red !important;
+            color: yellow !important;
+        }
+
+        .monaco-menu > .monaco-action-bar.vertical {
+            color: red !important;
+        }
+
         .decorationsOverviewRuler {
             display: none;
         }
@@ -15,12 +44,22 @@
             border: none;
         }
 
+        .monaco-hover-content .action-container {
+            // conflicts with https://sourcegraph.com/github.com/sourcegraph/sourcegraph@17d1578442ae6873ee690e76887c6a83dd94fbc3/-/blob/client/web/src/repo/settings/components/ActionContainer.scss
+            margin: unset;
+            padding: unset;
+            border: unset;
+            border-radius: unset;
+        }
+
+        /*
         .monaco-editor-hover-content {
             padding: 0.25rem;
-            .status-bar {
-                display: none;
-            }
+            //            .status-bar {
+            //                display: none;
+            //            }
         }
+*/
         .minimap {
             // Minimap is disabled but will still be rendered and affect eg. visual tests, force hide to prevent this.
             display: none;

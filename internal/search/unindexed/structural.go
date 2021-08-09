@@ -12,8 +12,65 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
-// StructuralSearchFilesInRepos searches a set of repos for a structural pattern.
-func StructuralSearchFilesInRepos(ctx context.Context, args *search.TextParameters, stream streaming.Sender) (err error) {
+// repoData represents whether repo input for a search is indexed or not.
+type repoData interface {
+	repoData()
+}
+
+func (IndexedMap) repoData()    {}
+func (UnindexedList) repoData() {}
+
+type IndexedMap map[string]*search.RepositoryRevisions
+type UnindexedList []*search.RepositoryRevisions
+
+// The following type definitions compose separable concerns for running structural search.
+
+// searchJob is a function that may run in its own Go routine.
+type searchJob func() error
+
+// withContext parameterizes a searchJob by context, making it easy to parametere ctx for multiple jobs part of an errgroup.
+type withContext func(context.Context) searchJob
+
+// structuralSearchJob creates a composable function for running structural
+// search. It unrolls the context parameter so that multiple jobs can be
+// parameterized by the errgroup context.
+func structuralSearchJob(args *search.TextParameters, stream streaming.Sender, repoData repoData) withContext {
+	return func(ctx context.Context) searchJob {
+		return func() error {
+			switch repos := repoData.(type) {
+			case IndexedMap:
+				reposList := make([]*search.RepositoryRevisions, 0, len(repos))
+				for _, repo := range repos {
+					reposList = append(reposList, repo)
+				}
+				return callSearcherOverRepos(ctx, args, stream, reposList, true)
+			case UnindexedList:
+				return callSearcherOverRepos(ctx, args, stream, repos, false)
+			}
+			panic("unreachable")
+		}
+	}
+}
+
+func runJobs(ctx context.Context, jobs []withContext) (err error) {
+	g, ctx := errgroup.WithContext(ctx)
+	for _, job := range jobs {
+		g.Go(job(ctx))
+	}
+	return g.Wait()
+}
+
+// repoSets returns the set of repositories to search (whether indexed or unindexed) based on search mode.
+func repoSets(indexed *zoektutil.IndexedSearchRequest, mode search.GlobalSearchMode) []repoData {
+	repoSets := []repoData{UnindexedList(indexed.Unindexed)} // unindexed included by default
+	if mode != search.SearcherOnly {
+		repoSets = append(repoSets, IndexedMap(indexed.Repos()))
+	}
+	return repoSets
+}
+
+// streamStructuralSearch runs structural search jobs and streams the results.
+func streamStructuralSearch(ctx context.Context, args *search.TextParameters, stream streaming.Sender) (err error) {
 	ctx, stream, cleanup := streaming.WithLimit(ctx, stream, int(args.PatternInfo.FileMatchLimit))
 	defer cleanup()
 
@@ -22,62 +79,48 @@ func StructuralSearchFilesInRepos(ctx context.Context, args *search.TextParamete
 		return err
 	}
 
-	g, ctx := errgroup.WithContext(ctx)
-
-	if args.Mode != search.SearcherOnly {
-		// Run structural search on indexed repositories (fulfilled via searcher).
-		g.Go(func() error {
-			repos := make([]*search.RepositoryRevisions, 0, len(indexed.Repos()))
-			for _, repo := range indexed.Repos() {
-				repos = append(repos, repo)
-			}
-			return callSearcherOverRepos(ctx, args, stream, repos, true)
-		})
+	jobs := []withContext{}
+	for _, repoSet := range repoSets(indexed, args.Mode) {
+		jobs = append(jobs, structuralSearchJob(args, stream, repoSet))
 	}
-
-	// Concurrently run over all unindexed repos for structural search.
-	g.Go(func() error {
-		return callSearcherOverRepos(ctx, args, stream, indexed.Unindexed, false)
-	})
-
-	return g.Wait()
+	return runJobs(ctx, jobs)
 }
 
-// StructuralSearchFilesInRepoBatch is a convenience function around
-// StructuralSearchFilesInRepos which collects the results from the stream.
-func StructuralSearchFilesInReposBatch(ctx context.Context, args *search.TextParameters) ([]*result.FileMatch, streaming.Stats, error) {
-	matches, stats, err := streaming.CollectStream(func(stream streaming.Sender) error {
-		return StructuralSearchFilesInRepos(ctx, args, stream)
-	})
-
-	fms, fmErr := matchesToFileMatches(matches)
-	if fmErr != nil && err == nil {
-		err = errors.Wrap(fmErr, "StructuralSearchFilesInReposBatch failed to convert results")
-	}
-	return fms, stats, err
+// retryStructuralSearch runs a structural search with a higher limit file match
+// limit so that Zoekt resolves more potential file matches.
+func retryStructuralSearch(ctx context.Context, args *search.TextParameters, stream streaming.Sender) error {
+	patternCopy := *(args.PatternInfo)
+	patternCopy.FileMatchLimit = 1000
+	argsCopy := *args
+	argsCopy.PatternInfo = &patternCopy
+	args = &argsCopy
+	return streamStructuralSearch(ctx, args, stream)
 }
 
 func StructuralSearch(ctx context.Context, args *search.TextParameters, stream streaming.Sender) error {
 	if args.PatternInfo.FileMatchLimit != search.DefaultMaxSearchResults {
-		// Service structural search via SearchFilesInRepos when we have
-		// an explicit `count` value that differs from the default value
-		// (e.g., user sets higher counts).
-		return StructuralSearchFilesInRepos(ctx, args, stream)
+		// streamStructuralSearch performs a streaming search when the user sets a value
+		// for `count`. The first return parameter indicates whether the request was
+		// serviced with streaming.
+		return streamStructuralSearch(ctx, args, stream)
 	}
 
 	// For structural search with default limits we retry if we get no results.
-	fileMatches, stats, err := StructuralSearchFilesInReposBatch(ctx, args)
+	fileMatches, stats, err := streaming.CollectStream(func(stream streaming.Sender) error {
+		return streamStructuralSearch(ctx, args, stream)
+	})
+	if err != nil {
+		return err
+	}
 
-	if len(fileMatches) == 0 && err == nil {
-		// No results for structural search? Automatically search again and force Zoekt
-		// to resolve more potential file matches by setting a higher FileMatchLimit.
-		patternCopy := *(args.PatternInfo)
-		patternCopy.FileMatchLimit = 1000
-		argsCopy := *args
-		argsCopy.PatternInfo = &patternCopy
-		args = &argsCopy
-
-		fileMatches, stats, err = StructuralSearchFilesInReposBatch(ctx, args)
+	if len(fileMatches) == 0 {
+		// retry structural search with a higher limit.
+		fileMatches, stats, err = streaming.CollectStream(func(stream streaming.Sender) error {
+			return retryStructuralSearch(ctx, args, stream)
+		})
+		if err != nil {
+			return err
+		}
 
 		if len(fileMatches) == 0 {
 			// Still no results? Give up.
@@ -88,6 +131,9 @@ func StructuralSearch(ctx context.Context, args *search.TextParameters, stream s
 
 	matches := make([]result.Match, 0, len(fileMatches))
 	for _, fm := range fileMatches {
+		if _, ok := fm.(*result.FileMatch); !ok {
+			return errors.Errorf("StructuralSearch failed to convert results")
+		}
 		matches = append(matches, fm)
 	}
 

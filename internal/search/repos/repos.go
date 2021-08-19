@@ -157,8 +157,13 @@ func (r *Resolver) Resolve(ctx context.Context, op search.RepoOptions) (Resolved
 			OnlyForks:    op.OnlyForks,
 			NoArchived:   op.NoArchived,
 			OnlyArchived: op.OnlyArchived,
-			NoPrivate:    op.OnlyPublic,
-			OnlyPrivate:  op.OnlyPrivate,
+			// if op.Visibility is query.Any, all repositories, both
+			// public and private, are included by default. For other
+			// values of op.Visibility:
+			// (1) we exclude private for visibility:public
+			// (2) we only include private if visibility:private
+			NoPrivate:   op.Visibility == query.Public,
+			OnlyPrivate: op.Visibility == query.Private,
 		}
 
 		if searchContext.ID != 0 {

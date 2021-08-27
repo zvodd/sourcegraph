@@ -771,3 +771,100 @@ func PatternToFile(b Basic) Basic {
 	}
 	return b
 }
+
+// feelingLuckyHeuristic is a collection of heurstics that make guesses at how
+// to interpret a query. It generates a plan that expands various choices in
+// ordered priority, for example: "first get results treating this input
+// literally, then get results treating this input as unordered patterns, then
+// get results by treating path-like inputs, that contain `/`, as file or repo
+// filters, etc." Our search backend will return results for these in the order
+// they are attempted, and stops executing more query choices once enough
+// results are found.
+//
+// The heuristics affect properties like: (1) interpreting patterns as a choice
+// of ordered or unordered search patterns; (2) interpreting patterns as file or
+// repository paths, if they contain `/`; (3) interpreting certain keywords,
+// like `Python` as `lang:` inputs.
+func feelingLuckyHeuristic(plan Plan) Plan {
+	// given some patterns "foo bar baz", interpret them as:
+	// (a) literally and ordered on a single line `foo bar baz`.
+	// (b) unordered anywhere in the file -> `foo and bar and baz`
+	// TODO: consider variable whitespace, fuzzy matching, and matching across newlines.
+	// (c) TODO: consider 'or' combinations for a subset of patterns
+	// (d) TODO: attempt unquoted for quoted values, allow jankier patterns like ) (foo) (
+	otherOrders := func(b Basic) Plan {
+		if p, ok := b.Pattern.(Pattern); !ok || p.Negated {
+			// don't bother with pattern expressions or purely negated patterns.
+			return []Basic{b}
+		}
+		patterns := strings.Split(b.Pattern.(Pattern).Value, " ")
+		var andPatterns []Node
+		for _, p := range patterns {
+			var labels labels
+			labels = Literal
+			andPatterns = append(andPatterns, newPattern(p, false, labels, Range{}))
+		}
+		// Just try as and patterns
+		return []Basic{
+			{
+				Parameters: b.Parameters,
+				Pattern:    Operator{Kind: And, Operands: andPatterns, Annotation: Annotation{}},
+			},
+		}
+	}
+
+	pathLikeAsFilters := func(b Basic) []Basic {
+		if p, ok := b.Pattern.(Pattern); !ok || p.Negated {
+			// don't bother with pattern expressions or purely negated patterns.
+			return []Basic{b}
+		}
+		patterns := strings.Split(b.Pattern.(Pattern).Value, " ")
+		repoParams := []Parameter{}
+		fileParams := []Parameter{}
+		for _, p := range patterns {
+			if strings.Contains(p, "/") {
+				if strings.Contains(p, "github") {
+					// TODO gitlab?
+					// TODO: fuzzify
+					repoParams = append(repoParams, Parameter{
+						Field:      "repo",
+						Value:      p,
+						Negated:    false,
+						Annotation: Annotation{},
+					})
+					continue
+				}
+				// TODO: fuzzify
+				fileParams = append(fileParams, Parameter{
+					Field:      "file",
+					Value:      p,
+					Negated:    false,
+					Annotation: Annotation{},
+				})
+			}
+		}
+		queries := []Basic{}
+		// 'And' over all repo/file params.
+		modified := Basic{
+			Parameters: append(append(b.Parameters, repoParams...), fileParams...),
+			Pattern:    b.Pattern,
+		}
+		queries = append(queries, modified)
+
+		// 'Or' over every repo/file pair
+		for _, repoParam := range repoParams {
+			for _, fileParam := range fileParams {
+				modified := Basic{
+					Parameters: append(b.Parameters, repoParam, fileParam),
+					Pattern:    b.Pattern,
+				}
+				queries = append(queries, modified)
+			}
+		}
+		return queries
+	}
+
+	keywordsAsFilters := func(b Basic) []Basic { return []Basic{b} }
+	// 	return MapPlan(MapPlan(MapPlan(plan, anyOrder), pathLikeAsFilters), keywordsAsFilters)
+	return []Basic{}
+}

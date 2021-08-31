@@ -566,6 +566,19 @@ func (r *searchResolver) Suggestions(ctx context.Context, args *searchSuggestion
 		}
 	}
 
+	if query.ContainsPredicate(r.Query) {
+		// Query contains a predicate that that may first need to be
+		// evaluated to provide suggestions (e.g., for repos), or we
+		// can't guarantee it will behave well. Evaluating predicates can
+		// be expensive, so punt suggestions for queries with them.
+		return nil, nil
+	}
+
+	if b, err := query.ToBasicQuery(r.Query); err != nil || !query.IsPatternAtom(b) {
+		// Not an atomic pattern, can't guarantee it will behave well.
+		return nil, err
+	}
+
 	suggesters := []suggester{
 		r.showRepoSuggestions,
 		r.showFileSuggestions,

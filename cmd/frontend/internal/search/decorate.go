@@ -21,12 +21,10 @@ func segmentToRanges(lineNumber int, segments [][2]int32) []stream.Range {
 	for _, segment := range segments {
 		ranges = append(ranges, stream.Range{
 			Start: stream.Location{
-				Offset: -1,
 				Line:   lineNumber,
 				Column: int(segment[0]),
 			},
 			End: stream.Location{
-				Offset: -1,
 				Line:   lineNumber,
 				Column: int(segment[0]) + int(segment[1]),
 			},
@@ -43,6 +41,9 @@ type group []*result.LineMatch
 func toMatchRanges(group group) []stream.Range {
 	matches := make([]stream.Range, 0, len(group))
 	for _, line := range group {
+		if len(line.OffsetAndLengths) == 0 {
+			continue
+		}
 		matches = append(matches, segmentToRanges(int(line.LineNumber), line.OffsetAndLengths)...)
 	}
 	return matches
@@ -84,6 +85,39 @@ func groupLineMatches(lineMatches []*result.LineMatch) []group {
 	return groups
 }
 
+// mergeGroups merges groups of line matches if adding context lines causes
+// lines to be contiguous.
+func mergeGroups(groups []group, contextLines int) []group {
+	var merged []group
+	var previousGroup group
+	var previousEnd int
+	for _, group := range groups {
+		if previousGroup == nil {
+			previousGroup = group
+			previousEnd = int(group[0].LineNumber) + len(group) - 1
+			continue
+		}
+		currentStart := int(group[0].LineNumber)
+		overlap := previousEnd - currentStart + (2 * contextLines) + 1 /* +1 for bordering lines */
+		log15.Info("x", "prev:", previousEnd, "curr", currentStart)
+		if overlap >= 0 {
+			emptySpan := make([]*result.LineMatch, 0, overlap)
+			for i := 0; i < (overlap-1)/2; i++ {
+				emptySpan = append(emptySpan, &result.LineMatch{})
+			}
+			previousGroup = append(previousGroup, emptySpan...)
+			previousGroup = append(previousGroup, group...)
+			previousEnd = int(group[0].LineNumber) + len(group) - 1
+			continue
+		}
+		merged = append(merged, previousGroup)
+		previousGroup = group
+		previousEnd = int(group[0].LineNumber) + len(group) - 1
+	}
+	merged = append(merged, previousGroup)
+	return merged
+}
+
 func fetchContent(ctx context.Context, repo api.RepoName, commit api.CommitID, path string) (content []byte, err error) {
 	content, err = git.ReadFile(ctx, repo, commit, path, 0)
 	if err != nil {
@@ -122,7 +156,7 @@ func DecorateFileHTML(ctx context.Context, repo api.RepoName, commit api.CommitI
 }
 
 // DecorateFileHunksHTML returns decorated file hunks given a file match.
-func DecorateFileHunksHTML(ctx context.Context, fm *result.FileMatch) []stream.DecoratedHunk {
+func DecorateFileHunksHTML(ctx context.Context, contextLines int, fm *result.FileMatch) []stream.DecoratedHunk {
 	html, err := DecorateFileHTML(ctx, fm.Repo.Name, fm.CommitID, fm.Path)
 	if err != nil {
 		log15.Warn("stream result decoration could not highlight file", "error", err)
@@ -154,6 +188,9 @@ func DecorateFileHunksHTML(ctx context.Context, fm *result.FileMatch) []stream.D
 	}
 
 	groups := groupLineMatches(fm.LineMatches)
+	if contextLines > 0 {
+		groups = mergeGroups(groups, contextLines)
+	}
 	hunks := make([]stream.DecoratedHunk, 0, len(groups))
 	for _, group := range groups {
 		rows := spliceRows(int(group[0].LineNumber), int(group[0].LineNumber)+len(group))

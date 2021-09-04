@@ -60,24 +60,24 @@ func TestToHunk(t *testing.T) {
 	want := [][]stream.Range{
 		{
 			{
-				Start: stream.Location{Offset: -1, Line: 1, Column: 0},
-				End:   stream.Location{Offset: -1, Line: 1, Column: 1},
+				Start: stream.Location{Line: 1, Column: 0},
+				End:   stream.Location{Line: 1, Column: 1},
 			},
 			{
-				Start: stream.Location{Offset: -1, Line: 2, Column: 2},
-				End:   stream.Location{Offset: -1, Line: 2, Column: 5},
+				Start: stream.Location{Line: 2, Column: 2},
+				End:   stream.Location{Line: 2, Column: 5},
 			},
 			{
-				Start: stream.Location{Offset: -1, Line: 2, Column: 4},
-				End:   stream.Location{Offset: -1, Line: 2, Column: 9},
+				Start: stream.Location{Line: 2, Column: 4},
+				End:   stream.Location{Line: 2, Column: 9},
 			},
 			{
-				Start: stream.Location{Offset: -1, Line: 3, Column: 6},
-				End:   stream.Location{Offset: -1, Line: 3, Column: 13},
+				Start: stream.Location{Line: 3, Column: 6},
+				End:   stream.Location{Line: 3, Column: 13},
 			},
 			{
-				Start: stream.Location{Offset: -1, Line: 3, Column: 8},
-				End:   stream.Location{Offset: -1, Line: 3, Column: 17},
+				Start: stream.Location{Line: 3, Column: 8},
+				End:   stream.Location{Line: 3, Column: 17},
 			},
 		},
 		{
@@ -111,6 +111,32 @@ func TestToHunk(t *testing.T) {
 		got = append(got, toMatchRanges(group))
 	}
 
+	if diff := cmp.Diff(want, got); diff != "" {
+		t.Fatalf("line match group partition wrong (-want +got):\n%s", diff)
+	}
+}
+
+func TestMergeGroup(t *testing.T) {
+	data := []group{
+		{
+			{LineNumber: 1, OffsetAndLengths: [][2]int32{{0, 1}}},
+			{LineNumber: 2, OffsetAndLengths: [][2]int32{{2, 3}, {4, 5}}},
+			{LineNumber: 3, OffsetAndLengths: [][2]int32{{6, 7}, {8, 9}}},
+		},
+		{
+			{LineNumber: 5, OffsetAndLengths: [][2]int32{{0, 1}}},
+			{LineNumber: 6, OffsetAndLengths: [][2]int32{{2, 3}, {4, 5}}},
+		},
+		{
+			{LineNumber: 8, OffsetAndLengths: [][2]int32{{6, 7}, {8, 9}}},
+		},
+		{
+			{LineNumber: 14, OffsetAndLengths: [][2]int32{{6, 7}, {8, 9}}},
+		},
+	}
+
+	want := []group{}
+	got := mergeGroups(data, 2)
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Fatalf("line match group partition wrong (-want +got):\n%s", diff)
 	}

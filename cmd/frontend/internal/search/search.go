@@ -405,7 +405,7 @@ func withDecoration(ctx context.Context, eventMatch streamhttp.EventMatch, inter
 		return eventMatch
 	}
 	if kind == "html" {
-		eventMatch.(*streamhttp.EventContentMatch).Hunks = DecorateFileHunksHTML(ctx, internalResult.(*result.FileMatch))
+		eventMatch.(*streamhttp.EventContentMatch).Hunks = DecorateFileHunksHTML(ctx, contextLines, internalResult.(*result.FileMatch))
 	}
 	// TODO(team/search-product): support additional decoration for terminal clients #24617.
 	return eventMatch

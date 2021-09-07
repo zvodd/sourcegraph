@@ -6,7 +6,6 @@ import (
 	"strings"
 
 	"github.com/sourcegraph/sourcegraph/internal/search"
-	"github.com/sourcegraph/sourcegraph/internal/types"
 )
 
 // Stats contains fields that should be returned by all funcs
@@ -44,15 +43,11 @@ func (c *Stats) Update(other *Stats) {
 	c.IsLimitHit = c.IsLimitHit || other.IsLimitHit
 	c.IsIndexUnavailable = c.IsIndexUnavailable || other.IsIndexUnavailable
 
-	if c.Repos == nil && other.Repos.Len() > 0 {
+	if c.Repos == nil && other.Repos != nil {
 		c.Repos = search.NewRepos()
 	}
 
-	other.Repos.ForEach(func(r *types.RepoName, revs search.RevSpecs) error {
-		c.Repos.Add(r, revs...)
-		return nil
-	})
-
+	c.Repos.Union(other.Repos)
 	c.Status.Union(&other.Status)
 
 	c.ExcludedForks = c.ExcludedForks + other.ExcludedForks

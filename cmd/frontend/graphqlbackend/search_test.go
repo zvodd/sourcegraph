@@ -515,7 +515,8 @@ func TestVersionContext(t *testing.T) {
 				t.Fatal(err)
 			}
 			var got []string
-			gotResult.ForEach(func(r *types.RepoName, revs search.RevSpecs) error {
+			gotResult.ForEach(func(r *types.RepoName) error {
+				revs := gotResult.RepoRevs[r.Name]
 				got = append(got, string(r.Name)+"@"+strings.Join(revs.RevSpecs(), ":"))
 				return nil
 			})

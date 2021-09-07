@@ -10,7 +10,10 @@ import (
 	"time"
 
 	"github.com/cockroachdb/errors"
+	"github.com/google/zoekt"
 	"github.com/inconshreveable/log15"
+	"github.com/opentracing/opentracing-go/log"
+	"github.com/sourcegraph/sourcegraph/internal/search/backend"
 	"golang.org/x/sync/errgroup"
 	"golang.org/x/sync/semaphore"
 
@@ -34,13 +37,27 @@ import (
 
 type Resolver struct {
 	DB                  dbutil.DB
+	Zoekt               *backend.Zoekt
 	SearchableReposFunc searchableReposFunc
 }
 
-func (r *Resolver) Resolve(ctx context.Context, op search.RepoOptions) (*search.Repos, error) {
-	var err error
+func (r *Resolver) Resolve(ctx context.Context, op search.RepoOptions) (res *search.Repos, err error) {
 	tr, ctx := trace.New(ctx, "resolveRepositories", op.String())
 	defer func() {
+		if res != nil {
+			tr.LogFields(
+				log.Int("Public", res.Public.Len()),
+				log.Int("Private", res.Private.Len()),
+				log.Int("Excluded", res.Excluded.Len()),
+				log.Int("Excluded.Archived", res.Excluded.Archived),
+				log.Int("Excluded.Forks", res.Excluded.Forks),
+				log.Int("RepoRevs", len(res.RepoRevs)),
+				log.Int("MissingRepoRevs", len(res.MissingRepoRevs)),
+				log.Int("IndexedRepoRevs", len(res.IndexedRepoRevs)),
+				log.Int("IndexedBranches", len(res.IndexedBranches)),
+				log.Bool("OverLimit", res.OverLimit),
+			)
+		}
 		tr.SetError(err)
 		tr.Finish()
 	}()
@@ -107,7 +124,7 @@ func (r *Resolver) Resolve(ctx context.Context, op search.RepoOptions) (*search.
 		return nil, err
 	}
 
-	res := search.NewRepos()
+	res = search.NewRepos()
 
 	if envvar.SourcegraphDotComMode() && len(includePatterns) == 0 && !query.HasTypeRepo(op.Query) && searchcontexts.IsGlobalSearchContext(searchContext) {
 		start := time.Now()
@@ -230,7 +247,7 @@ func (r *Resolver) Resolve(ctx context.Context, op search.RepoOptions) (*search.
 	}
 
 	for _, p := range includePatternRevs {
-		res.ForEach(func(r *types.RepoName, _ search.RevSpecs) error {
+		res.ForEach(func(r *types.RepoName) error {
 			if p.includePattern.MatchString(string(r.Name)) {
 				repoRevs[r.Name] = append(repoRevs[r.Name], p.revs...)
 			}
@@ -238,10 +255,39 @@ func (r *Resolver) Resolve(ctx context.Context, op search.RepoOptions) (*search.
 		})
 	}
 
-	// Filter out invalid revisions that the user specified and expand any globs.
+	tr.LazyPrintf("Associate/validate revs - association done: %d revs to process", len(repoRevs))
+
+	// Filter out invalid revisions that the user specified and expand any globs, also
+	// consult Zoekt to find out which repository revisions are indexed.
+	//
 	// TODO(tsenart): This could use some concurrency.
+
+	var indexedSet map[string]*zoekt.Repository
+	if len(repoRevs) > 0 {
+		ctx, cancel := context.WithTimeout(ctx, time.Second)
+		indexedSet, err = r.Zoekt.ListAll(ctx)
+		if err != nil {
+			log15.Warn("zoekt.ListAll failed, returning no IndexedRevs", "error", err)
+		}
+		cancel()
+	}
+
+	tr.LazyPrintf("Associate/validate revs - validation start")
+
 	for repo, revs := range repoRevs {
+		if len(revs) == 0 {
+			revs = search.DefaultRevSpecs
+		}
+
 		valid := revs[:0]
+
+		var indexedBranches []zoekt.RepositoryBranch
+		if len(indexedSet) > 0 {
+			if indexedRepo := indexedSet[string(repo)]; indexedRepo != nil {
+				indexedBranches = indexedRepo.Branches
+			}
+		}
+
 		for _, rev := range revs {
 			var globs []git.RefGlob
 			switch {
@@ -270,39 +316,49 @@ func (r *Resolver) Resolve(ctx context.Context, op search.RepoOptions) (*search.
 				continue
 			}
 
-			// not a glob, fast path
-			if rev.RevSpec == "" || rev.RevSpec == "HEAD" {
-				valid = append(valid, rev)
-				// skip default branch resolution to save time
-				continue
-			}
-
-			// Validate the revspec.
-			trimmedRefSpec := strings.TrimPrefix(rev.RevSpec, "^") // handle negated revisions, such as ^<branch>, ^<tag>, or ^<commit>
-			if _, err := git.ResolveRevision(ctx, repo, trimmedRefSpec, git.ResolveRevisionOptions{NoEnsureRevision: true}); err != nil {
-				if errors.Is(err, context.DeadlineExceeded) {
-					return nil, context.DeadlineExceeded
-				}
-				if errors.HasType(err, git.BadCommitError{}) {
-					return nil, err
-				}
-				if errors.HasType(err, &gitserver.RevisionNotFoundError{}) {
-					// The revspec does not exist, so don't include it, and report that it's missing.
-					if rev.RevSpec == "" {
-						// Report as HEAD not "" (empty string) to avoid user confusion.
-						rev.RevSpec = "HEAD"
+			if rev.RevSpec != "" && rev.RevSpec != "HEAD" {
+				// Validate the revspec.
+				trimmedRefSpec := strings.TrimPrefix(rev.RevSpec, "^") // handle negated revisions, such as ^<branch>, ^<tag>, or ^<commit>
+				if _, err := git.ResolveRevision(ctx, repo, trimmedRefSpec, git.ResolveRevisionOptions{NoEnsureRevision: true}); err != nil {
+					if errors.Is(err, context.DeadlineExceeded) {
+						return nil, context.DeadlineExceeded
 					}
-					res.MissingRepoRevs[repo] = append(res.MissingRepoRevs[repo], rev)
+					if errors.HasType(err, git.BadCommitError{}) {
+						return nil, err
+					}
+					if errors.HasType(err, &gitserver.RevisionNotFoundError{}) {
+						// The revspec does not exist, so don't include it, and report that it's missing.
+						if rev.RevSpec == "" {
+							// Report as HEAD not "" (empty string) to avoid user confusion.
+							rev.RevSpec = "HEAD"
+						}
+						res.MissingRepoRevs[repo] = append(res.MissingRepoRevs[repo], rev)
+					}
+					// If err != nil and is not one of the err values checked for above, cloning and other errors will be handled later, so just ignore an error
+					// if there is one.
+					continue
 				}
-				// If err != nil and is not one of the err values checked for above, cloning and other errors will be handled later, so just ignore an error
-				// if there is one.
-				continue
 			}
 
 			valid = append(valid, rev)
+
+			// Check if this rev is indexed.
+			indexed := false
+			for _, branch := range indexedBranches {
+				if branch.Name == rev.RevSpec || (len(rev.RevSpec) >= 4 && strings.HasPrefix(branch.Version, rev.RevSpec)) {
+					res.IndexedRepoRevs[repo] = append(res.IndexedRepoRevs[repo], rev)
+					res.IndexedBranches[string(repo)] = append(res.IndexedBranches[string(repo)], branch.Name)
+					indexed = true
+					break
+				}
+			}
+
+			if !indexed {
+				res.UnindexedRepoRevs[repo] = append(res.UnindexedRepoRevs[repo], rev)
+			}
 		}
 
-		res.Add(res.GetByName(repo), valid...)
+		res.RepoRevs[repo] = valid
 	}
 
 	tr.LazyPrintf("Associate/validate revs - done")
@@ -499,14 +555,17 @@ func findPatternRevs(includePatterns []string) (includePatternRevs []patternRevs
 		}
 		repoPattern = optimizeRepoPatternWithHeuristics(repoPattern)
 		includePatterns[i] = repoPattern
-		if len(revs) > 0 {
-			p, err := regexp.Compile("(?i:" + includePatterns[i] + ")")
-			if err != nil {
-				return nil, &badRequestError{err}
-			}
-			patternRev := patternRevspec{includePattern: p, revs: revs}
-			includePatternRevs = append(includePatternRevs, patternRev)
+		if len(revs) == 0 {
+			revs = search.DefaultRevSpecs
 		}
+
+		p, err := regexp.Compile("(?i:" + includePatterns[i] + ")")
+		if err != nil {
+			return nil, &badRequestError{err}
+		}
+
+		patternRev := patternRevspec{includePattern: p, revs: revs}
+		includePatternRevs = append(includePatternRevs, patternRev)
 	}
 	return
 }
@@ -536,7 +595,7 @@ func filterRepoHasCommitAfter(ctx context.Context, res *search.Repos, after stri
 		return nil
 	}
 
-	res.ForEach(func(r *types.RepoName, revs search.RevSpecs) error {
+	res.ForEach(func(r *types.RepoName) error {
 		if err = sem.Acquire(ctx, 1); err != nil {
 			return nil
 		}
@@ -544,8 +603,9 @@ func filterRepoHasCommitAfter(ctx context.Context, res *search.Repos, after stri
 		g.Go(func() error {
 			defer sem.Release(1)
 
+			revs := res.RepoRevs[r.Name]
 			if len(revs) == 0 {
-				return handle(r, &search.RevisionSpecifier{RevSpec: "HEAD"})
+				revs = search.DefaultRevSpecs
 			}
 
 			for _, rev := range revs {

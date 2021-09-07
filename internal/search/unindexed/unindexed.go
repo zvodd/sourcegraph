@@ -81,7 +81,7 @@ func SearchFilesInRepos(ctx context.Context, args *search.TextParameters, stream
 			PatternInfo:     args.PatternInfo,
 			UseFullDeadline: args.UseFullDeadline,
 		}
-		return callSearcherOverRepos(ctx, searcherArgs, stream, request.UnindexedRepos(), false)
+		return callSearcherOverRepos(ctx, searcherArgs, stream, args.Repos, false)
 	})
 
 	return g.Wait()
@@ -287,16 +287,13 @@ func callSearcherOverRepos(
 
 	g, ctx := errgroup.WithContext(ctx)
 	g.Go(func() error {
-		return searcherRepos.ForEach(func(r *types.RepoName, revs search.RevSpecs) error {
-			if len(revs) == 0 {
-				revs = search.DefaultRevSpecs
+		for repo, revs := range searcherRepos.UnindexedRepoRevs {
+			if _, ok := searcherRepos.Excluded.Names[repo]; ok {
+				continue
 			}
 
+			r := searcherRepos.GetByName(repo)
 			for _, rev := range revs {
-				if rev.IsGlob() {
-					continue
-				}
-
 				limitCtx, limitDone, err := textSearchLimiter.Acquire(ctx)
 				if err != nil {
 					return err
@@ -327,9 +324,9 @@ func callSearcherOverRepos(
 					return err
 				})
 			}
+		}
 
-			return nil
-		})
+		return nil
 	})
 
 	return g.Wait()

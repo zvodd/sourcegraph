@@ -80,21 +80,14 @@ func Search(ctx context.Context, args *search.TextParameters, limit int, stream 
 		})
 	}
 
-	err = request.UnindexedRepos().ForEach(func(r *types.RepoName, revs search.RevSpecs) error {
+	err = args.Repos.ForEach(func(r *types.RepoName) error {
+		revs := args.Repos.UnindexedRepoRevs[r.Name]
+		if len(revs) == 0 {
+			return nil
+		}
+
 		if ctx.Err() != nil {
 			return ctx.Err()
-		}
-
-		hasRevSpecs := false
-		for _, r := range revs {
-			if !r.IsGlob() {
-				hasRevSpecs = true
-				break
-			}
-		}
-
-		if !hasRevSpecs {
-			return nil
 		}
 
 		run.Acquire()
@@ -139,9 +132,7 @@ func searchInRepo(ctx context.Context, r *types.RepoName, revs search.RevSpecs, 
 
 	var inputRev string
 	for _, rev := range revs {
-		if !rev.IsGlob() {
-			inputRev = rev.RevSpec
-		}
+		inputRev = rev.RevSpec
 	}
 
 	span.SetTag("rev", inputRev)

@@ -362,8 +362,8 @@ func TestZoektIndexedRepos(t *testing.T) {
 		zoektRepos[r.Name] = r
 	}
 
-	mkIndexedRepoRevs := func(repos []string) *IndexedRepoRevs {
-		idx := &IndexedRepoRevs{
+	mkIndexedRepoRevs := func(repos []string) *IndexedRepos {
+		idx := &IndexedRepos{
 			Repos:    mkSearchRepos(repos...),
 			RevSpecs: map[api.RepoName]search.RevSpecs{},
 			Branches: map[string][]string{},
@@ -378,7 +378,7 @@ func TestZoektIndexedRepos(t *testing.T) {
 
 	cases := []struct {
 		name             string
-		indexed          *IndexedRepoRevs
+		indexed          *IndexedRepos
 		repos, unindexed *search.Repos
 	}{{
 		name:      "all",

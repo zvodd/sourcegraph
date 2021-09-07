@@ -80,7 +80,7 @@ func TestSearchFilesInRepos(t *testing.T) {
 	repos := makeSearchRepos("foo/one", "foo/two", "foo/empty", "foo/cloning", "foo/missing", "foo/missing-database", "foo/timedout", "foo/no-rev")
 
 	repoNames := map[api.RepoID]string{}
-	repos.ForEach(func(r *types.RepoName, _ search.RevSpecs) error {
+	repos.ForEach(func(r *types.RepoName) error {
 		repoNames[r.ID] = string(r.Name)
 		return nil
 	})
@@ -308,7 +308,8 @@ func makeSearchRepos(repos ...string) *search.Repos {
 	for _, repospec := range repos {
 		repoName, revs := search.ParseRepositoryRevisions(repospec)
 		rs := mkRepos(repoName)
-		r.Add(&rs[0], revs...)
+		r.Add(&rs[0])
+		r.RepoRevs[api.RepoName(repoName)] = revs
 	}
 	return r
 }

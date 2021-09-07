@@ -70,7 +70,10 @@ func TestRevisionValidationAndExpansion(t *testing.T) {
 
 	mkSearchRepos := func(r *types.RepoName, revs, missing search.RevSpecs) *search.Repos {
 		rs := search.NewRepos()
-		rs.Add(r, revs...)
+
+		if len(revs) > 0 {
+			rs.RepoRevs[r.Name] = append(rs.RepoRevs[r.Name], revs...)
+		}
 
 		if len(missing) > 0 {
 			rs.MissingRepoRevs[r.Name] = append(rs.MissingRepoRevs[r.Name], missing...)
@@ -330,7 +333,7 @@ func TestSearchableRepositoriesExclusion(t *testing.T) {
 			}
 
 			var have []string
-			resolved.ForEach(func(r *types.RepoName, _ search.RevSpecs) error {
+			resolved.ForEach(func(r *types.RepoName) error {
 				have = append(have, string(r.Name))
 				return nil
 			})
@@ -393,7 +396,7 @@ func TestUseIndexableReposIfMissingOrGlobalSearchContext(t *testing.T) {
 				t.Fatal(err)
 			}
 			var repoNames []string
-			resolved.ForEach(func(r *types.RepoName, _ search.RevSpecs) error {
+			resolved.ForEach(func(r *types.RepoName) error {
 				repoNames = append(repoNames, string(r.Name))
 				return nil
 			})
@@ -473,7 +476,7 @@ func TestResolveRepositoriesWithUserSearchContext(t *testing.T) {
 		t.Fatal(err)
 	}
 	var got []api.RepoName
-	resolved.ForEach(func(r *types.RepoName, _ search.RevSpecs) error {
+	resolved.ForEach(func(r *types.RepoName) error {
 		got = append(got, r.Name)
 		return nil
 	})
@@ -557,8 +560,10 @@ func TestResolveRepositoriesWithSearchContext(t *testing.T) {
 		t.Fatal(err)
 	}
 	want := search.NewRepos()
-	want.Add(&repoA, stringSliceToRevisionSpecifiers(searchContextRepositoryRevisions[0].Revisions)...)
-	want.Add(&repoB, stringSliceToRevisionSpecifiers(searchContextRepositoryRevisions[1].Revisions)...)
+	want.Add(&repoA)
+	want.RepoRevs[repoA.Name] = stringSliceToRevisionSpecifiers(searchContextRepositoryRevisions[0].Revisions)
+	want.Add(&repoB)
+	want.RepoRevs[repoB.Name] = stringSliceToRevisionSpecifiers(searchContextRepositoryRevisions[1].Revisions)
 	want.Excluded.Forks = 2
 	want.Excluded.Archived = 2
 

@@ -352,23 +352,29 @@ func (op *RepoOptions) String() string {
 
 // Repos is a set of resolved repositories for a search.
 type Repos struct {
-	Public          *types.RepoSet
-	Private         *types.RepoSet
-	Excluded        ExcludedRepos
-	RepoRevs        map[api.RepoName]RevSpecs
-	MissingRepoRevs map[api.RepoName]RevSpecs
-	RevRepos        map[RevisionSpecifier]map[api.RepoName]struct{}
-	OverLimit       bool
+	Public   *types.RepoSet
+	Private  *types.RepoSet
+	Excluded ExcludedRepos
+
+	RepoRevs          map[api.RepoName]RevSpecs
+	MissingRepoRevs   map[api.RepoName]RevSpecs
+	UnindexedRepoRevs map[api.RepoName]RevSpecs
+	IndexedRepoRevs   map[api.RepoName]RevSpecs
+	IndexedBranches   map[string][]string
+
+	OverLimit bool
 }
 
 func NewRepos(repos ...*types.RepoName) *Repos {
 	rs := &Repos{
-		Public:          types.NewRepoSet(),
-		Private:         types.NewRepoSet(),
-		Excluded:        ExcludedRepos{RepoSet: types.NewRepoSet()},
-		RepoRevs:        make(map[api.RepoName]RevSpecs),
-		MissingRepoRevs: make(map[api.RepoName]RevSpecs),
-		RevRepos:        make(map[RevisionSpecifier]map[api.RepoName]struct{}),
+		Public:            types.NewRepoSet(),
+		Private:           types.NewRepoSet(),
+		Excluded:          ExcludedRepos{RepoSet: types.NewRepoSet()},
+		RepoRevs:          make(map[api.RepoName]RevSpecs),
+		MissingRepoRevs:   make(map[api.RepoName]RevSpecs),
+		UnindexedRepoRevs: make(map[api.RepoName]RevSpecs),
+		IndexedRepoRevs:   make(map[api.RepoName]RevSpecs),
+		IndexedBranches:   make(map[string][]string),
 	}
 
 	for _, r := range repos {
@@ -406,7 +412,7 @@ func (r *Repos) GetByID(id api.RepoID) *types.RepoName {
 	return repo
 }
 
-func (r *Repos) Add(repo *types.RepoName, revs ...RevisionSpecifier) {
+func (r *Repos) Add(repo *types.RepoName) {
 	if repo == nil {
 		return
 	}
@@ -416,22 +422,77 @@ func (r *Repos) Add(repo *types.RepoName, revs ...RevisionSpecifier) {
 	} else {
 		r.Public.Add(repo)
 	}
-
-	for _, rev := range revs {
-		repos, ok := r.RevRepos[rev]
-		if !ok {
-			repos = make(map[api.RepoName]struct{})
-			r.RevRepos[rev] = repos
-		}
-
-		if _, ok = repos[repo.Name]; !ok {
-			r.RepoRevs[repo.Name] = append(r.RepoRevs[repo.Name], rev)
-			repos[repo.Name] = struct{}{}
-		}
-	}
 }
 
-func (r *Repos) ForEach(cb func(*types.RepoName, RevSpecs) error) error {
+func (r *Repos) Union(other *Repos) {
+	if r == nil || other == nil {
+		return
+	}
+
+	add := func(s *types.RepoSet, repo *types.RepoName) {
+		s.Add(repo)
+
+		set := make(map[string]struct{}, len(r.RepoRevs[repo.Name])+len(other.RepoRevs[repo.Name]))
+
+		for _, pair := range [][2]map[api.RepoName]RevSpecs{
+			{r.RepoRevs, other.RepoRevs},
+			{r.MissingRepoRevs, other.MissingRepoRevs},
+			{r.UnindexedRepoRevs, other.UnindexedRepoRevs},
+			{r.IndexedRepoRevs, other.IndexedRepoRevs},
+		} {
+			left, right := pair[0], pair[1]
+
+			for _, rev := range left[repo.Name] {
+				set[rev.RevSpec] = struct{}{}
+			}
+
+			for _, rev := range right[repo.Name] {
+				if _, ok := set[rev.RevSpec]; !ok {
+					left[repo.Name] = append(left[repo.Name], rev)
+					set[rev.RevSpec] = struct{}{}
+				}
+			}
+
+			for k := range set {
+				delete(set, k)
+			}
+		}
+
+		name := string(repo.Name)
+		for _, branch := range r.IndexedBranches[name] {
+			set[branch] = struct{}{}
+		}
+
+		for _, branch := range other.IndexedBranches[name] {
+			if _, ok := set[branch]; !ok {
+				r.IndexedBranches[name] = append(other.IndexedBranches[name], branch)
+				set[branch] = struct{}{}
+			}
+		}
+	}
+
+	if other.Public != nil {
+		for _, repo := range other.Public.Repos {
+			add(r.Public, repo)
+		}
+	}
+
+	if other.Private != nil {
+		for _, repo := range other.Private.Repos {
+			add(r.Private, repo)
+		}
+	}
+
+	if other.Excluded.Repos != nil {
+		for _, repo := range other.Excluded.Repos {
+			r.Excluded.Add(repo)
+		}
+	}
+
+	r.OverLimit = r.OverLimit || other.OverLimit
+}
+
+func (r *Repos) ForEach(cb func(repo *types.RepoName) error) error {
 	if r == nil {
 		return nil
 	}
@@ -455,9 +516,9 @@ func (r *Repos) Excludes(id api.RepoID) bool {
 	return r.Excluded.Includes(id) || (!r.Private.Includes(id) && !r.Public.Includes(id))
 }
 
-func (r *Repos) visit(repo *types.RepoName, cb func(*types.RepoName, RevSpecs) error) error {
+func (r *Repos) visit(repo *types.RepoName, cb func(*types.RepoName) error) error {
 	if _, excluded := r.Excluded.IDs[repo.ID]; !excluded {
-		return cb(repo, r.RepoRevs[repo.Name])
+		return cb(repo)
 	}
 	return nil
 }
@@ -467,8 +528,8 @@ func (r *Repos) String() string {
 		return "Repos(nil)"
 	}
 
-	return fmt.Sprintf("Resolved{Public=%d, Private=%d, RepoRevs=%d, MissingRepoRevs=%d, RevRepos=%d, OverLimit=%v, %s}",
-		r.Public.Len(), r.Private.Len(), len(r.RepoRevs), len(r.MissingRepoRevs), len(r.RevRepos), r.OverLimit, r.Excluded)
+	return fmt.Sprintf("Repos{Public=%d, Private=%d, RepoRevs=%d, MissingRepoRevs=%d, UnindexedRepoRevs=%d, IndexedRepoRevs=%d, OverLimit=%v, %s}",
+		r.Public.Len(), r.Private.Len(), len(r.RepoRevs), len(r.MissingRepoRevs), len(r.UnindexedRepoRevs), len(r.IndexedRepoRevs), r.OverLimit, r.Excluded)
 }
 
 func (r *Repos) Len() int {

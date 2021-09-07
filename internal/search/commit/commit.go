@@ -456,7 +456,8 @@ func searchInRepos(ctx context.Context, db dbutil.DB, args *search.TextParameter
 	}
 
 	g, ctx := errgroup.WithContext(ctx)
-	args.Repos.ForEach(func(r *types.RepoName, revs search.RevSpecs) error {
+	args.Repos.ForEach(func(r *types.RepoName) error {
+		revs := args.Repos.RepoRevs[r.Name]
 		if len(revs) == 0 {
 			revs = search.DefaultRevSpecs
 		}

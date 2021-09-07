@@ -301,6 +301,7 @@ func (r *searchResolver) resolveRepositories(ctx context.Context, options search
 
 	repositoryResolver := &searchrepos.Resolver{
 		DB:                  r.db,
+		Zoekt:               r.zoekt,
 		SearchableReposFunc: backend.Repos.ListSearchable,
 	}
 

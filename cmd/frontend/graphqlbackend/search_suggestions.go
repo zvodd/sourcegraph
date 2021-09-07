@@ -256,7 +256,7 @@ func (r *searchResolver) showRepoSuggestions(ctx context.Context) ([]SearchSugge
 		resolved, err := r.resolveRepositories(ctx, repoOptions)
 		resolvers := make([]SearchSuggestionResolver, 0, resolved.Len())
 		i := 0
-		resolved.ForEach(func(repo *types.RepoName, _ search.RevSpecs) error {
+		resolved.ForEach(func(repo *types.RepoName) error {
 			resolvers = append(resolvers, repositorySuggestionResolver{
 				repo: NewRepositoryResolver(r.db, repo.ToRepo()),
 				// Encode the returned order in score.

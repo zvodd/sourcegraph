@@ -20,7 +20,6 @@ import (
 	otlog "github.com/opentracing/opentracing-go/log"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
-
 	"github.com/sourcegraph/sourcegraph/cmd/frontend/envvar"
 	searchlogs "github.com/sourcegraph/sourcegraph/cmd/frontend/internal/search/logs"
 	"github.com/sourcegraph/sourcegraph/internal/actor"
@@ -56,7 +55,7 @@ func (c *SearchResultsResolver) LimitHit() bool {
 func (c *SearchResultsResolver) Repositories() []*RepositoryResolver {
 	repos := c.Stats.Repos
 	resolvers := make([]*RepositoryResolver, 0, repos.Len())
-	repos.ForEach(func(r *types.RepoName, _ search.RevSpecs) error {
+	repos.ForEach(func(r *types.RepoName) error {
 		resolvers = append(resolvers, NewRepositoryResolver(c.db, r.ToRepo()))
 		return nil
 	})
@@ -624,8 +623,8 @@ func (r *searchResolver) toSearchInputs(q query.Q) (*search.TextParameters, []ru
 		// across all of Sourcegraph.
 		if r.PatternType == query.SearchTypeStructural && p.Pattern != "" {
 			jobs = append(jobs, &unindexed.StructuralSearch{
-				RepoFetcher: unindexed.NewRepoFetcher(r.stream, &args),
-				Mode:        args.Mode,
+				Repos: args.Repos,
+				Mode:  args.Mode,
 				SearcherArgs: search.SearcherParameters{
 					SearcherURLs:    args.SearcherURLs,
 					PatternInfo:     args.PatternInfo,

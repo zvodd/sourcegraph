@@ -113,6 +113,7 @@ func (r *searchResolver) reposExist(ctx context.Context, options search.RepoOpti
 	options.UserSettings = r.UserSettings
 	repositoryResolver := &searchrepos.Resolver{
 		DB:                  r.db,
+		Zoekt:               r.zoekt,
 		SearchableReposFunc: backend.Repos.ListSearchable,
 	}
 	resolved, err := repositoryResolver.Resolve(ctx, options)
@@ -303,7 +304,7 @@ func (r *searchResolver) errorForOverRepoLimit(ctx context.Context) *errOverRepo
 	if resolved.Len() > 0 {
 		paths := make([]string, resolved.Len())
 		i := 0
-		resolved.ForEach(func(r *types.RepoName, _ search.RevSpecs) error {
+		resolved.ForEach(func(r *types.RepoName) error {
 			paths[i] = string(r.Name)
 			i++
 			return nil

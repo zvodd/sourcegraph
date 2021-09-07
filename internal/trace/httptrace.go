@@ -207,7 +207,7 @@ func HTTPTraceMiddleware(next http.Handler) http.Handler {
 
 		minDuration, _ := time.ParseDuration(os.Getenv("SRC_HTTP_LOG_MIN_DURATION"))
 		if minDuration == 0 {
-			minDuration = time.Second
+			minDuration = 0 // time.Second
 		}
 
 		if m.Duration >= minDuration || m.Code >= minCode {

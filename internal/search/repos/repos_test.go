@@ -72,7 +72,9 @@ func TestRevisionValidationAndExpansion(t *testing.T) {
 		rs := search.NewRepos()
 		rs.Add(r, revs...)
 
-		rs.MissingRepoRevs[r.Name] = append(rs.MissingRepoRevs[r.Name], missing...)
+		if len(missing) > 0 {
+			rs.MissingRepoRevs[r.Name] = append(rs.MissingRepoRevs[r.Name], missing...)
+		}
 
 		return rs
 	}

@@ -17,7 +17,9 @@ import (
 	"github.com/cockroachdb/errors"
 	"github.com/inconshreveable/log15"
 
+	"github.com/sourcegraph/sourcegraph/internal/database"
 	"github.com/sourcegraph/sourcegraph/internal/gitserver/protocol"
+	"github.com/sourcegraph/sourcegraph/internal/repos"
 	"github.com/sourcegraph/sourcegraph/internal/vcs"
 )
 
@@ -66,7 +68,10 @@ func (s *Server) createCommitFromPatch(ctx context.Context, req protocol.CreateC
 	if req.Push != nil && req.Push.RemoteURL != "" {
 		remoteURL, err = vcs.ParseURL(req.Push.RemoteURL)
 	} else {
-		remoteURL, err = s.getRemoteURL(ctx, req.Repo)
+		r, err := database.Repos(s.DB).GetByName(ctx, req.Repo)
+		if err == nil {
+			remoteURL, err = repos.GetRemoteURL(ctx, s.DB, r)
+		}
 	}
 
 	if err != nil {

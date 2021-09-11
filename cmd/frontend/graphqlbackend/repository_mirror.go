@@ -15,6 +15,7 @@ import (
 	"github.com/sourcegraph/sourcegraph/internal/gitserver"
 	"github.com/sourcegraph/sourcegraph/internal/gitserver/protocol"
 	"github.com/sourcegraph/sourcegraph/internal/lazyregexp"
+	"github.com/sourcegraph/sourcegraph/internal/repos"
 	"github.com/sourcegraph/sourcegraph/internal/repoupdater"
 	repoupdaterprotocol "github.com/sourcegraph/sourcegraph/internal/repoupdater/protocol"
 	"github.com/sourcegraph/sourcegraph/internal/types"
@@ -91,23 +92,21 @@ func (r *repositoryMirrorInfoResolver) RemoteURL(ctx context.Context) (string, e
 		return strings.Replace(strings.Replace(u.String(), "fake://", "", 1), "/", ":", 1)
 	}
 
-	{
-		repo, err := r.repository.repo(ctx)
-		if err != nil {
-			return "", err
-		}
-
-		if cloneURLs := repo.CloneURLs(); len(cloneURLs) > 0 {
-			return removeUserinfo(cloneURLs[0]), nil
-		}
-	}
-
-	// Fall back to the gitserver repo info for repos on hosts that are not yet fully supported by repo-updater.
-	info, err := r.gitserverRepoInfo(ctx)
+	repo, err := r.repository.repo(ctx)
 	if err != nil {
 		return "", err
 	}
-	return removeUserinfo(info.URL), nil
+
+	if cloneURLs := repo.CloneURLs(); len(cloneURLs) > 0 {
+		return removeUserinfo(cloneURLs[0]), nil
+	}
+
+	// Fall back to the gitserver repo info for repos on hosts that are not yet fully supported by repo-updater.
+	url, err := repos.GetRemoteURL(ctx, r.db, repo)
+	if err != nil {
+		return "", err
+	}
+	return removeUserinfo(url.String()), nil
 }
 
 func (r *repositoryMirrorInfoResolver) Cloned(ctx context.Context) (bool, error) {

@@ -34,7 +34,6 @@ import (
 	"github.com/sourcegraph/sourcegraph/internal/logging"
 	"github.com/sourcegraph/sourcegraph/internal/observation"
 	"github.com/sourcegraph/sourcegraph/internal/profiler"
-	"github.com/sourcegraph/sourcegraph/internal/repos"
 	"github.com/sourcegraph/sourcegraph/internal/sentry"
 	"github.com/sourcegraph/sourcegraph/internal/trace"
 	"github.com/sourcegraph/sourcegraph/internal/trace/ot"
@@ -84,96 +83,23 @@ func main() {
 		log.Fatalf("failed to initialize database stores: %v", err)
 	}
 
-	repoStore := database.Repos(db)
-	codeintelDB := codeinteldbstore.NewWithDB(db, &observation.Context{
+	observationContext := &observation.Context{
 		Logger:     log15.Root(),
 		Tracer:     &trace.Tracer{Tracer: opentracing.GlobalTracer()},
 		Registerer: prometheus.DefaultRegisterer,
-	}, nil)
-	externalServiceStore := database.ExternalServices(db)
+	}
 
 	err = keyring.Init(ctx)
 	if err != nil {
-		log.Fatalf("failed to initialise keyring: %s", err)
+		log.Fatalf("failed to initialize keyring: %s", err)
 	}
 
 	gitserver := server.Server{
 		ReposDir:           reposDir,
 		DesiredPercentFree: wantPctFree2,
-		GetRemoteURLFunc: func(ctx context.Context, repo api.RepoName) (string, error) {
-			r, err := repoStore.GetByName(ctx, repo)
-			if err != nil {
-				return "", err
-			}
-
-			for _, info := range r.Sources {
-				// build the clone url using the external service config instead of using
-				// the source CloneURL field
-				svc, err := externalServiceStore.GetByID(ctx, info.ExternalServiceID())
-				if err != nil {
-					return "", err
-				}
-
-				return repos.CloneURL(svc.Kind, svc.Config, r)
-			}
-			return "", errors.Errorf("no sources for %q", repo)
-		},
-		GetVCSSyncer: func(ctx context.Context, repo api.RepoName) (server.VCSSyncer, error) {
-			r, err := repoStore.GetByName(ctx, repo)
-			if err != nil {
-				return nil, errors.Wrap(err, "get repository")
-			}
-
-			switch r.ExternalRepo.ServiceType {
-			case extsvc.TypePerforce:
-				// Extract options from external service config
-				var c schema.PerforceConnection
-				for _, info := range r.Sources {
-					es, err := externalServiceStore.GetByID(ctx, info.ExternalServiceID())
-					if err != nil {
-						return nil, errors.Wrap(err, "get external service")
-					}
-
-					normalized, err := jsonc.Parse(es.Config)
-					if err != nil {
-						return nil, errors.Wrap(err, "normalize JSON")
-					}
-
-					if err = jsoniter.Unmarshal(normalized, &c); err != nil {
-						return nil, errors.Wrap(err, "unmarshal JSON")
-					}
-					break
-				}
-
-				return &server.PerforceDepotSyncer{
-					MaxChanges: int(c.MaxChanges),
-					Client:     c.P4Client,
-				}, nil
-			case extsvc.TypeJVMPackages:
-				var c schema.JVMPackagesConnection
-				for _, info := range r.Sources {
-					es, err := externalServiceStore.GetByID(ctx, info.ExternalServiceID())
-					if err != nil {
-						return nil, errors.Wrap(err, "get external service")
-					}
-
-					normalized, err := jsonc.Parse(es.Config)
-					if err != nil {
-						return nil, errors.Wrap(err, "normalize JSON")
-					}
-
-					if err = jsoniter.Unmarshal(normalized, &c); err != nil {
-						return nil, errors.Wrap(err, "unmarshal JSON")
-					}
-					break
-				}
-
-				return &server.JVMPackagesSyncer{Config: &c, DBStore: codeintelDB}, nil
-			}
-			return &server.GitRepoSyncer{}, nil
-		},
-		Hostname: hostname.Get(),
-		DB:       db,
+		GetVCSSyncer:       newVCSSyncerFactory(db, observationContext),
+		Hostname:           hostname.Get(),
+		DB:                 db,
 	}
 	gitserver.RegisterMetrics()
 
@@ -223,6 +149,7 @@ func main() {
 	<-c
 	go func() {
 		<-c
+		// TODO: gitserver.Stop()
 		os.Exit(0)
 	}()
 
@@ -275,4 +202,65 @@ func getDB() (dbutil.DB, error) {
 	})
 
 	return dbconn.New(dbconn.Opts{DSN: dsn, DBName: "frontend", AppName: "gitserver"})
+}
+
+func newVCSSyncerFactory(db dbutil.DB, observationContext *observation.Context) func(ctx context.Context, repo api.RepoName) (server.VCSSyncer, error) {
+	repoStore := database.Repos(db)
+	codeintelDB := codeinteldbstore.NewWithDB(db, observationContext, nil)
+	externalServiceStore := database.ExternalServices(db)
+
+	return func(ctx context.Context, repo api.RepoName) (server.VCSSyncer, error) {
+		r, err := repoStore.GetByName(ctx, repo)
+		if err != nil {
+			return nil, errors.Wrap(err, "get repository")
+		}
+
+		switch r.ExternalRepo.ServiceType {
+		case extsvc.TypePerforce:
+			// Extract options from external service config
+			var c schema.PerforceConnection
+			for _, info := range r.Sources {
+				es, err := externalServiceStore.GetByID(ctx, info.ExternalServiceID())
+				if err != nil {
+					return nil, errors.Wrap(err, "get external service")
+				}
+
+				normalized, err := jsonc.Parse(es.Config)
+				if err != nil {
+					return nil, errors.Wrap(err, "normalize JSON")
+				}
+
+				if err = jsoniter.Unmarshal(normalized, &c); err != nil {
+					return nil, errors.Wrap(err, "unmarshal JSON")
+				}
+				break
+			}
+
+			return &server.PerforceDepotSyncer{
+				MaxChanges: int(c.MaxChanges),
+				Client:     c.P4Client,
+			}, nil
+		case extsvc.TypeJVMPackages:
+			var c schema.JVMPackagesConnection
+			for _, info := range r.Sources {
+				es, err := externalServiceStore.GetByID(ctx, info.ExternalServiceID())
+				if err != nil {
+					return nil, errors.Wrap(err, "get external service")
+				}
+
+				normalized, err := jsonc.Parse(es.Config)
+				if err != nil {
+					return nil, errors.Wrap(err, "normalize JSON")
+				}
+
+				if err = jsoniter.Unmarshal(normalized, &c); err != nil {
+					return nil, errors.Wrap(err, "unmarshal JSON")
+				}
+				break
+			}
+
+			return &server.JVMPackagesSyncer{Config: &c, DBStore: codeintelDB}, nil
+		}
+		return &server.GitRepoSyncer{}, nil
+	}
 }

@@ -629,11 +629,8 @@ func (c *Client) IsRepoCloned(ctx context.Context, repo api.RepoName) (bool, err
 	}
 	// no need to defer, we aren't using the body.
 	resp.Body.Close()
-	var cloned bool
-	if resp.StatusCode == http.StatusOK {
-		cloned = true
-	}
-	return cloned, nil
+
+	return resp.StatusCode == http.StatusOK, nil
 }
 
 func (c *Client) RepoCloneProgress(ctx context.Context, repos ...api.RepoName) (*protocol.RepoCloneProgressResponse, error) {

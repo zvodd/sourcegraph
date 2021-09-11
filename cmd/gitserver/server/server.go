@@ -41,6 +41,7 @@ import (
 	"github.com/sourcegraph/sourcegraph/internal/honey"
 	"github.com/sourcegraph/sourcegraph/internal/lazyregexp"
 	"github.com/sourcegraph/sourcegraph/internal/mutablelimiter"
+	"github.com/sourcegraph/sourcegraph/internal/repos"
 	"github.com/sourcegraph/sourcegraph/internal/repotrackutil"
 	"github.com/sourcegraph/sourcegraph/internal/trace"
 	"github.com/sourcegraph/sourcegraph/internal/trace/ot"
@@ -117,16 +118,6 @@ type Server struct {
 
 	// DiskSizer tells how much disk is free and how large the disk is.
 	DiskSizer DiskSizer
-
-	// GetRemoteURLFunc is a function which returns the remote URL for a
-	// repository. This is used when cloning or fetching a repository. In
-	// production this will speak to the database to look up the clone URL. In
-	// tests this is usually set to clone a local repository or intentionally
-	// error.
-	//
-	// Note: internal uses should call getRemoteURL which will handle
-	// GetRemoteURLFunc being nil.
-	GetRemoteURLFunc func(context.Context, api.RepoName) (string, error)
 
 	// GetVCSSyncer is a function which returns the VCS syncer for a repository.
 	// This is used when cloning or fetching a repository. In production this will
@@ -520,19 +511,6 @@ func (s *Server) serverContext() (context.Context, context.CancelFunc) {
 	}
 }
 
-func (s *Server) getRemoteURL(ctx context.Context, name api.RepoName) (*vcs.URL, error) {
-	if s.GetRemoteURLFunc == nil {
-		return nil, errors.New("gitserver GetRemoteURLFunc is unset")
-	}
-
-	remoteURL, err := s.GetRemoteURLFunc(ctx, name)
-	if err != nil {
-		return nil, errors.Wrap(err, "GetRemoteURLFunc")
-	}
-
-	return vcs.ParseURL(remoteURL)
-}
-
 // acquireCloneLimiter() acquires a cancellable context associated with the
 // clone limiter.
 func (s *Server) acquireCloneLimiter(ctx context.Context) (context.Context, context.CancelFunc, error) {
@@ -589,7 +567,11 @@ func (s *Server) handleIsRepoCloneable(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var syncer VCSSyncer
-	remoteURL, err := s.getRemoteURL(r.Context(), req.Repo)
+	var remoteURL string
+	r, err := database.Repos(db).GetByName(ctx, name)
+	if err == nil {
+		remoteURL, err = repos.GetRemoteURL(r.Context(), s.DB, req.Repo)
+	}
 	if err != nil {
 		// We use this endpoint to verify if a repo exists without consuming
 		// API rate limit, since many users visit private or bogus repos,
@@ -1233,7 +1215,11 @@ func (s *Server) cloneRepo(ctx context.Context, repo api.RepoName, opts *cloneOp
 		return "", errors.Wrap(err, "get VCS syncer")
 	}
 
-	remoteURL, err := s.getRemoteURL(ctx, repo)
+	r, err := database.Repos(s.DB).GetByName(ctx, repo)
+	if err != nil {
+		return "", err
+	}
+	remoteURL, err := repos.GetRemoteURL(ctx, s.DB, r)
 	if err != nil {
 		return "", err
 	}
@@ -1650,7 +1636,11 @@ func (s *Server) doBackgroundRepoUpdate(repo api.RepoName) error {
 	repo = protocol.NormalizeRepo(repo)
 	dir := s.dir(repo)
 
-	remoteURL, err := s.getRemoteURL(ctx, repo)
+	r, err := database.Repos(s.DB).GetByName(ctx, repo)
+	if err != nil {
+		return err
+	}
+	remoteURL, err := repos.GetRemoteURL(ctx, s.DB, r)
 	if err != nil {
 		return errors.Wrap(err, "failed to determine Git remote URL")
 	}

@@ -114,7 +114,6 @@ type RepoInfoRequest struct {
 // RepoInfo is the information requests about a single repository
 // via a RepoInfoRequest.
 type RepoInfo struct {
-	URL             string     // this repository's Git remote URL
 	CloneInProgress bool       // whether the repository is currently being cloned
 	CloneProgress   string     // a progress message from the running clone command.
 	Cloned          bool       // whether the repository has been cloned successfully
@@ -155,7 +154,6 @@ type RepoCloneProgressRequest struct {
 type RepoCloneProgress struct {
 	CloneInProgress bool   // whether the repository is currently being cloned
 	CloneProgress   string // a progress message from the running clone command.
-	Cloned          bool   // whether the repository has been cloned successfully
 }
 
 // RepoCloneProgressResponse is the response to a repository clone progress request

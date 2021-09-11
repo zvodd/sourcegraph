@@ -1,12 +1,15 @@
 package repos
 
 import (
+	"context"
 	"fmt"
 	"net/url"
 
 	"github.com/cockroachdb/errors"
 	"github.com/inconshreveable/log15"
 
+	"github.com/sourcegraph/sourcegraph/internal/database"
+	"github.com/sourcegraph/sourcegraph/internal/database/dbutil"
 	"github.com/sourcegraph/sourcegraph/internal/extsvc"
 	"github.com/sourcegraph/sourcegraph/internal/extsvc/awscodecommit"
 	"github.com/sourcegraph/sourcegraph/internal/extsvc/bitbucketcloud"
@@ -18,8 +21,30 @@ import (
 	"github.com/sourcegraph/sourcegraph/internal/extsvc/perforce"
 	"github.com/sourcegraph/sourcegraph/internal/extsvc/phabricator"
 	"github.com/sourcegraph/sourcegraph/internal/types"
+	"github.com/sourcegraph/sourcegraph/internal/vcs"
 	"github.com/sourcegraph/sourcegraph/schema"
 )
+
+func GetRemoteURL(ctx context.Context, db dbutil.DB, r *types.Repo) (*vcs.URL, error) {
+	remoteURL, err := func() (string, error) {
+		for _, info := range r.Sources {
+			// build the clone url using the external service config instead of using
+			// the source CloneURL field
+			svc, err := database.ExternalServices(db).GetByID(ctx, info.ExternalServiceID())
+			if err != nil {
+				return "", err
+			}
+
+			return CloneURL(svc.Kind, svc.Config, r)
+		}
+		return "", errors.Errorf("no sources for %q", r.Name)
+	}()
+	if err != nil {
+		return nil, errors.Wrap(err, "GetRemoteURL")
+	}
+
+	return vcs.ParseURL(remoteURL)
+}
 
 // CloneURL builds a cloneURL for the given repo based on the external service
 // configuration. If authentication information is found in the configuration, it

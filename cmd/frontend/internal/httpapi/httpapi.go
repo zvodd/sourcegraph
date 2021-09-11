@@ -133,7 +133,6 @@ func NewInternalHandler(m *mux.Router, db dbutil.DB, schema *graphql.Schema, new
 	m.Get(apirouter.ExternalURL).Handler(trace.Route(handler(serveExternalURL)))
 	m.Get(apirouter.CanSendEmail).Handler(trace.Route(handler(serveCanSendEmail)))
 	m.Get(apirouter.SendEmail).Handler(trace.Route(handler(serveSendEmail)))
-	m.Get(apirouter.GitExec).Handler(trace.Route(handler(serveGitExec)))
 	m.Get(apirouter.GitResolveRevision).Handler(trace.Route(handler(serveGitResolveRevision)))
 	m.Get(apirouter.GitTar).Handler(trace.Route(handler(serveGitTar)))
 	gitService := &gitServiceHandler{

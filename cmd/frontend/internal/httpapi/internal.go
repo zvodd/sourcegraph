@@ -1,14 +1,11 @@
 package httpapi
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
-	"io"
 	"net/http"
 	"net/url"
 	"path"
-	"strconv"
 
 	"github.com/cockroachdb/errors"
 	"github.com/gorilla/mux"
@@ -22,7 +19,6 @@ import (
 	"github.com/sourcegraph/sourcegraph/internal/database/dbutil"
 	"github.com/sourcegraph/sourcegraph/internal/errcode"
 	"github.com/sourcegraph/sourcegraph/internal/gitserver"
-	"github.com/sourcegraph/sourcegraph/internal/gitserver/protocol"
 	"github.com/sourcegraph/sourcegraph/internal/jsonc"
 	searchbackend "github.com/sourcegraph/sourcegraph/internal/search/backend"
 	"github.com/sourcegraph/sourcegraph/internal/txemail"
@@ -600,48 +596,6 @@ func serveGitTar(w http.ResponseWriter, r *http.Request) error {
 	w.Header().Set("Location", location.String())
 	w.WriteHeader(http.StatusFound)
 
-	return nil
-}
-
-func serveGitExec(w http.ResponseWriter, r *http.Request) error {
-	defer r.Body.Close()
-	req := protocol.ExecRequest{}
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		return errors.Wrap(err, "Decode")
-	}
-
-	vars := mux.Vars(r)
-	repoID, err := strconv.ParseInt(vars["RepoID"], 10, 64)
-	if err != nil {
-		http.Error(w, "illegal repository id: "+err.Error(), http.StatusBadRequest)
-		return nil
-	}
-
-	repo, err := database.GlobalRepos.Get(r.Context(), api.RepoID(repoID))
-	if err != nil {
-		return err
-	}
-
-	// Set repo name in gitserver request payload
-	req.Repo = repo.Name
-
-	var buf bytes.Buffer
-	if err := json.NewEncoder(&buf).Encode(req); err != nil {
-		return errors.Wrap(err, "Encode")
-	}
-
-	// Find the correct shard to query
-	addr := gitserver.DefaultClient.AddrForRepo(repo.Name)
-
-	director := func(req *http.Request) {
-		req.URL.Scheme = "http"
-		req.URL.Host = addr
-		req.URL.Path = "/exec"
-		req.Body = io.NopCloser(bytes.NewReader(buf.Bytes()))
-		req.ContentLength = int64(buf.Len())
-	}
-
-	gitserver.DefaultReverseProxy.ServeHTTP(repo.Name, "POST", "exec", director, w, r)
 	return nil
 }
 

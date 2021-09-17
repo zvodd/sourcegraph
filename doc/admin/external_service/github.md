@@ -139,7 +139,3 @@ If you would like to sync all public repositories while omitting archived repos,
     ]
 }
 ```
-
-If splitting by creation date does not work, try another field. See [GitHub advanced search query](https://github.com/search/advanced) for other fields you can try.
-
-See [Handle GitHub repositoryQuery that has more than 1000 results](https://github.com/sourcegraph/sourcegraph/issues/2562) for ongoing work to address this limitation.

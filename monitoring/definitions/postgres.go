@@ -111,7 +111,7 @@ func Postgres() *monitoring.Container {
 						// monitoring.Observable{
 						//	Name:            "cache_hit_ratio",
 						//	Description:     "ratio of cache hits over 5m",
-						//	Owner:           monitoring.ObservableOwnerCloudSaas,
+						//	Owner:           monitoring.ObservableOwnerCloudSaaS,
 						//	Query:           `avg(rate(pg_stat_database_blks_hit{datname!~"template.*|postgres|cloudsqladmin"}[5m]) / (rate(pg_stat_database_blks_hit{datname!~"template.*|postgres|cloudsqladmin"}[5m]) + rate(pg_stat_database_blks_read{datname!~"template.*|postgres|cloudsqladmin"}[5m]))) by (datname) * 100`,
 						//	DataMayNotExist: true,
 						//	Warning:         monitoring.Alert().LessOrEqual(0.98).For(5 * time.Minute),
@@ -129,7 +129,7 @@ func Postgres() *monitoring.Container {
 						monitoring.Observable{
 							Name:           "pg_table_size",
 							Description:    "table size",
-							Owner:          monitoring.ObservableOwnerCloudSaas,
+							Owner:          monitoring.ObservableOwnerCloudSaaS,
 							Query:          `max by (relname)(pg_table_bloat_size)`,
 							Panel:          monitoring.Panel().LegendFormat("{{relname}}").Unit(monitoring.Bytes),
 							NoAlert:        true,
@@ -138,7 +138,7 @@ func Postgres() *monitoring.Container {
 						monitoring.Observable{
 							Name:           "pg_table_bloat_ratio",
 							Description:    "table bloat ratio",
-							Owner:          monitoring.ObservableOwnerCloudSaas,
+							Owner:          monitoring.ObservableOwnerCloudSaaS,
 							Query:          `max by (relname)(pg_table_bloat_ratio) * 100`,
 							Panel:          monitoring.Panel().LegendFormat("{{relname}}").Unit(monitoring.Percentage),
 							NoAlert:        true,
@@ -149,7 +149,7 @@ func Postgres() *monitoring.Container {
 						monitoring.Observable{
 							Name:           "pg_index_size",
 							Description:    "index size",
-							Owner:          monitoring.ObservableOwnerCloudSaas,
+							Owner:          monitoring.ObservableOwnerCloudSaaS,
 							Query:          `max by (relname)(pg_index_bloat_size)`,
 							Panel:          monitoring.Panel().LegendFormat("{{relname}}").Unit(monitoring.Bytes),
 							NoAlert:        true,
@@ -158,7 +158,7 @@ func Postgres() *monitoring.Container {
 						monitoring.Observable{
 							Name:           "pg_index_bloat_ratio",
 							Description:    "index bloat ratio",
-							Owner:          monitoring.ObservableOwnerCloudSaas,
+							Owner:          monitoring.ObservableOwnerCloudSaaS,
 							Query:          `max by (relname)(pg_index_bloat_ratio) * 100`,
 							Panel:          monitoring.Panel().LegendFormat("{{relname}}").Unit(monitoring.Percentage),
 							NoAlert:        true,
@@ -168,8 +168,8 @@ func Postgres() *monitoring.Container {
 				},
 			},
 
-			shared.NewProvisioningIndicatorsGroup(containerName, monitoring.ObservableOwnerCloudSaas, nil),
-			shared.NewKubernetesMonitoringGroup(containerName, monitoring.ObservableOwnerCloudSaas, nil),
+			shared.NewProvisioningIndicatorsGroup(containerName, monitoring.ObservableOwnerCloudSaaS, nil),
+			shared.NewKubernetesMonitoringGroup(containerName, monitoring.ObservableOwnerCloudSaaS, nil),
 		},
 	}
 }

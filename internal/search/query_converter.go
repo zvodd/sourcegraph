@@ -9,6 +9,7 @@ import (
 
 	"github.com/go-enry/go-enry/v2"
 	"github.com/go-enry/go-enry/v2/data"
+	"github.com/inconshreveable/log15"
 	"github.com/sourcegraph/sourcegraph/internal/conf"
 	"github.com/sourcegraph/sourcegraph/internal/search/filter"
 	"github.com/sourcegraph/sourcegraph/internal/search/query"
@@ -301,6 +302,82 @@ func QueryToZoektQuery(p *TextPatternInfo, typ IndexedRequestType) (zoekt.Q, err
 		}
 		and = append(and, &zoekt.Not{Child: &zoekt.Type{Type: zoekt.TypeRepo, Child: q}})
 	}
+
+	return zoekt.Simplify(zoekt.NewAnd(and...)), nil
+}
+
+func OptimizeZoektQuery(p *TextPatternInfo, patterns []query.Pattern) (zoekt.Q, error) {
+	var and []zoekt.Q
+
+	var q zoekt.Q
+	var err error
+	for _, pp := range patterns {
+		if p.IsRegExp {
+			fileNameOnly := p.PatternMatchesPath && !p.PatternMatchesContent
+			contentOnly := !p.PatternMatchesPath && p.PatternMatchesContent
+			q, err = parseRe(pp.Value, fileNameOnly, contentOnly, p.IsCaseSensitive)
+			if err != nil {
+				return nil, err
+			}
+		} else {
+			q = &zoekt.Substring{
+				Pattern:       pp.Value,
+				CaseSensitive: p.IsCaseSensitive,
+
+				FileName: true,
+				Content:  true,
+			}
+		}
+
+		if pp.Negated {
+			q = &zoekt.Not{Child: q}
+		}
+
+		and = append(and, q)
+	}
+
+	log15.Warn("Yo I'm optimized", "", zoekt.NewAnd(and...).String())
+
+	// zoekt also uses regular expressions for file paths
+	// TODO PathPatternsAreCaseSensitive
+	// TODO whitespace in file path patterns?
+	for _, i := range p.IncludePatterns {
+		q, err := fileRe(i, p.IsCaseSensitive)
+		if err != nil {
+			return nil, err
+		}
+		and = append(and, q)
+	}
+	if p.ExcludePattern != "" {
+		q, err := fileRe(p.ExcludePattern, p.IsCaseSensitive)
+		if err != nil {
+			return nil, err
+		}
+		and = append(and, &zoekt.Not{Child: q})
+	}
+
+	// For conditionals that happen on a repo we can use type:repo queries. eg
+	// (type:repo file:foo) (type:repo file:bar) will match all repos which
+	// contain a filename matching "foo" and a filename matchinb "bar".
+	//
+	// Note: (type:repo file:foo file:bar) will only find repos with a
+	// filename containing both "foo" and "bar".
+	for _, i := range p.FilePatternsReposMustInclude {
+		q, err := fileRe(i, p.IsCaseSensitive)
+		if err != nil {
+			return nil, err
+		}
+		and = append(and, &zoekt.Type{Type: zoekt.TypeRepo, Child: q})
+	}
+	for _, i := range p.FilePatternsReposMustExclude {
+		q, err := fileRe(i, p.IsCaseSensitive)
+		if err != nil {
+			return nil, err
+		}
+		and = append(and, &zoekt.Not{Child: &zoekt.Type{Type: zoekt.TypeRepo, Child: q}})
+	}
+	final := zoekt.Simplify(zoekt.NewAnd(and...))
+	log15.Warn("Yo I'm finally optimized", "", final.String())
 
 	return zoekt.Simplify(zoekt.NewAnd(and...)), nil
 }

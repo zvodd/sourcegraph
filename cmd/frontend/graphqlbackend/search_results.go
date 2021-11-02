@@ -568,6 +568,97 @@ func withMode(args search.TextParameters, st query.SearchType) search.TextParame
 	return args
 }
 
+func (r *searchResolver) optimizeZoektAndQuery(ctx context.Context, b query.Basic) (*search.TextParameters, []run.Job, bool) {
+	// validate query shape is just (and p1 p2 p3...)
+	operands := b.Pattern.(query.Operator).Operands
+	patterns := []query.Pattern{}
+	for _, o := range operands {
+		p, ok := o.(query.Pattern)
+		if !ok {
+			return nil, nil, false
+		}
+		patterns = append(patterns, p)
+	}
+
+	// fake the pattern for ToTextPatternInfo
+	p := search.ToTextPatternInfo(b.MapPattern(operands[0]), r.protocol(), query.Identity)
+
+	forceResultTypes := result.TypeEmpty
+	if r.PatternType == query.SearchTypeStructural {
+		if p.Pattern == "" {
+			// Fallback to literal search for searching repos and files if
+			// the structural search pattern is empty.
+			r.PatternType = query.SearchTypeLiteral
+			p.IsStructuralPat = false
+			forceResultTypes = result.Types(0)
+		} else {
+			forceResultTypes = result.TypeStructural
+		}
+	}
+
+	args := search.TextParameters{
+		PatternInfo: p,
+		Query:       b.ToParseTree(),
+		Timeout:     search.TimeoutDuration(b),
+
+		// UseFullDeadline if timeout: set or we are streaming.
+		UseFullDeadline: b.ToParseTree().Timeout() != nil || b.ToParseTree().Count() != nil || r.stream != nil,
+
+		Zoekt:        r.zoekt,
+		SearcherURLs: r.searcherURLs,
+	}
+	args = withResultTypes(args, forceResultTypes)
+	args = withMode(args, r.PatternType)
+
+	globalSearch := args.Mode == search.ZoektGlobalSearch
+	skipUnindexed := args.Mode == search.SkipUnindexed || (globalSearch && envvar.SourcegraphDotComMode())
+	searcherOnly := args.Mode == search.SearcherOnly || (globalSearch && !envvar.SourcegraphDotComMode())
+	var jobs []run.Job
+
+	if args.ResultTypes.Has(result.TypeFile | result.TypePath) {
+		log15.Info("type file type path")
+		if !skipUnindexed {
+			log15.Info("!skipUnindexed")
+			typ := search.TextRequest
+			// TODO(rvantonder): we don't always have to run
+			// this converter. It depends on whether we run
+			// a zoekt search at all.
+			zoektQuery, err := search.OptimizeZoektQuery(p, patterns)
+			if err != nil {
+				log15.Info("err", "is", err.Error())
+				return nil, nil, false
+			}
+			zoektArgs := &search.ZoektParameters{
+				Query:          zoektQuery,
+				Typ:            typ,
+				FileMatchLimit: args.PatternInfo.FileMatchLimit,
+				Select:         args.PatternInfo.Select,
+				Zoekt:          args.Zoekt,
+			}
+
+			searcherArgs := &search.SearcherParameters{
+				SearcherURLs:    args.SearcherURLs,
+				PatternInfo:     args.PatternInfo,
+				UseFullDeadline: args.UseFullDeadline,
+			}
+
+			jobs = append(jobs, &unindexed.TextSearch{
+				ZoektArgs:         zoektArgs,
+				SearcherArgs:      searcherArgs,
+				FileMatchLimit:    args.PatternInfo.FileMatchLimit,
+				NotSearcherOnly:   !searcherOnly,
+				UseIndex:          args.PatternInfo.Index,
+				ContainsRefGlobs:  query.ContainsRefGlobs(b.ToParseTree()),
+				OnMissingRepoRevs: zoektutil.MissingRepoRevStatus(r.stream),
+			})
+		}
+		log15.Warn("have job")
+		return &args, jobs, true
+	}
+
+	return nil, nil, false
+}
+
 // toSearchInputs converts a query parse tree to the _internal_ representation
 // needed to run a search. To understand why this conversion matters, think
 // about the fact that the query parse tree doesn't know anything about our
@@ -903,6 +994,9 @@ func (r *searchResolver) evaluatePatternExpression(ctx context.Context, q query.
 
 		switch term.Kind {
 		case query.And:
+			if args, jobs, ok := r.optimizeZoektAndQuery(ctx, q); ok {
+				return r.evaluateLeaf(ctx, args, jobs)
+			}
 			return r.evaluateAnd(ctx, q)
 		case query.Or:
 			return r.evaluateOr(ctx, q)

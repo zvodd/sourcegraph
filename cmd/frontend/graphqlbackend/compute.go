@@ -145,7 +145,7 @@ func (r *computeResultResolver) ToComputeText() (*computeTextResolver, bool) {
 	return res, ok
 }
 
-func toComputeMatchContextResolver(fm *result.FileMatch, mc *compute.MatchContext, repository *RepositoryResolver) *computeMatchContextResolver {
+func toComputeMatchContextResolver(mc *compute.MatchContext, repository *RepositoryResolver, path, commit string) *computeMatchContextResolver {
 	var computeMatches []*computeMatchResolver
 	for _, m := range mc.Matches {
 		mCopy := m
@@ -153,27 +153,27 @@ func toComputeMatchContextResolver(fm *result.FileMatch, mc *compute.MatchContex
 	}
 	return &computeMatchContextResolver{
 		repository: repository,
-		commit:     string(fm.CommitID),
-		path:       fm.Path,
+		commit:     commit,
+		path:       path,
 		matches:    computeMatches,
 	}
 }
 
-func toComputeTextResolver(fm *result.FileMatch, result *compute.Text, repository *RepositoryResolver) *computeTextResolver {
+func toComputeTextResolver(result *compute.Text, repository *RepositoryResolver, path, commit string) *computeTextResolver {
 	return &computeTextResolver{
 		repository: repository,
-		commit:     string(fm.CommitID),
-		path:       fm.Path,
+		commit:     commit,
+		path:       path,
 		t:          result,
 	}
 }
 
-func toComputeResultResolver(fm *result.FileMatch, result compute.Result, repoResolver *RepositoryResolver) *computeResultResolver {
+func toComputeResultResolver(result compute.Result, repoResolver *RepositoryResolver, path, commit string) *computeResultResolver {
 	switch r := result.(type) {
 	case *compute.MatchContext:
-		return &computeResultResolver{result: toComputeMatchContextResolver(fm, r, repoResolver)}
+		return &computeResultResolver{result: toComputeMatchContextResolver(r, repoResolver, path, commit)}
 	case *compute.Text:
-		return &computeResultResolver{result: toComputeTextResolver(fm, r, repoResolver)}
+		return &computeResultResolver{result: toComputeTextResolver(r, repoResolver, path, commit)}
 	default:
 		panic(fmt.Sprintf("unsupported compute result %T", r))
 	}
@@ -197,14 +197,15 @@ func toResultResolverList(ctx context.Context, cmd compute.Command, matches []re
 
 	results := make([]*computeResultResolver, 0, len(matches))
 	for _, m := range matches {
-		if fm, ok := m.(*result.FileMatch); ok {
-			result, err := cmd.Run(ctx, fm)
-			if err != nil {
-				return nil, err
-			}
-			repoResolver := getRepoResolver(fm.Repo, "")
-			results = append(results, toComputeResultResolver(fm, result, repoResolver))
+		computeResult, err := cmd.Run(ctx, m)
+		if err != nil {
+			return nil, err
 		}
+		repoResolver := getRepoResolver(m.RepoName(), "")
+		path := m.Key().Path
+		commit := string(m.Key().Commit)
+		result := toComputeResultResolver(computeResult, repoResolver, path, commit)
+		results = append(results, result)
 	}
 	return results, nil
 }

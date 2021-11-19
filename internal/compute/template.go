@@ -258,15 +258,6 @@ func NewMetaEnvironment(r result.Match, content string) *MetaEnvironment {
 			Content: content,
 		}
 	case *result.CommitMatch:
-		var content string
-		if m.DiffPreview != nil {
-			// This is a diff result. Use Body, which is actually
-			// ```diff <...>``` markdown, because I don't think we
-			// expose it without markdown.
-			content = m.Body.Value
-		} else {
-			content = string(m.Commit.Message)
-		}
 		return &MetaEnvironment{
 			Repo:    string(m.Repo.Name),
 			Commit:  string(m.Commit.ID),

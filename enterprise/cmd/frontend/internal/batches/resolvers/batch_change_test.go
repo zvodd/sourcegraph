@@ -59,7 +59,7 @@ func TestBatchChangeResolver(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	s, err := graphqlbackend.NewSchema(database.NewDB(db), &Resolver{store: cstore}, nil, nil, nil, nil, nil, nil, nil, nil)
+	s, err := graphqlbackend.NewSchema(database.NewDB(db), &Resolver{store: cstore}, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -264,6 +264,7 @@ query($batchChange: ID!){
   }
 }
 `
+
 const queryBatchChangeByName = `
 fragment u on User { databaseID, siteAdmin }
 fragment o on Org  { id, name }

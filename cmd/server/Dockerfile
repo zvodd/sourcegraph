@@ -38,15 +38,15 @@ RUN apk update && apk add --no-cache --verbose \
     # from our *Minimum Supported Version* which alone dictates
     # the features we can depend on. See this link for more information:
     # https://github.com/sourcegraph/sourcegraph/blob/main/doc/dev/postgresql.md#version-requirements
-    'bash=5.1.4-r0' \
-    'redis=~6.2' \
+    bash \
+    redis \
     # Gitserver requires Git protocol v2 https://github.com/sourcegraph/sourcegraph/issues/13168
-    'git>=2.18' \
+    git \
     git-p4 \
     python2 \
     python3 \
-    'nginx>=1.18.0' openssh-client pcre sqlite-libs su-exec 'nodejs-current=16.11.1-r0' \
-    postgresql=13.5-r0 \
+    'nginx>=1.18.0' openssh-client pcre sqlite-libs su-exec nodejs-current \
+    postgresql \
     postgresql-contrib
 
 # IMPORTANT: If you update the syntect_server version below, you MUST confirm

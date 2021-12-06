@@ -38,7 +38,7 @@ func GetBackgroundJobs(ctx context.Context, mainAppDB *sql.DB, insightsDB *sql.D
 
 	// Create basic metrics for recording information about background jobs.
 	observationContext := &observation.Context{
-		Logger:     log15.Root(),
+		OldLogger:  log15.Root(),
 		Tracer:     &trace.Tracer{Tracer: opentracing.GlobalTracer()},
 		Registerer: prometheus.DefaultRegisterer,
 	}

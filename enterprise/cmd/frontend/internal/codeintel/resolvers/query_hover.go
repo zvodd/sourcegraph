@@ -5,25 +5,24 @@ import (
 	"time"
 
 	"github.com/cockroachdb/errors"
-	"github.com/opentracing/opentracing-go/log"
 
 	"github.com/sourcegraph/sourcegraph/enterprise/internal/codeintel/stores/lsifstore"
-	"github.com/sourcegraph/sourcegraph/internal/observation"
+	obsv "github.com/sourcegraph/sourcegraph/internal/observation"
 )
 
 const slowHoverRequestThreshold = time.Second
 
 // Hover returns the hover text and range for the symbol at the given position.
 func (r *queryResolver) Hover(ctx context.Context, line, character int) (_ string, _ lsifstore.Range, _ bool, err error) {
-	ctx, traceLog, endObservation := observeResolver(ctx, &err, "Hover", r.operations.hover, slowHoverRequestThreshold, observation.Args{
-		LogFields: []log.Field{
-			log.Int("repositoryID", r.repositoryID),
-			log.String("commit", r.commit),
-			log.String("path", r.path),
-			log.Int("numUploads", len(r.uploads)),
-			log.String("uploads", uploadIDsToString(r.uploads)),
-			log.Int("line", line),
-			log.Int("character", character),
+	ctx, traceLog, endObservation := observeResolver(ctx, &err, "Hover", r.operations.hover, slowHoverRequestThreshold, obsv.Args{
+		LogFields: []obsv.Field{
+			obsv.Int("repositoryID", r.repositoryID),
+			obsv.String("commit", r.commit),
+			obsv.String("path", r.path),
+			obsv.Int("numUploads", len(r.uploads)),
+			obsv.String("uploads", uploadIDsToString(r.uploads)),
+			obsv.Int("line", line),
+			obsv.Int("character", character),
 		},
 	})
 	defer endObservation()
@@ -43,7 +42,7 @@ func (r *queryResolver) Hover(ctx context.Context, line, character int) (_ strin
 
 	for i := range adjustedUploads {
 		adjustedUpload := adjustedUploads[i]
-		traceLog(log.Int("uploadID", adjustedUpload.Upload.ID))
+		traceLog(obsv.Int("uploadID", adjustedUpload.Upload.ID))
 
 		// Fetch hover text from the index
 		text, rn, exists, err := r.lsifStore.Hover(
@@ -94,8 +93,8 @@ func (r *queryResolver) Hover(ctx context.Context, line, character int) (_ strin
 		return "", lsifstore.Range{}, false, err
 	}
 	traceLog(
-		log.Int("numMonikers", len(orderedMonikers)),
-		log.String("monikers", monikersToString(orderedMonikers)),
+		obsv.Int("numMonikers", len(orderedMonikers)),
+		obsv.String("monikers", monikersToString(orderedMonikers)),
 	)
 
 	// Determine the set of uploads over which we need to perform a moniker search. This will
@@ -106,8 +105,8 @@ func (r *queryResolver) Hover(ctx context.Context, line, character int) (_ strin
 		return "", lsifstore.Range{}, false, err
 	}
 	traceLog(
-		log.Int("numDefinitionUploads", len(uploads)),
-		log.String("definitionUploads", uploadIDsToString(uploads)),
+		obsv.Int("numDefinitionUploads", len(uploads)),
+		obsv.String("definitionUploads", uploadIDsToString(uploads)),
 	)
 
 	// Perform the moniker search. This returns a set of locations defining one of the monikers
@@ -116,7 +115,7 @@ func (r *queryResolver) Hover(ctx context.Context, line, character int) (_ strin
 	if err != nil {
 		return "", lsifstore.Range{}, false, err
 	}
-	traceLog(log.Int("numLocations", len(locations)))
+	traceLog(obsv.Int("numLocations", len(locations)))
 
 	for i := range locations {
 		// Fetch hover text attached to a definition in the defining index

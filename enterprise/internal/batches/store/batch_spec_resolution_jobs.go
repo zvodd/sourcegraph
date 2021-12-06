@@ -7,11 +7,10 @@ import (
 
 	"github.com/keegancsmith/sqlf"
 	"github.com/lib/pq"
-	"github.com/opentracing/opentracing-go/log"
 
 	btypes "github.com/sourcegraph/sourcegraph/enterprise/internal/batches/types"
 	"github.com/sourcegraph/sourcegraph/internal/database/dbutil"
-	"github.com/sourcegraph/sourcegraph/internal/observation"
+	obsv "github.com/sourcegraph/sourcegraph/internal/observation"
 	"github.com/sourcegraph/sourcegraph/internal/workerutil"
 	dbworkerstore "github.com/sourcegraph/sourcegraph/internal/workerutil/dbworker/store"
 )
@@ -63,8 +62,8 @@ func (e ErrResolutionJobAlreadyExists) Error() string {
 
 // CreateBatchSpecResolutionJob creates the given batch spec resolutionjob jobs.
 func (s *Store) CreateBatchSpecResolutionJob(ctx context.Context, wj *btypes.BatchSpecResolutionJob) (err error) {
-	ctx, endObservation := s.operations.createBatchSpecResolutionJob.With(ctx, &err, observation.Args{LogFields: []log.Field{}})
-	defer endObservation(1, observation.Args{})
+	ctx, endObservation := s.operations.createBatchSpecResolutionJob.With(ctx, &err, obsv.Args{})
+	defer endObservation(1, obsv.Args{})
 
 	q := s.createBatchSpecResolutionJobQuery(wj)
 
@@ -117,11 +116,11 @@ type GetBatchSpecResolutionJobOpts struct {
 
 // GetBatchSpecResolutionJob gets a BatchSpecResolutionJob matching the given options.
 func (s *Store) GetBatchSpecResolutionJob(ctx context.Context, opts GetBatchSpecResolutionJobOpts) (job *btypes.BatchSpecResolutionJob, err error) {
-	ctx, endObservation := s.operations.getBatchSpecResolutionJob.With(ctx, &err, observation.Args{LogFields: []log.Field{
-		log.Int("ID", int(opts.ID)),
-		log.Int("BatchSpecID", int(opts.BatchSpecID)),
+	ctx, endObservation := s.operations.getBatchSpecResolutionJob.With(ctx, &err, obsv.Args{LogFields: []obsv.Field{
+		obsv.Int("ID", int(opts.ID)),
+		obsv.Int("BatchSpecID", int(opts.BatchSpecID)),
 	}})
-	defer endObservation(1, observation.Args{})
+	defer endObservation(1, obsv.Args{})
 
 	q := getBatchSpecResolutionJobQuery(&opts)
 	var c btypes.BatchSpecResolutionJob
@@ -173,8 +172,8 @@ type ListBatchSpecResolutionJobsOpts struct {
 
 // ListBatchSpecResolutionJobs lists batch changes with the given filters.
 func (s *Store) ListBatchSpecResolutionJobs(ctx context.Context, opts ListBatchSpecResolutionJobsOpts) (cs []*btypes.BatchSpecResolutionJob, err error) {
-	ctx, endObservation := s.operations.listBatchSpecResolutionJobs.With(ctx, &err, observation.Args{})
-	defer endObservation(1, observation.Args{})
+	ctx, endObservation := s.operations.listBatchSpecResolutionJobs.With(ctx, &err, obsv.Args{})
+	defer endObservation(1, obsv.Args{})
 
 	q := listBatchSpecResolutionJobsQuery(opts)
 

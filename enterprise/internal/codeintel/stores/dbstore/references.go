@@ -4,19 +4,18 @@ import (
 	"context"
 
 	"github.com/keegancsmith/sqlf"
-	"github.com/opentracing/opentracing-go/log"
 
 	"github.com/sourcegraph/sourcegraph/internal/database/batch"
-	"github.com/sourcegraph/sourcegraph/internal/observation"
+	obsv "github.com/sourcegraph/sourcegraph/internal/observation"
 	"github.com/sourcegraph/sourcegraph/lib/codeintel/precise"
 )
 
 // UpdatePackageReferences inserts reference data tied to the given upload.
 func (s *Store) UpdatePackageReferences(ctx context.Context, dumpID int, references []precise.PackageReference) (err error) {
-	ctx, endObservation := s.operations.updatePackageReferences.With(ctx, &err, observation.Args{LogFields: []log.Field{
-		log.Int("numReferences", len(references)),
+	ctx, endObservation := s.operations.updatePackageReferences.With(ctx, &err, obsv.Args{LogFields: []obsv.Field{
+		obsv.Int("numReferences", len(references)),
 	}})
-	defer endObservation(1, observation.Args{})
+	defer endObservation(1, obsv.Args{})
 
 	if len(references) == 0 {
 		return nil

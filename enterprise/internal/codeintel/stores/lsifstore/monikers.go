@@ -6,9 +6,8 @@ import (
 	"strings"
 
 	"github.com/keegancsmith/sqlf"
-	"github.com/opentracing/opentracing-go/log"
 
-	"github.com/sourcegraph/sourcegraph/internal/observation"
+	obsv "github.com/sourcegraph/sourcegraph/internal/observation"
 	"github.com/sourcegraph/sourcegraph/lib/codeintel/precise"
 )
 
@@ -17,22 +16,22 @@ import (
 // of monikers are attached to a single range. The order of the output slice is "outside-in", so that
 // the range attached to earlier monikers enclose the range attached to later monikers.
 func (s *Store) MonikersByPosition(ctx context.Context, bundleID int, path string, line, character int) (_ [][]precise.MonikerData, err error) {
-	ctx, traceLog, endObservation := s.operations.monikersByPosition.WithAndLogger(ctx, &err, observation.Args{LogFields: []log.Field{
-		log.Int("bundleID", bundleID),
-		log.String("path", path),
-		log.Int("line", line),
-		log.Int("character", character),
+	ctx, traceLog, endObservation := s.operations.monikersByPosition.WithAndLogger(ctx, &err, obsv.Args{LogFields: []obsv.Field{
+		obsv.Int("bundleID", bundleID),
+		obsv.String("path", path),
+		obsv.Int("line", line),
+		obsv.Int("character", character),
 	}})
-	defer endObservation(1, observation.Args{})
+	defer endObservation(1, obsv.Args{})
 
 	documentData, exists, err := s.scanFirstDocumentData(s.Store.Query(ctx, sqlf.Sprintf(monikersDocumentQuery, bundleID, path)))
 	if err != nil || !exists {
 		return nil, err
 	}
 
-	traceLog(log.Int("numRanges", len(documentData.Document.Ranges)))
+	traceLog(obsv.Int("numRanges", len(documentData.Document.Ranges)))
 	ranges := precise.FindRanges(documentData.Document.Ranges, line, character)
-	traceLog(log.Int("numIntersectingRanges", len(ranges)))
+	traceLog(obsv.Int("numIntersectingRanges", len(ranges)))
 
 	monikerData := make([][]precise.MonikerData, 0, len(ranges))
 	for _, r := range ranges {
@@ -42,11 +41,11 @@ func (s *Store) MonikersByPosition(ctx context.Context, bundleID int, path strin
 				batch = append(batch, moniker)
 			}
 		}
-		traceLog(log.Int("numMonikersForRange", len(batch)))
+		traceLog(obsv.Int("numMonikersForRange", len(batch)))
 
 		monikerData = append(monikerData, batch)
 	}
-	traceLog(log.Int("numMonikers", len(monikerData)))
+	traceLog(obsv.Int("numMonikers", len(monikerData)))
 
 	return monikerData, nil
 }
@@ -74,16 +73,16 @@ LIMIT 1
 // whose scheme+identifier matches one of the given monikers. This method also returns the size of the
 // complete result set to aid in pagination.
 func (s *Store) BulkMonikerResults(ctx context.Context, tableName string, uploadIDs []int, monikers []precise.MonikerData, limit, offset int) (_ []Location, _ int, err error) {
-	ctx, traceLog, endObservation := s.operations.bulkMonikerResults.WithAndLogger(ctx, &err, observation.Args{LogFields: []log.Field{
-		log.String("tableName", tableName),
-		log.Int("numUploadIDs", len(uploadIDs)),
-		log.String("uploadIDs", intsToString(uploadIDs)),
-		log.Int("numMonikers", len(monikers)),
-		log.String("monikers", monikersToString(monikers)),
-		log.Int("limit", limit),
-		log.Int("offset", offset),
+	ctx, traceLog, endObservation := s.operations.bulkMonikerResults.WithAndLogger(ctx, &err, obsv.Args{LogFields: []obsv.Field{
+		obsv.String("tableName", tableName),
+		obsv.Int("numUploadIDs", len(uploadIDs)),
+		obsv.String("uploadIDs", intsToString(uploadIDs)),
+		obsv.Int("numMonikers", len(monikers)),
+		obsv.String("monikers", monikersToString(monikers)),
+		obsv.Int("limit", limit),
+		obsv.Int("offset", offset),
 	}})
-	defer endObservation(1, observation.Args{})
+	defer endObservation(1, obsv.Args{})
 
 	if len(uploadIDs) == 0 || len(monikers) == 0 {
 		return nil, 0, nil
@@ -114,8 +113,8 @@ func (s *Store) BulkMonikerResults(ctx context.Context, tableName string, upload
 		totalCount += len(monikerLocations.Locations)
 	}
 	traceLog(
-		log.Int("numDumps", len(locationData)),
-		log.Int("totalCount", totalCount),
+		obsv.Int("numDumps", len(locationData)),
+		obsv.Int("totalCount", totalCount),
 	)
 
 	max := totalCount
@@ -143,7 +142,7 @@ outer:
 			}
 		}
 	}
-	traceLog(log.Int("numLocations", len(locations)))
+	traceLog(obsv.Int("numLocations", len(locations)))
 
 	return locations, totalCount, nil
 }

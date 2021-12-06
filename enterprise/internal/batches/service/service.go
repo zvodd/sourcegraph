@@ -10,7 +10,6 @@ import (
 	"github.com/cockroachdb/errors"
 	"github.com/graph-gophers/graphql-go"
 	"github.com/hashicorp/go-multierror"
-	"github.com/opentracing/opentracing-go/log"
 
 	"github.com/sourcegraph/sourcegraph/cmd/frontend/backend"
 	"github.com/sourcegraph/sourcegraph/cmd/frontend/graphqlbackend"
@@ -25,7 +24,7 @@ import (
 	"github.com/sourcegraph/sourcegraph/internal/extsvc/auth"
 	"github.com/sourcegraph/sourcegraph/internal/httpcli"
 	"github.com/sourcegraph/sourcegraph/internal/metrics"
-	"github.com/sourcegraph/sourcegraph/internal/observation"
+	obsv "github.com/sourcegraph/sourcegraph/internal/observation"
 	"github.com/sourcegraph/sourcegraph/internal/repoupdater"
 	"github.com/sourcegraph/sourcegraph/internal/types"
 )
@@ -56,28 +55,28 @@ type Service struct {
 }
 
 type operations struct {
-	createBatchSpec                      *observation.Operation
-	createBatchSpecFromRaw               *observation.Operation
-	enqueueBatchSpecResolution           *observation.Operation
-	executeBatchSpec                     *observation.Operation
-	cancelBatchSpec                      *observation.Operation
-	replaceBatchSpecInput                *observation.Operation
-	retryBatchSpecWorkspaces             *observation.Operation
-	createChangesetSpec                  *observation.Operation
-	getBatchChangeMatchingBatchSpec      *observation.Operation
-	getNewestBatchSpec                   *observation.Operation
-	moveBatchChange                      *observation.Operation
-	closeBatchChange                     *observation.Operation
-	deleteBatchChange                    *observation.Operation
-	enqueueChangesetSync                 *observation.Operation
-	reenqueueChangeset                   *observation.Operation
-	checkNamespaceAccess                 *observation.Operation
-	fetchUsernameForBitbucketServerToken *observation.Operation
-	validateAuthenticator                *observation.Operation
-	createChangesetJobs                  *observation.Operation
-	applyBatchChange                     *observation.Operation
-	reconcileBatchChange                 *observation.Operation
-	validateChangesetSpecs               *observation.Operation
+	createBatchSpec                      *obsv.Operation
+	createBatchSpecFromRaw               *obsv.Operation
+	enqueueBatchSpecResolution           *obsv.Operation
+	executeBatchSpec                     *obsv.Operation
+	cancelBatchSpec                      *obsv.Operation
+	replaceBatchSpecInput                *obsv.Operation
+	retryBatchSpecWorkspaces             *obsv.Operation
+	createChangesetSpec                  *obsv.Operation
+	getBatchChangeMatchingBatchSpec      *obsv.Operation
+	getNewestBatchSpec                   *obsv.Operation
+	moveBatchChange                      *obsv.Operation
+	closeBatchChange                     *obsv.Operation
+	deleteBatchChange                    *obsv.Operation
+	enqueueChangesetSync                 *obsv.Operation
+	reenqueueChangeset                   *obsv.Operation
+	checkNamespaceAccess                 *obsv.Operation
+	fetchUsernameForBitbucketServerToken *obsv.Operation
+	validateAuthenticator                *obsv.Operation
+	createChangesetJobs                  *obsv.Operation
+	applyBatchChange                     *obsv.Operation
+	reconcileBatchChange                 *obsv.Operation
+	validateChangesetSpecs               *obsv.Operation
 }
 
 var (
@@ -87,7 +86,7 @@ var (
 
 // newOperations generates a singleton of the operations struct.
 // TODO: We should create one per observationContext.
-func newOperations(observationContext *observation.Context) *operations {
+func newOperations(observationContext *obsv.Context) *operations {
 	operationsOnce.Do(func() {
 		m := metrics.NewREDMetrics(
 			observationContext.Registerer,
@@ -96,8 +95,8 @@ func newOperations(observationContext *observation.Context) *operations {
 			metrics.WithCountHelp("Total number of method invocations."),
 		)
 
-		op := func(name string) *observation.Operation {
-			return observationContext.Operation(observation.Op{
+		op := func(name string) *obsv.Operation {
+			return observationContext.Operation(obsv.Op{
 				Name:              fmt.Sprintf("batches.service.%s", name),
 				MetricLabelValues: []string{name},
 				Metrics:           m,
@@ -150,10 +149,10 @@ type CreateBatchSpecOpts struct {
 
 // CreateBatchSpec creates the BatchSpec.
 func (s *Service) CreateBatchSpec(ctx context.Context, opts CreateBatchSpecOpts) (spec *btypes.BatchSpec, err error) {
-	ctx, endObservation := s.operations.createBatchSpec.With(ctx, &err, observation.Args{LogFields: []log.Field{
-		log.Int("changesetSpecs", len(opts.ChangesetSpecRandIDs)),
+	ctx, endObservation := s.operations.createBatchSpec.With(ctx, &err, obsv.Args{LogFields: []obsv.Field{
+		obsv.Int("changesetSpecs", len(opts.ChangesetSpecRandIDs)),
 	}})
-	defer endObservation(1, observation.Args{})
+	defer endObservation(1, obsv.Args{})
 
 	spec, err = btypes.NewBatchSpecFromRaw(opts.RawSpec, true)
 	if err != nil {
@@ -238,11 +237,11 @@ type CreateBatchSpecFromRawOpts struct {
 
 // CreateBatchSpecFromRaw creates the BatchSpec.
 func (s *Service) CreateBatchSpecFromRaw(ctx context.Context, opts CreateBatchSpecFromRawOpts) (spec *btypes.BatchSpec, err error) {
-	ctx, endObservation := s.operations.createBatchSpecFromRaw.With(ctx, &err, observation.Args{LogFields: []log.Field{
-		log.Bool("allowIgnored", opts.AllowIgnored),
-		log.Bool("allowUnsupported", opts.AllowUnsupported),
+	ctx, endObservation := s.operations.createBatchSpecFromRaw.With(ctx, &err, obsv.Args{LogFields: []obsv.Field{
+		obsv.Bool("allowIgnored", opts.AllowIgnored),
+		obsv.Bool("allowUnsupported", opts.AllowUnsupported),
 	}})
-	defer endObservation(1, observation.Args{})
+	defer endObservation(1, obsv.Args{})
 
 	spec, err = btypes.NewBatchSpecFromRaw(opts.RawSpec, false)
 	if err != nil {
@@ -309,8 +308,8 @@ type EnqueueBatchSpecResolutionOpts struct {
 
 // EnqueueBatchSpecResolution creates a pending BatchSpec that will be picked up by a worker in the background.
 func (s *Service) EnqueueBatchSpecResolution(ctx context.Context, opts EnqueueBatchSpecResolutionOpts) (err error) {
-	ctx, endObservation := s.operations.enqueueBatchSpecResolution.With(ctx, &err, observation.Args{})
-	defer endObservation(1, observation.Args{})
+	ctx, endObservation := s.operations.enqueueBatchSpecResolution.With(ctx, &err, obsv.Args{})
+	defer endObservation(1, obsv.Args{})
 
 	return s.store.CreateBatchSpecResolutionJob(ctx, &btypes.BatchSpecResolutionJob{
 		State:       btypes.BatchSpecResolutionJobStateQueued,
@@ -341,10 +340,10 @@ type ExecuteBatchSpecOpts struct {
 // It returns an error if the batchSpecWorkspaceResolutionJob didn't finish
 // successfully.
 func (s *Service) ExecuteBatchSpec(ctx context.Context, opts ExecuteBatchSpecOpts) (batchSpec *btypes.BatchSpec, err error) {
-	ctx, endObservation := s.operations.executeBatchSpec.With(ctx, &err, observation.Args{LogFields: []log.Field{
-		log.String("BatchSpecRandID", opts.BatchSpecRandID),
+	ctx, endObservation := s.operations.executeBatchSpec.With(ctx, &err, obsv.Args{LogFields: []obsv.Field{
+		obsv.String("BatchSpecRandID", opts.BatchSpecRandID),
 	}})
-	defer endObservation(1, observation.Args{})
+	defer endObservation(1, obsv.Args{})
 
 	batchSpec, err = s.store.GetBatchSpec(ctx, store.GetBatchSpecOpts{RandID: opts.BatchSpecRandID})
 	if err != nil {
@@ -403,10 +402,10 @@ type CancelBatchSpecOpts struct {
 // CancelBatchSpec cancels all BatchSpecWorkspaceExecutionJobs associated with
 // the BatchSpec.
 func (s *Service) CancelBatchSpec(ctx context.Context, opts CancelBatchSpecOpts) (batchSpec *btypes.BatchSpec, err error) {
-	ctx, endObservation := s.operations.cancelBatchSpec.With(ctx, &err, observation.Args{LogFields: []log.Field{
-		log.String("BatchSpecRandID", opts.BatchSpecRandID),
+	ctx, endObservation := s.operations.cancelBatchSpec.With(ctx, &err, obsv.Args{LogFields: []obsv.Field{
+		obsv.String("BatchSpecRandID", opts.BatchSpecRandID),
 	}})
-	defer endObservation(1, observation.Args{})
+	defer endObservation(1, obsv.Args{})
 
 	batchSpec, err = s.store.GetBatchSpec(ctx, store.GetBatchSpecOpts{RandID: opts.BatchSpecRandID})
 	if err != nil {
@@ -453,8 +452,8 @@ type ReplaceBatchSpecInputOpts struct {
 // It returns an error if the batchSpecWorkspaceResolutionJob didn't finish
 // successfully.
 func (s *Service) ReplaceBatchSpecInput(ctx context.Context, opts ReplaceBatchSpecInputOpts) (batchSpec *btypes.BatchSpec, err error) {
-	ctx, endObservation := s.operations.replaceBatchSpecInput.With(ctx, &err, observation.Args{})
-	defer endObservation(1, observation.Args{})
+	ctx, endObservation := s.operations.replaceBatchSpecInput.With(ctx, &err, obsv.Args{})
+	defer endObservation(1, obsv.Args{})
 
 	// Before we hit the database, validate the new spec.
 	newSpec, err := btypes.NewBatchSpecFromRaw(opts.RawSpec, false)
@@ -507,8 +506,8 @@ func (s *Service) ReplaceBatchSpecInput(ctx context.Context, opts ReplaceBatchSp
 
 // CreateChangesetSpec validates the given raw spec input and creates the ChangesetSpec.
 func (s *Service) CreateChangesetSpec(ctx context.Context, rawSpec string, userID int32) (spec *btypes.ChangesetSpec, err error) {
-	ctx, endObservation := s.operations.createChangesetSpec.With(ctx, &err, observation.Args{})
-	defer endObservation(1, observation.Args{})
+	ctx, endObservation := s.operations.createChangesetSpec.With(ctx, &err, obsv.Args{})
+	defer endObservation(1, obsv.Args{})
 
 	spec, err = btypes.NewChangesetSpecFromRaw(rawSpec)
 	if err != nil {
@@ -550,8 +549,8 @@ func (e *changesetSpecNotFoundErr) NotFound() bool { return true }
 // If it doesn't exist yet, both return values are nil.
 // It accepts a *store.Store so that it can be used inside a transaction.
 func (s *Service) GetBatchChangeMatchingBatchSpec(ctx context.Context, spec *btypes.BatchSpec) (_ *btypes.BatchChange, err error) {
-	ctx, endObservation := s.operations.getBatchChangeMatchingBatchSpec.With(ctx, &err, observation.Args{})
-	defer endObservation(1, observation.Args{})
+	ctx, endObservation := s.operations.getBatchChangeMatchingBatchSpec.With(ctx, &err, obsv.Args{})
+	defer endObservation(1, obsv.Args{})
 
 	opts := store.GetBatchChangeOpts{
 		Name:            spec.Spec.Name,
@@ -572,8 +571,8 @@ func (s *Service) GetBatchChangeMatchingBatchSpec(ctx context.Context, spec *bty
 // GetNewestBatchSpec returns the newest batch spec that matches the given
 // spec's namespace and name and is owned by the given user, or nil if none is found.
 func (s *Service) GetNewestBatchSpec(ctx context.Context, tx *store.Store, spec *btypes.BatchSpec, userID int32) (_ *btypes.BatchSpec, err error) {
-	ctx, endObservation := s.operations.getNewestBatchSpec.With(ctx, &err, observation.Args{})
-	defer endObservation(1, observation.Args{})
+	ctx, endObservation := s.operations.getNewestBatchSpec.With(ctx, &err, obsv.Args{})
+	defer endObservation(1, obsv.Args{})
 
 	opts := store.GetNewestBatchSpecOpts{
 		UserID:          userID,
@@ -615,8 +614,8 @@ func (o MoveBatchChangeOpts) String() string {
 // MoveBatchChange moves the batch change from one namespace to another and/or renames
 // the batch change.
 func (s *Service) MoveBatchChange(ctx context.Context, opts MoveBatchChangeOpts) (batchChange *btypes.BatchChange, err error) {
-	ctx, endObservation := s.operations.moveBatchChange.With(ctx, &err, observation.Args{})
-	defer endObservation(1, observation.Args{})
+	ctx, endObservation := s.operations.moveBatchChange.With(ctx, &err, obsv.Args{})
+	defer endObservation(1, obsv.Args{})
 
 	tx, err := s.store.Transact(ctx)
 	if err != nil {
@@ -658,8 +657,8 @@ func (s *Service) MoveBatchChange(ctx context.Context, opts MoveBatchChangeOpts)
 
 // CloseBatchChange closes the BatchChange with the given ID if it has not been closed yet.
 func (s *Service) CloseBatchChange(ctx context.Context, id int64, closeChangesets bool) (batchChange *btypes.BatchChange, err error) {
-	ctx, endObservation := s.operations.closeBatchChange.With(ctx, &err, observation.Args{})
-	defer endObservation(1, observation.Args{})
+	ctx, endObservation := s.operations.closeBatchChange.With(ctx, &err, obsv.Args{})
+	defer endObservation(1, obsv.Args{})
 
 	batchChange, err = s.store.GetBatchChange(ctx, store.GetBatchChangeOpts{ID: id})
 	if err != nil {
@@ -704,8 +703,8 @@ func (s *Service) CloseBatchChange(ctx context.Context, id int64, closeChangeset
 // DeleteBatchChange deletes the BatchChange with the given ID if it hasn't been
 // deleted yet.
 func (s *Service) DeleteBatchChange(ctx context.Context, id int64) (err error) {
-	ctx, endObservation := s.operations.deleteBatchChange.With(ctx, &err, observation.Args{})
-	defer endObservation(1, observation.Args{})
+	ctx, endObservation := s.operations.deleteBatchChange.With(ctx, &err, obsv.Args{})
+	defer endObservation(1, obsv.Args{})
 
 	batchChange, err := s.store.GetBatchChange(ctx, store.GetBatchChangeOpts{ID: id})
 	if err != nil {
@@ -723,8 +722,8 @@ func (s *Service) DeleteBatchChange(ctx context.Context, id int64) (err error) {
 // whether the actor in the context has permission to enqueue a sync and then
 // enqueues a sync by calling the repoupdater client.
 func (s *Service) EnqueueChangesetSync(ctx context.Context, id int64) (err error) {
-	ctx, endObservation := s.operations.enqueueChangesetSync.With(ctx, &err, observation.Args{})
-	defer endObservation(1, observation.Args{})
+	ctx, endObservation := s.operations.enqueueChangesetSync.With(ctx, &err, obsv.Args{})
+	defer endObservation(1, obsv.Args{})
 
 	// Check for existence of changeset so we don't swallow that error.
 	changeset, err := s.store.GetChangeset(ctx, store.GetChangesetOpts{ID: id})
@@ -774,8 +773,8 @@ func (s *Service) EnqueueChangesetSync(ctx context.Context, id int64) (err error
 // whether the actor in the context has permission to enqueue a reconciler run and then
 // enqueues it by calling ResetReconcilerState.
 func (s *Service) ReenqueueChangeset(ctx context.Context, id int64) (changeset *btypes.Changeset, repo *types.Repo, err error) {
-	ctx, endObservation := s.operations.reenqueueChangeset.With(ctx, &err, observation.Args{})
-	defer endObservation(1, observation.Args{})
+	ctx, endObservation := s.operations.reenqueueChangeset.With(ctx, &err, obsv.Args{})
+	defer endObservation(1, obsv.Args{})
 
 	changeset, err = s.store.GetChangeset(ctx, store.GetChangesetOpts{ID: id})
 	if err != nil {
@@ -859,8 +858,8 @@ var ErrNoNamespace = errors.New("no namespace given")
 // Since Bitbucket sends the username as a header in REST responses, we can
 // take it from there and complete the UserCredential.
 func (s *Service) FetchUsernameForBitbucketServerToken(ctx context.Context, externalServiceID, externalServiceType, token string) (_ string, err error) {
-	ctx, endObservation := s.operations.fetchUsernameForBitbucketServerToken.With(ctx, &err, observation.Args{})
-	defer endObservation(1, observation.Args{})
+	ctx, endObservation := s.operations.fetchUsernameForBitbucketServerToken.With(ctx, &err, obsv.Args{})
+	defer endObservation(1, obsv.Args{})
 
 	css, err := s.sourcer.ForExternalService(ctx, s.store, store.GetExternalServiceIDsOpts{
 		ExternalServiceType: externalServiceType,
@@ -897,8 +896,8 @@ var _ usernameSource = &sources.BitbucketServerSource{}
 // ValidateAuthenticator creates a ChangesetSource, configures it with the given
 // authenticator and validates it can correctly access the remote server.
 func (s *Service) ValidateAuthenticator(ctx context.Context, externalServiceID, externalServiceType string, a auth.Authenticator) (err error) {
-	ctx, endObservation := s.operations.validateAuthenticator.With(ctx, &err, observation.Args{})
-	defer endObservation(1, observation.Args{})
+	ctx, endObservation := s.operations.validateAuthenticator.With(ctx, &err, obsv.Args{})
+	defer endObservation(1, obsv.Args{})
 
 	if Mocks.ValidateAuthenticator != nil {
 		return Mocks.ValidateAuthenticator(ctx, externalServiceID, externalServiceType, a)
@@ -932,8 +931,8 @@ var ErrChangesetsForJobNotFound = errors.New("some changesets could not be found
 // given BatchChange, checking whether the actor in the context has permission to
 // trigger a job, and enqueues it.
 func (s *Service) CreateChangesetJobs(ctx context.Context, batchChangeID int64, ids []int64, jobType btypes.ChangesetJobType, payload interface{}, listOpts store.ListChangesetsOpts) (bulkGroupID string, err error) {
-	ctx, endObservation := s.operations.createChangesetJobs.With(ctx, &err, observation.Args{})
-	defer endObservation(1, observation.Args{})
+	ctx, endObservation := s.operations.createChangesetJobs.With(ctx, &err, obsv.Args{})
+	defer endObservation(1, obsv.Args{})
 
 	// Load the BatchChange to check for write permissions.
 	batchChange, err := s.store.GetBatchChange(ctx, store.GetBatchChangeOpts{ID: batchChangeID})
@@ -1002,8 +1001,8 @@ func (s *Service) ValidateChangesetSpecs(ctx context.Context, batchSpecID int64)
 	// as such and the validation errors that we want to return without logging
 	// them as errors.
 	var nonValidationErr error
-	ctx, endObservation := s.operations.validateChangesetSpecs.With(ctx, &nonValidationErr, observation.Args{})
-	defer endObservation(1, observation.Args{})
+	ctx, endObservation := s.operations.validateChangesetSpecs.With(ctx, &nonValidationErr, obsv.Args{})
+	defer endObservation(1, obsv.Args{})
 
 	conflicts, nonValidationErr := s.store.ListChangesetSpecsWithConflictingHeadRef(ctx, batchSpecID)
 	if nonValidationErr != nil {
@@ -1099,8 +1098,8 @@ func computeBatchSpecState(ctx context.Context, s *store.Store, spec *btypes.Bat
 // It only deletes changeset_specs created by workspaces. The imported changeset_specs
 // will not be altered.
 func (s *Service) RetryBatchSpecWorkspaces(ctx context.Context, workspaceIDs []int64) (err error) {
-	ctx, endObservation := s.operations.retryBatchSpecWorkspaces.With(ctx, &err, observation.Args{})
-	defer endObservation(1, observation.Args{})
+	ctx, endObservation := s.operations.retryBatchSpecWorkspaces.With(ctx, &err, obsv.Args{})
+	defer endObservation(1, obsv.Args{})
 
 	if len(workspaceIDs) == 0 {
 		return errors.New("no workspaces specified")

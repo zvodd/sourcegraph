@@ -8,8 +8,9 @@ import (
 	"time"
 
 	"github.com/cockroachdb/errors"
-	"github.com/inconshreveable/log15"
 	"github.com/prometheus/client_golang/prometheus"
+
+	"github.com/sourcegraph/sourcegraph/internal/logging"
 )
 
 type testRegisterer struct{}
@@ -110,7 +111,7 @@ func (t *requestCounterMiddleware) RoundTrip(r *http.Request) (resp *http.Respon
 	d := time.Since(start)
 	t.meter.counter.WithLabelValues(category, code, r.URL.Host).Inc()
 	t.meter.duration.WithLabelValues(category, code, r.URL.Host).Observe(d.Seconds())
-	log15.Debug("TRACE "+t.meter.subsystem, "host", r.URL.Host, "path", r.URL.Path, "code", code, "duration", d)
+	logging.Debug(r.Context(), "TRACE "+t.meter.subsystem, "host", r.URL.Host, "path", r.URL.Path, "code", code, "duration", d)
 	return
 }
 

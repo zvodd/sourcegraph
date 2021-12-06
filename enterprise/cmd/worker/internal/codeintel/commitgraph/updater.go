@@ -7,11 +7,10 @@ import (
 	"github.com/cockroachdb/errors"
 	"github.com/hashicorp/go-multierror"
 	"github.com/inconshreveable/log15"
-	"github.com/opentracing/opentracing-go/log"
 
 	"github.com/sourcegraph/sourcegraph/internal/gitserver/gitdomain"
 	"github.com/sourcegraph/sourcegraph/internal/goroutine"
-	"github.com/sourcegraph/sourcegraph/internal/observation"
+	obsv "github.com/sourcegraph/sourcegraph/internal/observation"
 	"github.com/sourcegraph/sourcegraph/internal/vcs/git"
 )
 
@@ -43,7 +42,7 @@ func NewUpdater(
 	maxAgeForNonStaleBranches time.Duration,
 	maxAgeForNonStaleTags time.Duration,
 	interval time.Duration,
-	observationContext *observation.Context,
+	observationContext *obsv.Context,
 ) goroutine.BackgroundRoutine {
 	return goroutine.NewPeriodicGoroutine(context.Background(), interval, &Updater{
 		dbStore:                   dbStore,
@@ -103,26 +102,26 @@ func (u *Updater) tryUpdate(ctx context.Context, repositoryID, dirtyToken int) (
 // the repository can be unmarked as long as the repository is not marked as dirty again before
 // the update completes.
 func (u *Updater) update(ctx context.Context, repositoryID, dirtyToken int) (err error) {
-	ctx, traceLog, endObservation := u.operations.commitUpdate.WithAndLogger(ctx, &err, observation.Args{
-		LogFields: []log.Field{
-			log.Int("repositoryID", repositoryID),
-			log.Int("dirtyToken", dirtyToken),
+	ctx, traceLog, endObservation := u.operations.commitUpdate.WithAndLogger(ctx, &err, obsv.Args{
+		LogFields: []obsv.Field{
+			obsv.Int("repositoryID", repositoryID),
+			obsv.Int("dirtyToken", dirtyToken),
 		},
 	})
-	defer endObservation(1, observation.Args{})
+	defer endObservation(1, obsv.Args{})
 
 	// Construct a view of the git graph that we will later decorate with upload information.
 	commitGraph, err := u.getCommitGraph(ctx, repositoryID)
 	if err != nil {
 		return err
 	}
-	traceLog(log.Int("numCommitGraphKeys", len(commitGraph.Order())))
+	traceLog(obsv.Int("numCommitGraphKeys", len(commitGraph.Order())))
 
 	refDescriptions, err := u.gitserverClient.RefDescriptions(ctx, repositoryID)
 	if err != nil {
 		return errors.Wrap(err, "gitserver.RefDescriptions")
 	}
-	traceLog(log.Int("numRefDescriptions", len(refDescriptions)))
+	traceLog(obsv.Int("numRefDescriptions", len(refDescriptions)))
 
 	// Decorate the commit graph with the set of processed uploads are visible from each commit,
 	// then bulk update the denormalized view in Postgres. We call this with an empty graph as well

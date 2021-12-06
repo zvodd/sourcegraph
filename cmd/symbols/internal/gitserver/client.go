@@ -8,11 +8,10 @@ import (
 	"strings"
 
 	"github.com/cockroachdb/errors"
-	"github.com/opentracing/opentracing-go/log"
 
 	"github.com/sourcegraph/sourcegraph/internal/api"
 	"github.com/sourcegraph/sourcegraph/internal/gitserver"
-	"github.com/sourcegraph/sourcegraph/internal/observation"
+	obsv "github.com/sourcegraph/sourcegraph/internal/observation"
 	"github.com/sourcegraph/sourcegraph/internal/vcs/git"
 )
 
@@ -37,20 +36,20 @@ type gitserverClient struct {
 	operations *operations
 }
 
-func NewClient(observationContext *observation.Context) GitserverClient {
+func NewClient(observationContext *obsv.Context) GitserverClient {
 	return &gitserverClient{
 		operations: newOperations(observationContext),
 	}
 }
 
 func (c *gitserverClient) FetchTar(ctx context.Context, repo api.RepoName, commit api.CommitID, paths []string) (_ io.ReadCloser, err error) {
-	ctx, endObservation := c.operations.fetchTar.With(ctx, &err, observation.Args{LogFields: []log.Field{
-		log.String("repo", string(repo)),
-		log.String("commit", string(commit)),
-		log.Int("paths", len(paths)),
-		log.String("paths", strings.Join(paths, ":")),
+	ctx, endObservation := c.operations.fetchTar.With(ctx, &err, obsv.Args{LogFields: []obsv.Field{
+		obsv.String("repo", string(repo)),
+		obsv.String("commit", string(commit)),
+		obsv.Int("paths", len(paths)),
+		obsv.String("paths", strings.Join(paths, ":")),
 	}})
-	defer endObservation(1, observation.Args{})
+	defer endObservation(1, obsv.Args{})
 
 	opts := gitserver.ArchiveOptions{
 		Treeish: string(commit),
@@ -62,12 +61,12 @@ func (c *gitserverClient) FetchTar(ctx context.Context, repo api.RepoName, commi
 }
 
 func (c *gitserverClient) GitDiff(ctx context.Context, repo api.RepoName, commitA, commitB api.CommitID) (_ Changes, err error) {
-	ctx, endObservation := c.operations.gitDiff.With(ctx, &err, observation.Args{LogFields: []log.Field{
-		log.String("repo", string(repo)),
-		log.String("commitA", string(commitA)),
-		log.String("commitB", string(commitB)),
+	ctx, endObservation := c.operations.gitDiff.With(ctx, &err, obsv.Args{LogFields: []obsv.Field{
+		obsv.String("repo", string(repo)),
+		obsv.String("commitA", string(commitA)),
+		obsv.String("commitB", string(commitB)),
 	}})
-	defer endObservation(1, observation.Args{})
+	defer endObservation(1, obsv.Args{})
 
 	output, err := git.DiffSymbols(ctx, repo, commitA, commitB)
 

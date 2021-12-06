@@ -7,9 +7,8 @@ import (
 	"time"
 
 	"github.com/cockroachdb/errors"
-	"github.com/opentracing/opentracing-go/log"
 
-	"github.com/sourcegraph/sourcegraph/internal/observation"
+	obsv "github.com/sourcegraph/sourcegraph/internal/observation"
 	"github.com/sourcegraph/sourcegraph/lib/codeintel/lsif/protocol"
 	"github.com/sourcegraph/sourcegraph/lib/codeintel/precise"
 )
@@ -20,20 +19,20 @@ const slowDocumentationPageRequestThreshold = time.Second
 //
 // nil, nil is returned if the page does not exist.
 func (r *queryResolver) DocumentationPage(ctx context.Context, pathID string) (_ *precise.DocumentationPageData, err error) {
-	ctx, traceLog, endObservation := observeResolver(ctx, &err, "DocumentationPage", r.operations.documentationPage, slowDocumentationPageRequestThreshold, observation.Args{
-		LogFields: []log.Field{
-			log.Int("repositoryID", r.repositoryID),
-			log.String("commit", r.commit),
-			log.String("path", r.path),
-			log.Int("numUploads", len(r.uploads)),
-			log.String("uploads", uploadIDsToString(r.uploads)),
-			log.String("pathID", pathID),
+	ctx, traceLog, endObservation := observeResolver(ctx, &err, "DocumentationPage", r.operations.documentationPage, slowDocumentationPageRequestThreshold, obsv.Args{
+		LogFields: []obsv.Field{
+			obsv.Int("repositoryID", r.repositoryID),
+			obsv.String("commit", r.commit),
+			obsv.String("path", r.path),
+			obsv.Int("numUploads", len(r.uploads)),
+			obsv.String("uploads", uploadIDsToString(r.uploads)),
+			obsv.String("pathID", pathID),
 		},
 	})
 	defer endObservation()
 
 	for i := range r.uploads {
-		traceLog(log.Int("uploadID", r.uploads[i].ID))
+		traceLog(obsv.Int("uploadID", r.uploads[i].ID))
 
 		// In the case of multiple LSIF uploads, we merely return the most-recent page from a
 		// matching bundle.
@@ -55,20 +54,20 @@ const slowDocumentationPathInfoRequestThreshold = time.Second
 //
 // nil, nil is returned if the page does not exist.
 func (r *queryResolver) DocumentationPathInfo(ctx context.Context, pathID string) (_ *precise.DocumentationPathInfoData, err error) {
-	ctx, traceLog, endObservation := observeResolver(ctx, &err, "DocumentationPathInfo", r.operations.documentationPathInfo, slowDocumentationPathInfoRequestThreshold, observation.Args{
-		LogFields: []log.Field{
-			log.Int("repositoryID", r.repositoryID),
-			log.String("commit", r.commit),
-			log.String("path", r.path),
-			log.Int("numUploads", len(r.uploads)),
-			log.String("uploads", uploadIDsToString(r.uploads)),
-			log.String("pathID", pathID),
+	ctx, traceLog, endObservation := observeResolver(ctx, &err, "DocumentationPathInfo", r.operations.documentationPathInfo, slowDocumentationPathInfoRequestThreshold, obsv.Args{
+		LogFields: []obsv.Field{
+			obsv.Int("repositoryID", r.repositoryID),
+			obsv.String("commit", r.commit),
+			obsv.String("path", r.path),
+			obsv.Int("numUploads", len(r.uploads)),
+			obsv.String("uploads", uploadIDsToString(r.uploads)),
+			obsv.String("pathID", pathID),
 		},
 	})
 	defer endObservation()
 
 	for i := range r.uploads {
-		traceLog(log.Int("uploadID", r.uploads[i].ID))
+		traceLog(obsv.Int("uploadID", r.uploads[i].ID))
 
 		// In the case of multiple LSIF uploads, we merely return the most-recent info from a
 		// matching bundle.
@@ -88,15 +87,15 @@ const slowDocumentationRequestThreshold = time.Second
 
 // Documentation returns documentation for the symbol at the given position.
 func (r *queryResolver) Documentation(ctx context.Context, line, character int) (_ []*Documentation, err error) {
-	ctx, _, endObservation := observeResolver(ctx, &err, "Documentation", r.operations.documentation, slowDocumentationRequestThreshold, observation.Args{
-		LogFields: []log.Field{
-			log.Int("repositoryID", r.repositoryID),
-			log.String("commit", r.commit),
-			log.String("path", r.path),
-			log.Int("numUploads", len(r.uploads)),
-			log.String("uploads", uploadIDsToString(r.uploads)),
-			log.Int("line", line),
-			log.Int("character", character),
+	ctx, _, endObservation := observeResolver(ctx, &err, "Documentation", r.operations.documentation, slowDocumentationRequestThreshold, obsv.Args{
+		LogFields: []obsv.Field{
+			obsv.Int("repositoryID", r.repositoryID),
+			obsv.String("commit", r.commit),
+			obsv.String("path", r.path),
+			obsv.Int("numUploads", len(r.uploads)),
+			obsv.String("uploads", uploadIDsToString(r.uploads)),
+			obsv.Int("line", line),
+			obsv.Int("character", character),
 		},
 	})
 	defer endObservation()
@@ -142,10 +141,10 @@ const slowDocumentationSearchRequestThreshold = 3 * time.Second
 
 // DocumentationSearch searches for documentation, limiting the results to the specified set of repos (or all if empty).
 func (r *resolver) DocumentationSearch(ctx context.Context, query string, repos []string) (_ []precise.DocumentationSearchResult, err error) {
-	ctx, _, endObservation := observeResolver(ctx, &err, "DocumentationSearch", r.operations.documentationSearch, slowDocumentationSearchRequestThreshold, observation.Args{
-		LogFields: []log.Field{
-			log.String("query", query),
-			log.String("repos", fmt.Sprint(repos)),
+	ctx, _, endObservation := observeResolver(ctx, &err, "DocumentationSearch", r.operations.documentationSearch, slowDocumentationSearchRequestThreshold, obsv.Args{
+		LogFields: []obsv.Field{
+			obsv.String("query", query),
+			obsv.String("repos", fmt.Sprint(repos)),
 		},
 	})
 	defer endObservation()

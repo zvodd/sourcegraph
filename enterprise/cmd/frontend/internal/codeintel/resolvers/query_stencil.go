@@ -6,23 +6,22 @@ import (
 	"time"
 
 	"github.com/cockroachdb/errors"
-	"github.com/opentracing/opentracing-go/log"
 
 	"github.com/sourcegraph/sourcegraph/enterprise/internal/codeintel/stores/lsifstore"
-	"github.com/sourcegraph/sourcegraph/internal/observation"
+	obsv "github.com/sourcegraph/sourcegraph/internal/observation"
 )
 
 const slowStencilRequestThreshold = time.Second
 
 // Stencil return all ranges within a single document.
 func (r *queryResolver) Stencil(ctx context.Context) (adjustedRanges []lsifstore.Range, err error) {
-	ctx, traceLog, endObservation := observeResolver(ctx, &err, "Stencil", r.operations.stencil, slowStencilRequestThreshold, observation.Args{
-		LogFields: []log.Field{
-			log.Int("repositoryID", r.repositoryID),
-			log.String("commit", r.commit),
-			log.String("path", r.path),
-			log.Int("numUploads", len(r.uploads)),
-			log.String("uploads", uploadIDsToString(r.uploads)),
+	ctx, traceLog, endObservation := observeResolver(ctx, &err, "Stencil", r.operations.stencil, slowStencilRequestThreshold, obsv.Args{
+		LogFields: []obsv.Field{
+			obsv.Int("repositoryID", r.repositoryID),
+			obsv.String("commit", r.commit),
+			obsv.String("path", r.path),
+			obsv.Int("numUploads", len(r.uploads)),
+			obsv.String("uploads", uploadIDsToString(r.uploads)),
 		},
 	})
 	defer endObservation()
@@ -33,7 +32,7 @@ func (r *queryResolver) Stencil(ctx context.Context) (adjustedRanges []lsifstore
 	}
 
 	for i := range adjustedUploads {
-		traceLog(log.Int("uploadID", adjustedUploads[i].Upload.ID))
+		traceLog(obsv.Int("uploadID", adjustedUploads[i].Upload.ID))
 
 		ranges, err := r.lsifStore.Stencil(
 			ctx,
@@ -54,7 +53,7 @@ func (r *queryResolver) Stencil(ctx context.Context) (adjustedRanges []lsifstore
 			adjustedRanges = append(adjustedRanges, adjustedRange)
 		}
 	}
-	traceLog(log.Int("numRanges", len(adjustedRanges)))
+	traceLog(obsv.Int("numRanges", len(adjustedRanges)))
 
 	return sortRanges(adjustedRanges), nil
 }

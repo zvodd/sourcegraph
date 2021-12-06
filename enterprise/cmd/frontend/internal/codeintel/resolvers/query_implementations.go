@@ -6,10 +6,9 @@ import (
 	"time"
 
 	"github.com/cockroachdb/errors"
-	"github.com/opentracing/opentracing-go/log"
 
 	"github.com/sourcegraph/sourcegraph/enterprise/internal/codeintel/stores/lsifstore"
-	"github.com/sourcegraph/sourcegraph/internal/observation"
+	obsv "github.com/sourcegraph/sourcegraph/internal/observation"
 )
 
 const slowImplementationsRequestThreshold = time.Second
@@ -19,15 +18,15 @@ const ImplementationsLimit = 100
 
 // Implementations returns the list of source locations that define the symbol at the given position.
 func (r *queryResolver) Implementations(ctx context.Context, line, character int, limit int, rawCursor string) (_ []AdjustedLocation, _ string, err error) {
-	ctx, traceLog, endObservation := observeResolver(ctx, &err, "Implementations", r.operations.implementations, slowImplementationsRequestThreshold, observation.Args{
-		LogFields: []log.Field{
-			log.Int("repositoryID", r.repositoryID),
-			log.String("commit", r.commit),
-			log.String("path", r.path),
-			log.Int("numUploads", len(r.uploads)),
-			log.String("uploads", uploadIDsToString(r.uploads)),
-			log.Int("line", line),
-			log.Int("character", character),
+	ctx, traceLog, endObservation := observeResolver(ctx, &err, "Implementations", r.operations.implementations, slowImplementationsRequestThreshold, obsv.Args{
+		LogFields: []obsv.Field{
+			obsv.Int("repositoryID", r.repositoryID),
+			obsv.String("commit", r.commit),
+			obsv.String("path", r.path),
+			obsv.Int("numUploads", len(r.uploads)),
+			obsv.String("uploads", uploadIDsToString(r.uploads)),
+			obsv.Int("line", line),
+			obsv.Int("character", character),
 		},
 	})
 	defer endObservation()
@@ -60,8 +59,8 @@ func (r *queryResolver) Implementations(ctx context.Context, line, character int
 		}
 	}
 	traceLog(
-		log.Int("numImplementationMonikers", len(cursor.OrderedImplementationMonikers)),
-		log.String("implementationMonikers", monikersToString(cursor.OrderedImplementationMonikers)),
+		obsv.Int("numImplementationMonikers", len(cursor.OrderedImplementationMonikers)),
+		obsv.String("implementationMonikers", monikersToString(cursor.OrderedImplementationMonikers)),
 	)
 
 	if cursor.OrderedExportMonikers == nil {
@@ -70,8 +69,8 @@ func (r *queryResolver) Implementations(ctx context.Context, line, character int
 		}
 	}
 	traceLog(
-		log.Int("numExportMonikers", len(cursor.OrderedExportMonikers)),
-		log.String("exportMonikers", monikersToString(cursor.OrderedExportMonikers)),
+		obsv.Int("numExportMonikers", len(cursor.OrderedExportMonikers)),
+		obsv.String("exportMonikers", monikersToString(cursor.OrderedExportMonikers)),
 	)
 
 	// Phase 1: Gather all "local" locations via LSIF graph traversal. We'll continue to request additional
@@ -102,8 +101,8 @@ func (r *queryResolver) Implementations(ctx context.Context, line, character int
 			return nil, "", err
 		}
 		traceLog(
-			log.Int("numDefinitionUploads", len(uploads)),
-			log.String("definitionUploads", uploadIDsToString(uploads)),
+			obsv.Int("numDefinitionUploads", len(uploads)),
+			obsv.String("definitionUploads", uploadIDsToString(uploads)),
 		)
 
 		definitionLocations, _, err := r.monikerLocations(ctx, uploads, cursor.OrderedImplementationMonikers, "definitions", DefinitionsLimit, 0)
@@ -131,7 +130,7 @@ func (r *queryResolver) Implementations(ctx context.Context, line, character int
 		}
 	}
 
-	traceLog(log.Int("numLocations", len(locations)))
+	traceLog(obsv.Int("numLocations", len(locations)))
 
 	// Adjust the locations back to the appropriate range in the target commits. This adjusts
 	// locations within the repository the user is browsing so that it appears all implementations
@@ -141,7 +140,7 @@ func (r *queryResolver) Implementations(ctx context.Context, line, character int
 	if err != nil {
 		return nil, "", err
 	}
-	traceLog(log.Int("numAdjustedLocations", len(adjustedLocations)))
+	traceLog(obsv.Int("numAdjustedLocations", len(adjustedLocations)))
 
 	nextCursor := ""
 	if cursor.Phase != "done" {

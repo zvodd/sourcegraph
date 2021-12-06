@@ -7,10 +7,9 @@ import (
 	"time"
 
 	"github.com/keegancsmith/sqlf"
-	"github.com/opentracing/opentracing-go/log"
 
 	"github.com/sourcegraph/sourcegraph/internal/database/basestore"
-	"github.com/sourcegraph/sourcegraph/internal/observation"
+	obsv "github.com/sourcegraph/sourcegraph/internal/observation"
 	"github.com/sourcegraph/sourcegraph/internal/workerutil"
 	"github.com/sourcegraph/sourcegraph/lib/codeintel/precise"
 )
@@ -177,10 +176,10 @@ func scanFirstDependencyIndexingJobRecord(rows *sql.Rows, err error) (workerutil
 
 // InsertDependencySyncingJob inserts a new dependency syncing job and returns its identifier.
 func (s *Store) InsertDependencySyncingJob(ctx context.Context, uploadID int) (id int, err error) {
-	ctx, endObservation := s.operations.insertDependencySyncingJob.With(ctx, &err, observation.Args{})
+	ctx, endObservation := s.operations.insertDependencySyncingJob.With(ctx, &err, obsv.Args{})
 	defer func() {
-		endObservation(1, observation.Args{LogFields: []log.Field{
-			log.Int("id", id),
+		endObservation(1, obsv.Args{LogFields: []obsv.Field{
+			obsv.Int("id", id),
 		}})
 	}()
 
@@ -195,11 +194,11 @@ RETURNING id
 `
 
 func (s *Store) InsertCloneableDependencyRepo(ctx context.Context, dependency precise.Package) (new bool, err error) {
-	ctx, endObservation := s.operations.insertCloneableDependencyRepo.With(ctx, &err, observation.Args{})
+	ctx, endObservation := s.operations.insertCloneableDependencyRepo.With(ctx, &err, obsv.Args{})
 	defer func() {
-		endObservation(1, observation.Args{LogFields: []log.Field{
-			log.Bool("new", new),
-			log.Object("dependency", fmt.Sprint(dependency)),
+		endObservation(1, obsv.Args{LogFields: []obsv.Field{
+			obsv.Bool("new", new),
+			obsv.Object("dependency", fmt.Sprint(dependency)),
 		}})
 	}()
 
@@ -216,13 +215,13 @@ RETURNING 1
 `
 
 func (s *Store) InsertDependencyIndexingJob(ctx context.Context, uploadID int, externalServiceKind string, syncTime time.Time) (id int, err error) {
-	ctx, endObservation := s.operations.insertDependencyIndexingJob.With(ctx, &err, observation.Args{LogFields: []log.Field{
-		log.Int("uploadId", uploadID),
-		log.String("extSvcKind", externalServiceKind),
+	ctx, endObservation := s.operations.insertDependencyIndexingJob.With(ctx, &err, obsv.Args{LogFields: []obsv.Field{
+		obsv.Int("uploadId", uploadID),
+		obsv.String("extSvcKind", externalServiceKind),
 	}})
 	defer func() {
-		endObservation(1, observation.Args{LogFields: []log.Field{
-			log.Int("id", id),
+		endObservation(1, obsv.Args{LogFields: []obsv.Field{
+			obsv.Int("id", id),
 		}})
 	}()
 

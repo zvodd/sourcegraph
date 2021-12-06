@@ -4,30 +4,29 @@ import (
 	"context"
 
 	"github.com/keegancsmith/sqlf"
-	"github.com/opentracing/opentracing-go/log"
 
-	"github.com/sourcegraph/sourcegraph/internal/observation"
+	obsv "github.com/sourcegraph/sourcegraph/internal/observation"
 	"github.com/sourcegraph/sourcegraph/lib/codeintel/precise"
 )
 
 // Hover returns the hover text of the symbol at the given position.
 func (s *Store) Hover(ctx context.Context, bundleID int, path string, line, character int) (_ string, _ Range, _ bool, err error) {
-	ctx, traceLog, endObservation := s.operations.hover.WithAndLogger(ctx, &err, observation.Args{LogFields: []log.Field{
-		log.Int("bundleID", bundleID),
-		log.String("path", path),
-		log.Int("line", line),
-		log.Int("character", character),
+	ctx, traceLog, endObservation := s.operations.hover.WithAndLogger(ctx, &err, obsv.Args{LogFields: []obsv.Field{
+		obsv.Int("bundleID", bundleID),
+		obsv.String("path", path),
+		obsv.Int("line", line),
+		obsv.Int("character", character),
 	}})
-	defer endObservation(1, observation.Args{})
+	defer endObservation(1, obsv.Args{})
 
 	documentData, exists, err := s.scanFirstDocumentData(s.Store.Query(ctx, sqlf.Sprintf(hoverDocumentQuery, bundleID, path)))
 	if err != nil || !exists {
 		return "", Range{}, false, err
 	}
 
-	traceLog(log.Int("numRanges", len(documentData.Document.Ranges)))
+	traceLog(obsv.Int("numRanges", len(documentData.Document.Ranges)))
 	ranges := precise.FindRanges(documentData.Document.Ranges, line, character)
-	traceLog(log.Int("numIntersectingRanges", len(ranges)))
+	traceLog(obsv.Int("numIntersectingRanges", len(ranges)))
 
 	for _, r := range ranges {
 		if text, ok := documentData.Document.HoverResults[r.HoverResultID]; ok {

@@ -4,19 +4,18 @@ import (
 	"context"
 
 	"github.com/keegancsmith/sqlf"
-	"github.com/opentracing/opentracing-go/log"
 
 	"github.com/sourcegraph/sourcegraph/internal/database/basestore"
-	"github.com/sourcegraph/sourcegraph/internal/observation"
+	obsv "github.com/sourcegraph/sourcegraph/internal/observation"
 )
 
 // Exists determines if the path exists in the database.
 func (s *Store) Exists(ctx context.Context, bundleID int, path string) (_ bool, err error) {
-	ctx, endObservation := s.operations.exists.With(ctx, &err, observation.Args{LogFields: []log.Field{
-		log.Int("bundleID", bundleID),
-		log.String("path", path),
+	ctx, endObservation := s.operations.exists.With(ctx, &err, obsv.Args{LogFields: []obsv.Field{
+		obsv.Int("bundleID", bundleID),
+		obsv.String("path", path),
 	}})
-	defer endObservation(1, observation.Args{})
+	defer endObservation(1, obsv.Args{})
 
 	_, exists, err := basestore.ScanFirstString(s.Store.Query(ctx, sqlf.Sprintf(existsQuery, bundleID, path)))
 	return exists, err

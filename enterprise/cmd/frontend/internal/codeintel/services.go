@@ -49,7 +49,7 @@ func NewServices(ctx context.Context, siteConfig conftypes.SiteConfigQuerier, db
 
 	// Initialize tracing/metrics
 	observationContext := &observation.Context{
-		Logger:     log15.Root(),
+		OldLogger:  log15.Root(),
 		Tracer:     &trace.Tracer{Tracer: opentracing.GlobalTracer()},
 		Registerer: prometheus.DefaultRegisterer,
 	}

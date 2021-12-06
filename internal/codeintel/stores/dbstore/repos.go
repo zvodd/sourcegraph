@@ -8,15 +8,15 @@ import (
 	"github.com/opentracing/opentracing-go/log"
 
 	"github.com/sourcegraph/sourcegraph/internal/database/basestore"
-	"github.com/sourcegraph/sourcegraph/internal/observation"
+	obsv "github.com/sourcegraph/sourcegraph/internal/observation"
 )
 
 // RepoName returns the name for the repo with the given identifier.
 func (s *Store) RepoName(ctx context.Context, repositoryID int) (_ string, err error) {
-	ctx, endObservation := s.operations.repoName.With(ctx, &err, observation.Args{LogFields: []log.Field{
-		log.Int("repositoryID", repositoryID),
+	ctx, endObservation := s.operations.repoName.With(ctx, &err, obsv.Args{LogFields: []obsv.Field{
+		obsv.Int("repositoryID", repositoryID),
 	}})
-	defer endObservation(1, observation.Args{})
+	defer endObservation(1, obsv.Args{})
 
 	name, exists, err := basestore.ScanFirstString(s.Store.Query(ctx, sqlf.Sprintf(repoNameQuery, repositoryID)))
 	if err != nil {
@@ -46,14 +46,14 @@ type JVMDependencyRepo struct {
 }
 
 func (s *Store) GetJVMDependencyRepos(ctx context.Context, filter GetJVMDependencyReposOpts) (repos []JVMDependencyRepo, err error) {
-	ctx, endObservation := s.operations.getJVMDependencies.With(ctx, &err, observation.Args{LogFields: []log.Field{
-		log.Int("after", filter.After),
-		log.Int("limit", filter.Limit),
-		log.Lazy(func(l log.Encoder) {
+	ctx, endObservation := s.operations.getJVMDependencies.With(ctx, &err, obsv.Args{LogFields: []obsv.Field{
+		obsv.Int("after", filter.After),
+		obsv.Int("limit", filter.Limit),
+		obsv.Lazy(func(l log.Encoder) {
 			l.EmitInt("results", len(repos))
 		}),
 	}})
-	defer endObservation(1, observation.Args{})
+	defer endObservation(1, obsv.Args{})
 
 	conds := make([]*sqlf.Query, 0, 3)
 	conds = append(conds, sqlf.Sprintf("scheme = 'semanticdb'"))

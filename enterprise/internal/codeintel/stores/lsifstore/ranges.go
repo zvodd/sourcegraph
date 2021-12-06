@@ -5,9 +5,8 @@ import (
 	"sort"
 
 	"github.com/keegancsmith/sqlf"
-	"github.com/opentracing/opentracing-go/log"
 
-	"github.com/sourcegraph/sourcegraph/internal/observation"
+	obsv "github.com/sourcegraph/sourcegraph/internal/observation"
 	"github.com/sourcegraph/sourcegraph/lib/codeintel/precise"
 )
 
@@ -17,22 +16,22 @@ const MaximumRangesDefinitionLocations = 10000
 
 // Ranges returns definition, reference, implementation, hover, and documentation data for each range within the given span of lines.
 func (s *Store) Ranges(ctx context.Context, bundleID int, path string, startLine, endLine int) (_ []CodeIntelligenceRange, err error) {
-	ctx, traceLog, endObservation := s.operations.ranges.WithAndLogger(ctx, &err, observation.Args{LogFields: []log.Field{
-		log.Int("bundleID", bundleID),
-		log.String("path", path),
-		log.Int("startLine", startLine),
-		log.Int("endLine", endLine),
+	ctx, traceLog, endObservation := s.operations.ranges.WithAndLogger(ctx, &err, obsv.Args{LogFields: []obsv.Field{
+		obsv.Int("bundleID", bundleID),
+		obsv.String("path", path),
+		obsv.Int("startLine", startLine),
+		obsv.Int("endLine", endLine),
 	}})
-	defer endObservation(1, observation.Args{})
+	defer endObservation(1, obsv.Args{})
 
 	documentData, exists, err := s.scanFirstDocumentData(s.Store.Query(ctx, sqlf.Sprintf(rangesDocumentQuery, bundleID, path)))
 	if err != nil || !exists {
 		return nil, err
 	}
 
-	traceLog(log.Int("numRanges", len(documentData.Document.Ranges)))
+	traceLog(obsv.Int("numRanges", len(documentData.Document.Ranges)))
 	ranges := precise.FindRangesInWindow(documentData.Document.Ranges, startLine, endLine)
-	traceLog(log.Int("numIntersectingRanges", len(ranges)))
+	traceLog(obsv.Int("numIntersectingRanges", len(ranges)))
 
 	definitionResultIDs := extractResultIDs(ranges, func(r precise.RangeData) precise.ID { return r.DefinitionResultID })
 	definitionLocations, _, err := s.locations(ctx, bundleID, definitionResultIDs, MaximumRangesDefinitionLocations, 0)
@@ -78,22 +77,22 @@ func (s *Store) Ranges(ctx context.Context, bundleID int, path string, startLine
 
 // DocumentationAtPosition returns documentation path IDs found at the given position.
 func (s *Store) DocumentationAtPosition(ctx context.Context, bundleID int, path string, line, character int) (_ []string, err error) {
-	ctx, traceLog, endObservation := s.operations.documentationAtPosition.WithAndLogger(ctx, &err, observation.Args{LogFields: []log.Field{
-		log.Int("bundleID", bundleID),
-		log.String("path", path),
-		log.Int("line", line),
-		log.Int("character", character),
+	ctx, traceLog, endObservation := s.operations.documentationAtPosition.WithAndLogger(ctx, &err, obsv.Args{LogFields: []obsv.Field{
+		obsv.Int("bundleID", bundleID),
+		obsv.String("path", path),
+		obsv.Int("line", line),
+		obsv.Int("character", character),
 	}})
-	defer endObservation(1, observation.Args{})
+	defer endObservation(1, obsv.Args{})
 
 	documentData, exists, err := s.scanFirstDocumentData(s.Store.Query(ctx, sqlf.Sprintf(rangesDocumentQuery, bundleID, path)))
 	if err != nil || !exists {
 		return nil, err
 	}
 
-	traceLog(log.Int("numRanges", len(documentData.Document.Ranges)))
+	traceLog(obsv.Int("numRanges", len(documentData.Document.Ranges)))
 	ranges := precise.FindRanges(documentData.Document.Ranges, line, character)
-	traceLog(log.Int("numIntersectingRanges", len(ranges)))
+	traceLog(obsv.Int("numIntersectingRanges", len(ranges)))
 
 	documentationResultIDs := extractResultIDs(ranges, func(r precise.RangeData) precise.ID { return r.DocumentationResultID })
 	documentationPathIDs, err := s.documentationIDsToPathIDs(ctx, bundleID, documentationResultIDs)
@@ -131,13 +130,13 @@ LIMIT 1
 // identifiers. Like locations, this method returns a map from result set identifiers to another map from
 // document paths to locations within that document.
 func (s *Store) locationsWithinFile(ctx context.Context, bundleID int, ids []precise.ID, path string, documentData precise.DocumentData) (_ map[precise.ID][]Location, err error) {
-	ctx, traceLog, endObservation := s.operations.locationsWithinFile.WithAndLogger(ctx, &err, observation.Args{LogFields: []log.Field{
-		log.Int("bundleID", bundleID),
-		log.Int("numIDs", len(ids)),
-		log.String("ids", idsToString(ids)),
-		log.String("path", path),
+	ctx, traceLog, endObservation := s.operations.locationsWithinFile.WithAndLogger(ctx, &err, obsv.Args{LogFields: []obsv.Field{
+		obsv.Int("bundleID", bundleID),
+		obsv.Int("numIDs", len(ids)),
+		obsv.String("ids", idsToString(ids)),
+		obsv.String("path", path),
 	}})
-	defer endObservation(1, observation.Args{})
+	defer endObservation(1, obsv.Args{})
 
 	if len(ids) == 0 {
 		return nil, nil
@@ -149,8 +148,8 @@ func (s *Store) locationsWithinFile(ctx context.Context, bundleID int, ids []pre
 		return nil, err
 	}
 	traceLog(
-		log.Int("numIndexes", len(indexes)),
-		log.String("indexes", intsToString(indexes)),
+		obsv.Int("numIndexes", len(indexes)),
+		obsv.String("indexes", intsToString(indexes)),
 	)
 
 	// Read the result sets and gather the set of range identifiers we need to resolve with
@@ -164,7 +163,7 @@ func (s *Store) locationsWithinFile(ctx context.Context, bundleID int, ids []pre
 	// containing document. This refines the map constructed in the previous step.
 	locationsByResultID := make(map[precise.ID][]Location, len(ids))
 	totalCount := s.readRangesFromDocument(bundleID, rangeIDsByResultID, locationsByResultID, path, documentData, traceLog)
-	traceLog(log.Int("numLocations", totalCount))
+	traceLog(obsv.Int("numLocations", totalCount))
 
 	return locationsByResultID, nil
 }

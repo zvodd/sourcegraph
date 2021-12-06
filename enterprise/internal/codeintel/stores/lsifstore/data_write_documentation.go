@@ -15,14 +15,13 @@ import (
 	"github.com/cockroachdb/errors"
 	"github.com/inconshreveable/log15"
 	"github.com/keegancsmith/sqlf"
-	"github.com/opentracing/opentracing-go/log"
 
 	"github.com/sourcegraph/sourcegraph/enterprise/internal/codeintel/stores/dbstore"
 	"github.com/sourcegraph/sourcegraph/enterprise/internal/codeintel/stores/lsifstore/apidocs"
 	"github.com/sourcegraph/sourcegraph/internal/conf"
 	"github.com/sourcegraph/sourcegraph/internal/database/basestore"
 	"github.com/sourcegraph/sourcegraph/internal/database/batch"
-	"github.com/sourcegraph/sourcegraph/internal/observation"
+	obsv "github.com/sourcegraph/sourcegraph/internal/observation"
 	"github.com/sourcegraph/sourcegraph/internal/timeutil"
 	"github.com/sourcegraph/sourcegraph/internal/types"
 	"github.com/sourcegraph/sourcegraph/lib/codeintel/lsif/protocol"
@@ -42,20 +41,20 @@ func (s *Store) WriteDocumentationPages(
 	repositoryNameID int,
 	languageNameID int,
 ) (count uint32, err error) {
-	ctx, traceLog, endObservation := s.operations.writeDocumentationPages.WithAndLogger(ctx, &err, observation.Args{LogFields: []log.Field{
-		log.Int("bundleID", upload.ID),
-		log.String("repo", upload.RepositoryName),
-		log.String("commit", upload.Commit),
-		log.String("root", upload.Root),
+	ctx, traceLog, endObservation := s.operations.writeDocumentationPages.WithAndLogger(ctx, &err, obsv.Args{LogFields: []obsv.Field{
+		obsv.Int("bundleID", upload.ID),
+		obsv.String("repo", upload.RepositoryName),
+		obsv.String("commit", upload.Commit),
+		obsv.String("root", upload.Root),
 	}})
-	defer endObservation(1, observation.Args{})
+	defer endObservation(1, obsv.Args{})
 
 	defer func() {
 		if err := recover(); err != nil {
 			stack := debug.Stack()
 			stdlog.Printf("API docs panic: %v\n%s", err, stack)
-			traceLog(log.String("API docs panic error", fmt.Sprint(err)))
-			traceLog(log.String("API docs panic stack", string(stack)))
+			traceLog(obsv.String("API docs panic error", fmt.Sprint(err)))
+			traceLog(obsv.String("API docs panic stack", string(stack)))
 		}
 	}()
 
@@ -92,7 +91,7 @@ func (s *Store) WriteDocumentationPages(
 	); err != nil {
 		return 0, err
 	}
-	traceLog(log.Int("numResultChunkRecords", int(count)))
+	traceLog(obsv.Int("numResultChunkRecords", int(count)))
 
 	// Note: If someone disables API docs search indexing, uploads during that time will not be
 	// indexed even if it is turned back on. Only future uploads would be.
@@ -125,10 +124,10 @@ FROM t_lsif_data_documentation_pages source
 
 // WriteDocumentationPathInfo is called (transactionally) from the precise-code-intel-worker.
 func (s *Store) WriteDocumentationPathInfo(ctx context.Context, bundleID int, documentationPathInfo chan *precise.DocumentationPathInfoData) (count uint32, err error) {
-	ctx, traceLog, endObservation := s.operations.writeDocumentationPathInfo.WithAndLogger(ctx, &err, observation.Args{LogFields: []log.Field{
-		log.Int("bundleID", bundleID),
+	ctx, traceLog, endObservation := s.operations.writeDocumentationPathInfo.WithAndLogger(ctx, &err, obsv.Args{LogFields: []obsv.Field{
+		obsv.Int("bundleID", bundleID),
 	}})
-	defer endObservation(1, observation.Args{})
+	defer endObservation(1, obsv.Args{})
 
 	tx, err := s.Transact(ctx)
 	if err != nil {
@@ -167,7 +166,7 @@ func (s *Store) WriteDocumentationPathInfo(ctx context.Context, bundleID int, do
 	); err != nil {
 		return 0, err
 	}
-	traceLog(log.Int("numResultChunkRecords", int(count)))
+	traceLog(obsv.Int("numResultChunkRecords", int(count)))
 
 	// Insert the values from the temporary table into the target table. We select a
 	// parameterized dump id here since it is the same for all rows in this operation.
@@ -191,10 +190,10 @@ FROM t_lsif_data_documentation_path_info source
 
 // WriteDocumentationMappings is called (transactionally) from the precise-code-intel-worker.
 func (s *Store) WriteDocumentationMappings(ctx context.Context, bundleID int, mappings chan precise.DocumentationMapping) (count uint32, err error) {
-	ctx, traceLog, endObservation := s.operations.writeDocumentationMappings.WithAndLogger(ctx, &err, observation.Args{LogFields: []log.Field{
-		log.Int("bundleID", bundleID),
+	ctx, traceLog, endObservation := s.operations.writeDocumentationMappings.WithAndLogger(ctx, &err, obsv.Args{LogFields: []obsv.Field{
+		obsv.Int("bundleID", bundleID),
 	}})
-	defer endObservation(1, observation.Args{})
+	defer endObservation(1, obsv.Args{})
 
 	tx, err := s.Transact(ctx)
 	if err != nil {
@@ -227,7 +226,7 @@ func (s *Store) WriteDocumentationMappings(ctx context.Context, bundleID int, ma
 	); err != nil {
 		return 0, err
 	}
-	traceLog(log.Int("numRecords", int(count)))
+	traceLog(obsv.Int("numRecords", int(count)))
 
 	// Insert the values from the temporary table into the target table. We select a
 	// parameterized dump id here since it is the same for all rows in this operation.
@@ -257,11 +256,11 @@ FROM t_lsif_data_documentation_mappings source
 // outside of a long-running transaction to reduce lock contention between shared rows being held longer
 // than necessary.
 func (s *Store) WriteDocumentationSearchPrework(ctx context.Context, upload dbstore.Upload, repo *types.Repo, isDefaultBranch bool) (_ int, _ int, err error) {
-	ctx, endObservation := s.operations.writeDocumentationSearchPrework.With(ctx, &err, observation.Args{LogFields: []log.Field{
-		log.String("repo", upload.RepositoryName),
-		log.Int("bundleID", upload.ID),
+	ctx, endObservation := s.operations.writeDocumentationSearchPrework.With(ctx, &err, obsv.Args{LogFields: []obsv.Field{
+		obsv.String("repo", upload.RepositoryName),
+		obsv.Int("bundleID", upload.ID),
 	}})
-	defer endObservation(1, observation.Args{})
+	defer endObservation(1, obsv.Args{})
 
 	if !isDefaultBranch {
 		// We do not index non-default branches for API docs search.
@@ -305,12 +304,12 @@ func (s *Store) WriteDocumentationSearch(
 	repositoryNameID int,
 	languageNameID int,
 ) (err error) {
-	ctx, endObservation := s.operations.writeDocumentationSearch.With(ctx, &err, observation.Args{LogFields: []log.Field{
-		log.String("repo", upload.RepositoryName),
-		log.Int("bundleID", upload.ID),
-		log.Int("pages", len(pages)),
+	ctx, endObservation := s.operations.writeDocumentationSearch.With(ctx, &err, obsv.Args{LogFields: []obsv.Field{
+		obsv.String("repo", upload.RepositoryName),
+		obsv.Int("bundleID", upload.ID),
+		obsv.Int("pages", len(pages)),
 	}})
-	defer endObservation(1, observation.Args{})
+	defer endObservation(1, obsv.Args{})
 
 	if !isDefaultBranch {
 		// We do not index non-default branches for API docs search.

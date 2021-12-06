@@ -155,7 +155,7 @@ func Main(enterpriseSetupHook func(db database.DB, c conftypes.UnifiedWatchable,
 	logging.Init(logging.Filter(loghandlers.Trace(strings.Fields(traceFields), d)))
 	tracer.Init(conf.DefaultClient())
 	sentry.Init(conf.DefaultClient())
-	trace.Init()
+	trace.Init(conf.DefaultClient())
 
 	// Create an out-of-band migration runner onto which each enterprise init function
 	// can register migration routines to run in the background while they still have

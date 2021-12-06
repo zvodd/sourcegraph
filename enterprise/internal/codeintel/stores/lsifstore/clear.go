@@ -7,9 +7,8 @@ import (
 	"strings"
 
 	"github.com/keegancsmith/sqlf"
-	"github.com/opentracing/opentracing-go/log"
 
-	"github.com/sourcegraph/sourcegraph/internal/observation"
+	obsv "github.com/sourcegraph/sourcegraph/internal/observation"
 )
 
 var tableNames = []string{
@@ -26,11 +25,11 @@ var tableNames = []string{
 }
 
 func (s *Store) Clear(ctx context.Context, bundleIDs ...int) (err error) {
-	ctx, traceLog, endObservation := s.operations.clear.WithAndLogger(ctx, &err, observation.Args{LogFields: []log.Field{
-		log.Int("numBundleIDs", len(bundleIDs)),
-		log.String("bundleIDs", intsToString(bundleIDs)),
+	ctx, traceLog, endObservation := s.operations.clear.WithAndLogger(ctx, &err, obsv.Args{LogFields: []obsv.Field{
+		obsv.Int("numBundleIDs", len(bundleIDs)),
+		obsv.String("bundleIDs", intsToString(bundleIDs)),
 	}})
-	defer endObservation(1, observation.Args{})
+	defer endObservation(1, obsv.Args{})
 
 	if len(bundleIDs) == 0 {
 		return nil
@@ -55,7 +54,7 @@ func (s *Store) Clear(ctx context.Context, bundleIDs ...int) (err error) {
 	}()
 
 	for _, tableName := range tableNames {
-		traceLog(log.String("tableName", tableName))
+		traceLog(obsv.String("tableName", tableName))
 
 		if err := tx.Exec(ctx, sqlf.Sprintf(clearQuery, sqlf.Sprintf(tableName), sqlf.Join(ids, ","))); err != nil {
 			return err

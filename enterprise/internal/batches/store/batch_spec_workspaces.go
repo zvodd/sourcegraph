@@ -9,13 +9,12 @@ import (
 	"github.com/cockroachdb/errors"
 	"github.com/keegancsmith/sqlf"
 	"github.com/lib/pq"
-	"github.com/opentracing/opentracing-go/log"
 
 	btypes "github.com/sourcegraph/sourcegraph/enterprise/internal/batches/types"
 	"github.com/sourcegraph/sourcegraph/internal/database/basestore"
 	"github.com/sourcegraph/sourcegraph/internal/database/batch"
 	"github.com/sourcegraph/sourcegraph/internal/database/dbutil"
-	"github.com/sourcegraph/sourcegraph/internal/observation"
+	obsv "github.com/sourcegraph/sourcegraph/internal/observation"
 	batcheslib "github.com/sourcegraph/sourcegraph/lib/batches"
 )
 
@@ -69,10 +68,10 @@ var BatchSpecWorkspaceColums = SQLColumns{
 
 // CreateBatchSpecWorkspace creates the given batch spec workspace jobs.
 func (s *Store) CreateBatchSpecWorkspace(ctx context.Context, ws ...*btypes.BatchSpecWorkspace) (err error) {
-	ctx, endObservation := s.operations.createBatchSpecWorkspace.With(ctx, &err, observation.Args{LogFields: []log.Field{
-		log.Int("count", len(ws)),
+	ctx, endObservation := s.operations.createBatchSpecWorkspace.With(ctx, &err, obsv.Args{LogFields: []obsv.Field{
+		obsv.Int("count", len(ws)),
 	}})
-	defer endObservation(1, observation.Args{})
+	defer endObservation(1, obsv.Args{})
 
 	inserter := func(inserter *batch.Inserter) error {
 		for _, wj := range ws {
@@ -161,10 +160,10 @@ type GetBatchSpecWorkspaceOpts struct {
 
 // GetBatchSpecWorkspace gets a BatchSpecWorkspace matching the given options.
 func (s *Store) GetBatchSpecWorkspace(ctx context.Context, opts GetBatchSpecWorkspaceOpts) (job *btypes.BatchSpecWorkspace, err error) {
-	ctx, endObservation := s.operations.getBatchSpecWorkspace.With(ctx, &err, observation.Args{LogFields: []log.Field{
-		log.Int("ID", int(opts.ID)),
+	ctx, endObservation := s.operations.getBatchSpecWorkspace.With(ctx, &err, obsv.Args{LogFields: []obsv.Field{
+		obsv.Int("ID", int(opts.ID)),
 	}})
-	defer endObservation(1, observation.Args{})
+	defer endObservation(1, obsv.Args{})
 
 	q := getBatchSpecWorkspaceQuery(&opts)
 	var c btypes.BatchSpecWorkspace
@@ -234,8 +233,8 @@ func (opts ListBatchSpecWorkspacesOpts) SQLConds(forCount bool) *sqlf.Query {
 
 // ListBatchSpecWorkspaces lists batch spec workspaces with the given filters.
 func (s *Store) ListBatchSpecWorkspaces(ctx context.Context, opts ListBatchSpecWorkspacesOpts) (cs []*btypes.BatchSpecWorkspace, next int64, err error) {
-	ctx, endObservation := s.operations.listBatchSpecWorkspaces.With(ctx, &err, observation.Args{})
-	defer endObservation(1, observation.Args{})
+	ctx, endObservation := s.operations.listBatchSpecWorkspaces.With(ctx, &err, obsv.Args{})
+	defer endObservation(1, obsv.Args{})
 
 	q := listBatchSpecWorkspacesQuery(opts)
 
@@ -275,8 +274,8 @@ func listBatchSpecWorkspacesQuery(opts ListBatchSpecWorkspacesOpts) *sqlf.Query 
 
 // CountBatchSpecWorkspaces counts batch spec workspaces with the given filters.
 func (s *Store) CountBatchSpecWorkspaces(ctx context.Context, opts ListBatchSpecWorkspacesOpts) (count int64, err error) {
-	ctx, endObservation := s.operations.countBatchSpecWorkspaces.With(ctx, &err, observation.Args{})
-	defer endObservation(1, observation.Args{})
+	ctx, endObservation := s.operations.countBatchSpecWorkspaces.With(ctx, &err, obsv.Args{})
+	defer endObservation(1, obsv.Args{})
 
 	q := countBatchSpecWorkspacesQuery(opts)
 
@@ -317,10 +316,10 @@ AND NOT %s
 // MarkSkippedBatchSpecWorkspaces marks the workspace that were skipped in
 // CreateBatchSpecWorkspaceExecutionJobs as skipped.
 func (s *Store) MarkSkippedBatchSpecWorkspaces(ctx context.Context, batchSpecID int64) (err error) {
-	ctx, endObservation := s.operations.markSkippedBatchSpecWorkspaces.With(ctx, &err, observation.Args{LogFields: []log.Field{
-		log.Int("batchSpecID", int(batchSpecID)),
+	ctx, endObservation := s.operations.markSkippedBatchSpecWorkspaces.With(ctx, &err, obsv.Args{LogFields: []obsv.Field{
+		obsv.Int("batchSpecID", int(batchSpecID)),
 	}})
-	defer endObservation(1, observation.Args{})
+	defer endObservation(1, obsv.Args{})
 
 	q := sqlf.Sprintf(
 		markSkippedBatchSpecWorkspacesQueryFmtstr,

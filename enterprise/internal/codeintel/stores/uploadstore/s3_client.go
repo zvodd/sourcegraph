@@ -16,11 +16,10 @@ import (
 	s3types "github.com/aws/aws-sdk-go-v2/service/s3/types"
 	"github.com/cockroachdb/errors"
 	"github.com/inconshreveable/log15"
-	"github.com/opentracing/opentracing-go/log"
 
 	"github.com/sourcegraph/sourcegraph/internal/env"
 	"github.com/sourcegraph/sourcegraph/internal/goroutine"
-	"github.com/sourcegraph/sourcegraph/internal/observation"
+	obsv "github.com/sourcegraph/sourcegraph/internal/observation"
 )
 
 type s3Store struct {
@@ -99,10 +98,10 @@ const maxZeroReads = 3
 var errNoDownloadProgress = errors.New("no download progress")
 
 func (s *s3Store) Get(ctx context.Context, key string) (_ io.ReadCloser, err error) {
-	ctx, endObservation := s.operations.get.With(ctx, &err, observation.Args{LogFields: []log.Field{
-		log.String("key", key),
+	ctx, endObservation := s.operations.get.With(ctx, &err, obsv.Args{LogFields: []obsv.Field{
+		obsv.String("key", key),
 	}})
-	defer endObservation(1, observation.Args{})
+	defer endObservation(1, obsv.Args{})
 
 	reader := writeToPipe(func(w io.Writer) error {
 		zeroReads := 0
@@ -158,10 +157,10 @@ func (s *s3Store) readObjectInto(ctx context.Context, w io.Writer, key string, b
 }
 
 func (s *s3Store) Upload(ctx context.Context, key string, r io.Reader) (_ int64, err error) {
-	ctx, endObservation := s.operations.upload.With(ctx, &err, observation.Args{LogFields: []log.Field{
-		log.String("key", key),
+	ctx, endObservation := s.operations.upload.With(ctx, &err, obsv.Args{LogFields: []obsv.Field{
+		obsv.String("key", key),
 	}})
-	defer endObservation(1, observation.Args{})
+	defer endObservation(1, obsv.Args{})
 
 	cr := &countingReader{r: r}
 
@@ -177,11 +176,11 @@ func (s *s3Store) Upload(ctx context.Context, key string, r io.Reader) (_ int64,
 }
 
 func (s *s3Store) Compose(ctx context.Context, destination string, sources ...string) (_ int64, err error) {
-	ctx, endObservation := s.operations.compose.With(ctx, &err, observation.Args{LogFields: []log.Field{
-		log.String("destination", destination),
-		log.String("sources", strings.Join(sources, ", ")),
+	ctx, endObservation := s.operations.compose.With(ctx, &err, obsv.Args{LogFields: []obsv.Field{
+		obsv.String("destination", destination),
+		obsv.String("sources", strings.Join(sources, ", ")),
 	}})
-	defer endObservation(1, observation.Args{})
+	defer endObservation(1, obsv.Args{})
 
 	multipartUpload, err := s.client.CreateMultipartUpload(ctx, &s3.CreateMultipartUploadInput{
 		Bucket: aws.String(s.bucket),
@@ -266,10 +265,10 @@ func (s *s3Store) Compose(ctx context.Context, destination string, sources ...st
 }
 
 func (s *s3Store) Delete(ctx context.Context, key string) (err error) {
-	ctx, endObservation := s.operations.delete.With(ctx, &err, observation.Args{LogFields: []log.Field{
-		log.String("key", key),
+	ctx, endObservation := s.operations.delete.With(ctx, &err, obsv.Args{LogFields: []obsv.Field{
+		obsv.String("key", key),
 	}})
-	defer endObservation(1, observation.Args{})
+	defer endObservation(1, obsv.Args{})
 
 	_, err = s.client.DeleteObject(ctx, &s3.DeleteObjectInput{
 		Bucket: aws.String(s.bucket),

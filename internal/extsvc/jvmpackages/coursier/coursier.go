@@ -15,12 +15,11 @@ import (
 	"github.com/cockroachdb/errors"
 	"github.com/inconshreveable/log15"
 	"github.com/opentracing/opentracing-go"
-	otlog "github.com/opentracing/opentracing-go/log"
 	"github.com/prometheus/client_golang/prometheus"
 
 	"github.com/sourcegraph/sourcegraph/internal/conf/reposource"
 	"github.com/sourcegraph/sourcegraph/internal/env"
-	"github.com/sourcegraph/sourcegraph/internal/observation"
+	obsv "github.com/sourcegraph/sourcegraph/internal/observation"
 	"github.com/sourcegraph/sourcegraph/internal/trace"
 	"github.com/sourcegraph/sourcegraph/schema"
 )
@@ -29,14 +28,14 @@ var CoursierBinary = "coursier"
 
 var (
 	coursierCacheDir   string
-	observationContext *observation.Context
+	observationContext *obsv.Context
 	operations         *Operations
 	invocTimeout, _    = time.ParseDuration(env.Get("SRC_COURSIER_TIMEOUT", "2m", "Time limit per Coursier invocation, which is used to resolve JVM/Java dependencies."))
 )
 
 func init() {
-	observationContext = &observation.Context{
-		Logger:     log15.Root(),
+	observationContext = &obsv.Context{
+		OldLogger:  log15.Root(),
 		Tracer:     &trace.Tracer{Tracer: opentracing.GlobalTracer()},
 		Registerer: prometheus.DefaultRegisterer,
 	}
@@ -54,10 +53,10 @@ func init() {
 }
 
 func FetchSources(ctx context.Context, config *schema.JVMPackagesConnection, dependency reposource.MavenDependency) (sourceCodeJarPath string, err error) {
-	ctx, endObservation := operations.fetchSources.With(ctx, &err, observation.Args{LogFields: []otlog.Field{
-		otlog.String("dependency", dependency.CoursierSyntax()),
+	ctx, endObservation := operations.fetchSources.With(ctx, &err, obsv.Args{LogFields: []obsv.Field{
+		obsv.String("dependency", dependency.CoursierSyntax()),
 	}})
-	defer endObservation(1, observation.Args{})
+	defer endObservation(1, obsv.Args{})
 
 	if dependency.IsJDK() {
 		output, err := runCoursierCommand(
@@ -107,8 +106,8 @@ func FetchSources(ctx context.Context, config *schema.JVMPackagesConnection, dep
 }
 
 func FetchByteCode(ctx context.Context, config *schema.JVMPackagesConnection, dependency reposource.MavenDependency) (byteCodeJarPath string, err error) {
-	ctx, endObservation := operations.fetchByteCode.With(ctx, &err, observation.Args{})
-	defer endObservation(1, observation.Args{})
+	ctx, endObservation := operations.fetchByteCode.With(ctx, &err, obsv.Args{})
+	defer endObservation(1, obsv.Args{})
 
 	paths, err := runCoursierCommand(
 		ctx,
@@ -134,10 +133,10 @@ func FetchByteCode(ctx context.Context, config *schema.JVMPackagesConnection, de
 }
 
 func Exists(ctx context.Context, config *schema.JVMPackagesConnection, dependency reposource.MavenDependency) (exists bool, err error) {
-	ctx, endObservation := operations.exists.With(ctx, &err, observation.Args{LogFields: []otlog.Field{
-		otlog.String("dependency", dependency.CoursierSyntax()),
+	ctx, endObservation := operations.exists.With(ctx, &err, obsv.Args{LogFields: []obsv.Field{
+		obsv.String("dependency", dependency.CoursierSyntax()),
 	}})
-	defer endObservation(1, observation.Args{})
+	defer endObservation(1, obsv.Args{})
 
 	if dependency.IsJDK() {
 		_, err = FetchSources(ctx, config, dependency)
@@ -157,11 +156,11 @@ func runCoursierCommand(ctx context.Context, config *schema.JVMPackagesConnectio
 	ctx, cancel := context.WithTimeout(ctx, invocTimeout)
 	defer cancel()
 
-	ctx, traceLog, endObservation := operations.runCommand.WithAndLogger(ctx, &err, observation.Args{LogFields: []otlog.Field{
-		otlog.String("repositories", strings.Join(config.Maven.Repositories, "|")),
-		otlog.String("args", strings.Join(args, ", ")),
+	ctx, traceLog, endObservation := operations.runCommand.WithAndLogger(ctx, &err, obsv.Args{LogFields: []obsv.Field{
+		obsv.String("repositories", strings.Join(config.Maven.Repositories, "|")),
+		obsv.String("args", strings.Join(args, ", ")),
 	}})
-	defer endObservation(1, observation.Args{})
+	defer endObservation(1, obsv.Args{})
 
 	cmd := exec.CommandContext(ctx, CoursierBinary, args...)
 	if config.Maven.Credentials != "" {
@@ -183,7 +182,7 @@ func runCoursierCommand(ctx context.Context, config *schema.JVMPackagesConnectio
 	if err := cmd.Run(); err != nil {
 		return nil, errors.Wrapf(err, "coursier command %q failed with stderr %q and stdout %q", cmd, stderr, &stdout)
 	}
-	traceLog(otlog.String("stdout", stdout.String()), otlog.String("stderr", stderr.String()))
+	traceLog(obsv.String("stdout", stdout.String()), obsv.String("stderr", stderr.String()))
 
 	if stdout.String() == "" {
 		return []string{}, nil

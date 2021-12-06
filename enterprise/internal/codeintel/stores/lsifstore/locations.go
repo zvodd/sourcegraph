@@ -7,10 +7,9 @@ import (
 
 	"github.com/cockroachdb/errors"
 	"github.com/keegancsmith/sqlf"
-	"github.com/opentracing/opentracing-go/log"
 
 	"github.com/sourcegraph/sourcegraph/internal/database/basestore"
-	"github.com/sourcegraph/sourcegraph/internal/observation"
+	obsv "github.com/sourcegraph/sourcegraph/internal/observation"
 	"github.com/sourcegraph/sourcegraph/lib/codeintel/precise"
 )
 
@@ -35,30 +34,30 @@ func (s *Store) Implementations(ctx context.Context, bundleID int, path string, 
 	return s.definitionsReferences(ctx, extractor, operation, bundleID, path, line, character, limit, offset)
 }
 
-func (s *Store) definitionsReferences(ctx context.Context, extractor func(r precise.RangeData) precise.ID, operation *observation.Operation, bundleID int, path string, line, character, limit, offset int) (_ []Location, _ int, err error) {
-	ctx, traceLog, endObservation := operation.WithAndLogger(ctx, &err, observation.Args{LogFields: []log.Field{
-		log.Int("bundleID", bundleID),
-		log.String("path", path),
-		log.Int("line", line),
-		log.Int("character", character),
+func (s *Store) definitionsReferences(ctx context.Context, extractor func(r precise.RangeData) precise.ID, operation *obsv.Operation, bundleID int, path string, line, character, limit, offset int) (_ []Location, _ int, err error) {
+	ctx, traceLog, endObservation := operation.WithAndLogger(ctx, &err, obsv.Args{LogFields: []obsv.Field{
+		obsv.Int("bundleID", bundleID),
+		obsv.String("path", path),
+		obsv.Int("line", line),
+		obsv.Int("character", character),
 	}})
-	defer endObservation(1, observation.Args{})
+	defer endObservation(1, obsv.Args{})
 
 	documentData, exists, err := s.scanFirstDocumentData(s.Store.Query(ctx, sqlf.Sprintf(locationsDocumentQuery, bundleID, path)))
 	if err != nil || !exists {
 		return nil, 0, err
 	}
 
-	traceLog(log.Int("numRanges", len(documentData.Document.Ranges)))
+	traceLog(obsv.Int("numRanges", len(documentData.Document.Ranges)))
 	ranges := precise.FindRanges(documentData.Document.Ranges, line, character)
-	traceLog(log.Int("numIntersectingRanges", len(ranges)))
+	traceLog(obsv.Int("numIntersectingRanges", len(ranges)))
 
 	orderedResultIDs := extractResultIDs(ranges, extractor)
 	locationsMap, totalCount, err := s.locations(ctx, bundleID, orderedResultIDs, limit, offset)
 	if err != nil {
 		return nil, 0, err
 	}
-	traceLog(log.Int("totalCount", totalCount))
+	traceLog(obsv.Int("totalCount", totalCount))
 
 	locations := make([]Location, 0, limit)
 	for _, resultID := range orderedResultIDs {
@@ -72,14 +71,14 @@ func (s *Store) definitionsReferences(ctx context.Context, extractor func(r prec
 // method returns a map from result set identifiers to another map from document paths to locations
 // within that document, as well as a total count of locations within the map.
 func (s *Store) locations(ctx context.Context, bundleID int, ids []precise.ID, limit, offset int) (_ map[precise.ID][]Location, _ int, err error) {
-	ctx, traceLog, endObservation := s.operations.locations.WithAndLogger(ctx, &err, observation.Args{LogFields: []log.Field{
-		log.Int("bundleID", bundleID),
-		log.Int("numIDs", len(ids)),
-		log.String("ids", idsToString(ids)),
-		log.Int("limit", limit),
-		log.Int("offset", offset),
+	ctx, traceLog, endObservation := s.operations.locations.WithAndLogger(ctx, &err, obsv.Args{LogFields: []obsv.Field{
+		obsv.Int("bundleID", bundleID),
+		obsv.Int("numIDs", len(ids)),
+		obsv.String("ids", idsToString(ids)),
+		obsv.Int("limit", limit),
+		obsv.Int("offset", offset),
 	}})
-	defer endObservation(1, observation.Args{})
+	defer endObservation(1, obsv.Args{})
 
 	if len(ids) == 0 {
 		return nil, 0, nil
@@ -91,8 +90,8 @@ func (s *Store) locations(ctx context.Context, bundleID int, ids []precise.ID, l
 		return nil, 0, err
 	}
 	traceLog(
-		log.Int("numIndexes", len(indexes)),
-		log.String("indexes", intsToString(indexes)),
+		obsv.Int("numIndexes", len(indexes)),
+		obsv.String("indexes", intsToString(indexes)),
 	)
 
 	// Read the result sets and construct the set of documents we need to open to resolve range
@@ -101,15 +100,15 @@ func (s *Store) locations(ctx context.Context, bundleID int, ids []precise.ID, l
 	if err != nil {
 		return nil, 0, err
 	}
-	traceLog(log.Int("totalCount", totalCount))
+	traceLog(obsv.Int("totalCount", totalCount))
 
 	// Filter out all data in rangeIDsByResultID that falls outside of the current page. This
 	// also returns the set of paths for documents we will need to fetch to resolve the results
 	// of the current page.
 	rangeIDsByResultID, paths := limitResultMap(ids, rangeIDsByResultID, limit, offset)
 	traceLog(
-		log.Int("numPaths", len(paths)),
-		log.String("paths", strings.Join(paths, ", ")),
+		obsv.Int("numPaths", len(paths)),
+		obsv.String("paths", strings.Join(paths, ", ")),
 	)
 
 	// Hydrate the locations result set by replacing range ids with their actual data from their
@@ -316,7 +315,7 @@ const documentBatchSize = 50
 // readRangesFromDocuments extracts range data from the documents with the given paths. This method returns a map from
 // result set identifiers to the set of locations composing that result set. The output resolves the missing data given
 // via the rangeIDsByResultID parameter. This method also returns a total count of ranges in the result set.
-func (s *Store) readRangesFromDocuments(ctx context.Context, bundleID int, ids []precise.ID, paths []string, rangeIDsByResultID map[precise.ID]map[string][]precise.ID, traceLog observation.TraceLogger) (map[precise.ID][]Location, int, error) {
+func (s *Store) readRangesFromDocuments(ctx context.Context, bundleID int, ids []precise.ID, paths []string, rangeIDsByResultID map[precise.ID]map[string][]precise.ID, traceLog obsv.TraceLogger) (map[precise.ID][]Location, int, error) {
 	totalCount := 0
 	locationsByResultID := make(map[precise.ID][]Location, len(ids))
 
@@ -370,7 +369,7 @@ WHERE
 // readRangesFromDocument extracts range data from the given document. This method populates the given locationsByResultId
 // map, which resolves the missing data given via the rangeIDsByResultID parameter. This method returns a total count of
 // ranges in the result set.
-func (s *Store) readRangesFromDocument(bundleID int, rangeIDsByResultID map[precise.ID]map[string][]precise.ID, locationsByResultID map[precise.ID][]Location, path string, document precise.DocumentData, traceLog observation.TraceLogger) int {
+func (s *Store) readRangesFromDocument(bundleID int, rangeIDsByResultID map[precise.ID]map[string][]precise.ID, locationsByResultID map[precise.ID][]Location, path string, document precise.DocumentData, traceLog obsv.TraceLogger) int {
 	totalCount := 0
 	for id, rangeIDsByPath := range rangeIDsByResultID {
 		rangeIDs := rangeIDsByPath[path]
@@ -389,9 +388,9 @@ func (s *Store) readRangesFromDocument(bundleID int, rangeIDsByResultID map[prec
 			}
 		}
 		traceLog(
-			log.String("id", string(id)),
-			log.String("path", path),
-			log.Int("numLocationsForIDInPath", len(locations)),
+			obsv.String("id", string(id)),
+			obsv.String("path", path),
+			obsv.Int("numLocationsForIDInPath", len(locations)),
 		)
 
 		totalCount += len(locations)

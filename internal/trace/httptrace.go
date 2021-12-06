@@ -11,6 +11,7 @@ import (
 
 	"github.com/sourcegraph/sourcegraph/internal/conf/conftypes"
 	"github.com/sourcegraph/sourcegraph/internal/env"
+	"github.com/sourcegraph/sourcegraph/internal/sentry"
 
 	"github.com/cockroachdb/errors"
 	"github.com/felixge/httpsnoop"
@@ -21,9 +22,6 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
 
-	"github.com/sourcegraph/sourcegraph/internal/api"
-	"github.com/sourcegraph/sourcegraph/internal/repotrackutil"
-	"github.com/sourcegraph/sourcegraph/internal/sentry"
 	"github.com/sourcegraph/sourcegraph/internal/trace/ot"
 )
 
@@ -46,7 +44,7 @@ const (
 var trackOrigin = "https://gitlab.com"
 
 var (
-	metricLabels    = []string{"route", "method", "code", "repo", "origin"}
+	metricLabels    = []string{"route", "method", "code" /* "repo",  */, "origin"}
 	requestDuration = promauto.NewHistogramVec(prometheus.HistogramOpts{
 		Name:    "src_http_request_duration_seconds",
 		Help:    "The HTTP request latencies in seconds.",
@@ -59,10 +57,14 @@ var requestHeartbeat = promauto.NewGaugeVec(prometheus.GaugeOpts{
 	Help: "Last time a request finished for a http endpoint.",
 }, metricLabels)
 
-func Init() {
+func Init(c conftypes.WatchableSiteConfig) {
 	if origin := os.Getenv("METRICS_TRACK_ORIGIN"); origin != "" {
 		trackOrigin = origin
 	}
+
+	go c.Watch(func() {
+		ExternalURL = c.SiteConfig().ExternalURL
+	})
 }
 
 // GraphQLRequestName returns the GraphQL request name for a request context. For example,
@@ -196,7 +198,7 @@ func HTTPMiddleware(next http.Handler, siteConfig conftypes.SiteConfigQuerier) h
 			"route":  routeName,
 			"method": strings.ToLower(r.Method),
 			"code":   strconv.Itoa(m.Code),
-			"repo":   repotrackutil.GetTrackedRepo(api.RepoName(r.URL.Path)),
+			// "repo":   repotrackutil.GetTrackedRepo(api.RepoName(r.URL.Path)),
 			"origin": origin,
 		}
 		requestDuration.With(labels).Observe(m.Duration.Seconds())

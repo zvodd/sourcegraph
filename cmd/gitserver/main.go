@@ -69,7 +69,7 @@ func main() {
 	logging.Init()
 	tracer.Init(conf.DefaultClient())
 	sentry.Init(conf.DefaultClient())
-	trace.Init()
+	trace.Init(conf.DefaultClient())
 
 	if reposDir == "" {
 		log.Fatal("git-server: SRC_REPOS_DIR is required")
@@ -90,7 +90,7 @@ func main() {
 
 	repoStore := database.Repos(db)
 	codeintelDB := codeinteldbstore.NewWithDB(db, &observation.Context{
-		Logger:     log15.Root(),
+		OldLogger:  log15.Root(),
 		Tracer:     &trace.Tracer{Tracer: opentracing.GlobalTracer()},
 		Registerer: prometheus.DefaultRegisterer,
 	}, nil)

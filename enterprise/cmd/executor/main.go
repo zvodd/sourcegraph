@@ -14,6 +14,7 @@ import (
 	"github.com/sourcegraph/sourcegraph/enterprise/cmd/executor/internal/ignite"
 	"github.com/sourcegraph/sourcegraph/enterprise/cmd/executor/internal/janitor"
 	"github.com/sourcegraph/sourcegraph/enterprise/cmd/executor/internal/worker"
+	"github.com/sourcegraph/sourcegraph/internal/conf"
 	"github.com/sourcegraph/sourcegraph/internal/debugserver"
 	"github.com/sourcegraph/sourcegraph/internal/env"
 	"github.com/sourcegraph/sourcegraph/internal/goroutine"
@@ -31,7 +32,7 @@ func main() {
 	env.HandleHelpFlag()
 
 	logging.Init()
-	trace.Init()
+	trace.Init(conf.DefaultClient())
 
 	if err := config.Validate(); err != nil {
 		log.Fatalf("failed to read config: %s", err)
@@ -39,7 +40,7 @@ func main() {
 
 	// Initialize tracing/metrics
 	observationContext := &observation.Context{
-		Logger:     log15.Root(),
+		OldLogger:  log15.Root(),
 		Tracer:     &trace.Tracer{Tracer: opentracing.GlobalTracer()},
 		Registerer: prometheus.DefaultRegisterer,
 	}
@@ -96,7 +97,7 @@ func main() {
 
 func makeWorkerMetrics(queueName string) workerutil.WorkerMetrics {
 	observationContext := &observation.Context{
-		Logger:     log15.Root(),
+		OldLogger:  log15.Root(),
 		Tracer:     &trace.Tracer{Tracer: opentracing.GlobalTracer()},
 		Registerer: prometheus.DefaultRegisterer,
 	}

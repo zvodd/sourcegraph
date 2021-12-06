@@ -101,7 +101,7 @@ func newWorkerMetrics(r prometheus.Registerer) workerutil.WorkerMetrics {
 		observationContext = &observation.TestContext
 	} else {
 		observationContext = &observation.Context{
-			Logger:     log15.Root(),
+			OldLogger:  log15.Root(),
 			Tracer:     &trace.Tracer{Tracer: opentracing.GlobalTracer()},
 			Registerer: r,
 		}

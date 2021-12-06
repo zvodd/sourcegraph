@@ -61,7 +61,7 @@ func main() {
 	logging.Init()
 	tracer.Init(conf.DefaultClient())
 	sentry.Init(conf.DefaultClient())
-	trace.Init()
+	trace.Init(conf.DefaultClient())
 
 	// Ready immediately
 	ready := make(chan struct{})

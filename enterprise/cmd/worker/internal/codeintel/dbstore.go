@@ -25,7 +25,7 @@ func InitDBStore() (*dbstore.Store, error) {
 
 var initDBStore = memo.NewMemoizedConstructor(func() (interface{}, error) {
 	observationContext := &observation.Context{
-		Logger:     log15.Root(),
+		OldLogger:  log15.Root(),
 		Tracer:     &trace.Tracer{Tracer: opentracing.GlobalTracer()},
 		Registerer: prometheus.DefaultRegisterer,
 	}
@@ -50,7 +50,7 @@ func InitDependencySyncingStore() (dbworkerstore.Store, error) {
 
 var initDependencySyncStore = memo.NewMemoizedConstructor(func() (interface{}, error) {
 	observationContext := &observation.Context{
-		Logger:     log15.Root(),
+		OldLogger:  log15.Root(),
 		Tracer:     &trace.Tracer{Tracer: opentracing.GlobalTracer()},
 		Registerer: prometheus.DefaultRegisterer,
 	}
@@ -74,7 +74,7 @@ func InitDependencyIndexingStore() (dbworkerstore.Store, error) {
 
 var initDependenyIndexStore = memo.NewMemoizedConstructor(func() (interface{}, error) {
 	observationContext := &observation.Context{
-		Logger:     log15.Root(),
+		OldLogger:  log15.Root(),
 		Tracer:     &trace.Tracer{Tracer: opentracing.GlobalTracer()},
 		Registerer: prometheus.DefaultRegisterer,
 	}

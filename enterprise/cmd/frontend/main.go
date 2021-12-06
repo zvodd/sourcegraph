@@ -70,7 +70,7 @@ func enterpriseSetupHook(db database.DB, conf conftypes.UnifiedWatchable, outOfB
 	enterpriseServices := enterprise.DefaultServices()
 
 	observationContext := &observation.Context{
-		Logger:     log15.Root(),
+		OldLogger:  log15.Root(),
 		Tracer:     &trace.Tracer{Tracer: opentracing.GlobalTracer()},
 		Registerer: prometheus.DefaultRegisterer,
 	}

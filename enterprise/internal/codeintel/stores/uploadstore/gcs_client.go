@@ -10,12 +10,11 @@ import (
 	"github.com/cockroachdb/errors"
 	"github.com/hashicorp/go-multierror"
 	"github.com/inconshreveable/log15"
-	"github.com/opentracing/opentracing-go/log"
 	"google.golang.org/api/option"
 
 	"github.com/sourcegraph/sourcegraph/internal/env"
 	"github.com/sourcegraph/sourcegraph/internal/goroutine"
-	"github.com/sourcegraph/sourcegraph/internal/observation"
+	obsv "github.com/sourcegraph/sourcegraph/internal/observation"
 )
 
 type gcsStore struct {
@@ -89,10 +88,10 @@ func (s *gcsStore) Init(ctx context.Context) error {
 }
 
 func (s *gcsStore) Get(ctx context.Context, key string) (_ io.ReadCloser, err error) {
-	ctx, endObservation := s.operations.get.With(ctx, &err, observation.Args{LogFields: []log.Field{
-		log.String("key", key),
+	ctx, endObservation := s.operations.get.With(ctx, &err, obsv.Args{LogFields: []obsv.Field{
+		obsv.String("key", key),
 	}})
-	defer endObservation(1, observation.Args{})
+	defer endObservation(1, obsv.Args{})
 
 	rc, err := s.client.Bucket(s.bucket).Object(key).NewRangeReader(ctx, 0, -1)
 	if err != nil {
@@ -103,10 +102,10 @@ func (s *gcsStore) Get(ctx context.Context, key string) (_ io.ReadCloser, err er
 }
 
 func (s *gcsStore) Upload(ctx context.Context, key string, r io.Reader) (_ int64, err error) {
-	ctx, endObservation := s.operations.upload.With(ctx, &err, observation.Args{LogFields: []log.Field{
-		log.String("key", key),
+	ctx, endObservation := s.operations.upload.With(ctx, &err, obsv.Args{LogFields: []obsv.Field{
+		obsv.String("key", key),
 	}})
-	defer endObservation(1, observation.Args{})
+	defer endObservation(1, obsv.Args{})
 
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
@@ -129,11 +128,11 @@ func (s *gcsStore) Upload(ctx context.Context, key string, r io.Reader) (_ int64
 }
 
 func (s *gcsStore) Compose(ctx context.Context, destination string, sources ...string) (_ int64, err error) {
-	ctx, endObservation := s.operations.compose.With(ctx, &err, observation.Args{LogFields: []log.Field{
-		log.String("destination", destination),
-		log.String("sources", strings.Join(sources, ", ")),
+	ctx, endObservation := s.operations.compose.With(ctx, &err, obsv.Args{LogFields: []obsv.Field{
+		obsv.String("destination", destination),
+		obsv.String("sources", strings.Join(sources, ", ")),
 	}})
-	defer endObservation(1, observation.Args{})
+	defer endObservation(1, obsv.Args{})
 
 	bucket := s.client.Bucket(s.bucket)
 
@@ -160,10 +159,10 @@ func (s *gcsStore) Compose(ctx context.Context, destination string, sources ...s
 }
 
 func (s *gcsStore) Delete(ctx context.Context, key string) (err error) {
-	ctx, endObservation := s.operations.delete.With(ctx, &err, observation.Args{LogFields: []log.Field{
-		log.String("key", key),
+	ctx, endObservation := s.operations.delete.With(ctx, &err, obsv.Args{LogFields: []obsv.Field{
+		obsv.String("key", key),
 	}})
-	defer endObservation(1, observation.Args{})
+	defer endObservation(1, obsv.Args{})
 
 	return errors.Wrap(s.client.Bucket(s.bucket).Object(key).Delete(ctx), "failed to delete object")
 }

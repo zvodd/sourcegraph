@@ -70,7 +70,8 @@ import (
 // metrics. It should be created once on service startup, and passed around to
 // any location that wants to use it for observing operations.
 type Context struct {
-	Logger       logging.ErrorLogger
+	OldLogger    logging.ErrorLogger
+	Logger       logging.ErrorContextLogger
 	Tracer       *trace.Tracer
 	Registerer   prometheus.Registerer
 	HoneyDataset *honey.Dataset
@@ -103,7 +104,7 @@ type Op struct {
 	// MetricLabelValues that apply for every invocation of this operation.
 	MetricLabelValues []string
 	// LogFields that apply for for every invocation of this operation.
-	LogFields []log.Field
+	LogFields []Field
 	// ErrorFilter returns true for any error that should be converted to nil
 	// for the purposes of metrics and tracing. If this field is not set then
 	// error values are unaltered.
@@ -137,12 +138,12 @@ type Operation struct {
 	name         string
 	kebabName    string
 	metricLabels []string
-	logFields    []log.Field
+	logFields    []Field
 }
 
 // TraceLogger is returned from WithAndLogger and can be used to add timestamped key and
 // value pairs into a related opentracing span.
-type TraceLogger func(fields ...log.Field)
+type TraceLogger func(fields ...Field)
 
 // FinishFunc is the shape of the function returned by With and should be invoked within
 // a defer directly before the observed function returns.
@@ -153,7 +154,7 @@ type Args struct {
 	// MetricLabelValues that apply only to this invocation of the operation.
 	MetricLabelValues []string
 	// LogFields that apply only to this invocation of the operation.
-	LogFields []log.Field
+	LogFields []Field
 }
 
 // LogFieldMap returns a string-to-interface map containing the contents of this Arg value's
@@ -205,16 +206,23 @@ func (op *Operation) WithAndLogger(ctx context.Context, err *error, args Args) (
 
 	var logFields TraceLogger
 	if tr != nil {
-		logFields = func(fields ...log.Field) {
+		logFields = func(fields ...Field) {
 			for _, field := range fields {
-				event.AddField(snakecaseOpName+"."+toSnakeCase(field.Key()), field.Value())
+				if field.sink&HoneySink > 0 {
+					event.AddField(snakecaseOpName+"."+toSnakeCase(field.Key()), field.Value())
+				}
 			}
-			tr.LogFields(fields...)
+
+			if traceFields := FieldsToOTFields(filterLogFields(fields, TraceSink)); len(traceFields) > 0 {
+				tr.LogFields(traceFields...)
+			}
 		}
 	} else {
-		logFields = func(fields ...log.Field) {
+		logFields = func(fields ...Field) {
 			for _, field := range fields {
-				event.AddField(snakecaseOpName+"."+toSnakeCase(field.Key()), field.Value())
+				if field.sink&HoneySink > 0 {
+					event.AddField(snakecaseOpName+"."+toSnakeCase(field.Key()), field.Value())
+				}
 			}
 		}
 	}
@@ -227,7 +235,7 @@ func (op *Operation) WithAndLogger(ctx context.Context, err *error, args Args) (
 		since := time.Since(start)
 		elapsed := since.Seconds()
 		elapsedMs := since.Milliseconds()
-		defaultFinishFields := []log.Field{log.Float64("count", count), log.Float64("elapsed", elapsed)}
+		defaultFinishFields := []Field{Float64("count", count), Float64("elapsed", elapsed)}
 		logFields := mergeLogFields(defaultFinishFields, finishArgs.LogFields)
 		metricLabels := mergeLabels(op.metricLabels, args.MetricLabelValues, finishArgs.MetricLabelValues)
 
@@ -237,10 +245,10 @@ func (op *Operation) WithAndLogger(ctx context.Context, err *error, args Args) (
 			traceErr   = op.applyErrorFilter(err, EmitForTraces)
 			honeyErr   = op.applyErrorFilter(err, EmitForHoney)
 		)
-		op.emitErrorLogs(logErr, logFields)
-		op.emitHoneyEvent(honeyErr, snakecaseOpName, event, logFields, elapsedMs)
+		op.emitErrorLogs(ctx, logErr, filterLogFields(logFields, LogsSink))
+		op.emitHoneyEvent(honeyErr, snakecaseOpName, event, filterLogFields(logFields, HoneySink), elapsedMs)
 		op.emitMetrics(metricsErr, count, elapsed, metricLabels)
-		op.finishTrace(traceErr, tr, logFields)
+		op.finishTrace(traceErr, tr, filterLogFields(logFields, TraceSink))
 	}
 }
 
@@ -253,7 +261,7 @@ func (op *Operation) trace(ctx context.Context, args Args) (*trace.Trace, contex
 	}
 
 	tr, ctx := op.context.Tracer.New(ctx, op.kebabName, "")
-	if mergedFields := mergeLogFields(op.logFields, args.LogFields); len(mergedFields) > 0 {
+	if mergedFields := FieldsToOTFields(mergeLogFields(op.logFields, args.LogFields)); len(mergedFields) > 0 {
 		tr.LogFields(mergedFields...)
 	}
 	return tr, ctx
@@ -263,8 +271,15 @@ func (op *Operation) trace(ctx context.Context, args Args) (*trace.Trace, contex
 // as well as all of the log fields attached ot the operation, the args to With, and the args
 // to the finish function. This does nothing if the no logger was supplied on the observation
 // context.
-func (op *Operation) emitErrorLogs(err *error, logFields []log.Field) {
-	if op.context.Logger == nil {
+func (op *Operation) emitErrorLogs(ctx context.Context, err *error, logFields []Field) {
+	if op.context.OldLogger == nil {
+		if op.context.Logger != nil {
+			var kvs []interface{}
+			for _, field := range logFields {
+				kvs = append(kvs, field.Key(), field.Value())
+			}
+			logging.LogCtx(op.context.Logger, ctx, op.name, err, kvs...)
+		}
 		return
 	}
 
@@ -273,10 +288,10 @@ func (op *Operation) emitErrorLogs(err *error, logFields []log.Field) {
 		kvs = append(kvs, field.Key(), field.Value())
 	}
 
-	logging.Log(op.context.Logger, op.name, err, kvs...)
+	logging.Log(op.context.OldLogger, op.name, err, kvs...)
 }
 
-func (op *Operation) emitHoneyEvent(err *error, opName string, event honey.Event, logFields []log.Field, duration int64) {
+func (op *Operation) emitHoneyEvent(err *error, opName string, event honey.Event, logFields []Field, duration int64) {
 	if err != nil && *err != nil {
 		event.AddField("error", (*err).Error())
 	}
@@ -303,7 +318,7 @@ func (op *Operation) emitMetrics(err *error, count, elapsed float64, labels []st
 // finishTrace will set the error value, log additional fields supplied after the operation's
 // execution, and finalize the trace span. This does nothing if no trace was constructed at
 // the start of the operation.
-func (op *Operation) finishTrace(err *error, tr *trace.Trace, logFields []log.Field) {
+func (op *Operation) finishTrace(err *error, tr *trace.Trace, logFields []Field) {
 	if tr == nil {
 		return
 	}
@@ -312,7 +327,7 @@ func (op *Operation) finishTrace(err *error, tr *trace.Trace, logFields []log.Fi
 		tr.SetError(*err)
 	}
 
-	tr.LogFields(logFields...)
+	tr.LogFields(FieldsToOTFields(logFields)...)
 	tr.Finish()
 }
 
@@ -342,16 +357,33 @@ func mergeLabels(groups ...[]string) []string {
 }
 
 // mergeLogFields flattens slices of slices of log fields.
-func mergeLogFields(groups ...[]log.Field) []log.Field {
+func mergeLogFields(groups ...[]Field) []Field {
 	size := 0
 	for _, group := range groups {
 		size += len(group)
 	}
 
-	logFields := make([]log.Field, 0, size)
+	logFields := make([]Field, 0, size)
 	for _, group := range groups {
 		logFields = append(logFields, group...)
 	}
 
 	return logFields
+}
+
+func filterLogFields(fields []Field, sink LogSink) (filtered []Field) {
+	for _, field := range fields {
+		if field.sink&sink > 0 {
+			filtered = append(filtered, field)
+		}
+	}
+	return
+}
+
+func FieldsToOTFields(fields []Field) (out []log.Field) {
+	out = make([]log.Field, 0, len(fields))
+	for _, field := range fields {
+		out = append(out, field.field)
+	}
+	return
 }

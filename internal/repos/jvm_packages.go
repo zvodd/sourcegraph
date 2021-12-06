@@ -56,7 +56,7 @@ func NewJVMPackagesSource(svc *types.ExternalService) (*JVMPackagesSource, error
 func (s *JVMPackagesSource) SetDB(db dbutil.DB) {
 	once.Do(func() {
 		observationContext = &observation.Context{
-			Logger:     log15.Root(),
+			OldLogger:  log15.Root(),
 			Tracer:     &trace.Tracer{Tracer: opentracing.GlobalTracer()},
 			Registerer: prometheus.DefaultRegisterer,
 		}

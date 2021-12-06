@@ -5,22 +5,21 @@ import (
 	"strings"
 
 	"github.com/keegancsmith/sqlf"
-	"github.com/opentracing/opentracing-go/log"
 
 	"github.com/sourcegraph/sourcegraph/internal/database"
 	"github.com/sourcegraph/sourcegraph/internal/database/basestore"
-	"github.com/sourcegraph/sourcegraph/internal/observation"
+	obsv "github.com/sourcegraph/sourcegraph/internal/observation"
 )
 
 // RepoIDsByGlobPatterns returns a page of repository identifiers and a total count of repositories matching
 // one of the given patterns.
 func (s *Store) RepoIDsByGlobPatterns(ctx context.Context, patterns []string, limit, offset int) (_ []int, _ int, err error) {
-	ctx, endObservation := s.operations.repoIDsByGlobPatterns.With(ctx, &err, observation.Args{LogFields: []log.Field{
-		log.String("patterns", strings.Join(patterns, ", ")),
-		log.Int("limit", limit),
-		log.Int("offset", offset),
+	ctx, endObservation := s.operations.repoIDsByGlobPatterns.With(ctx, &err, obsv.Args{LogFields: []obsv.Field{
+		obsv.String("patterns", strings.Join(patterns, ", ")),
+		obsv.Int("limit", limit),
+		obsv.Int("offset", offset),
 	}})
-	defer endObservation(1, observation.Args{})
+	defer endObservation(1, obsv.Args{})
 
 	if len(patterns) == 0 {
 		return nil, 0, nil
@@ -86,11 +85,11 @@ LIMIT %s OFFSET %s
 // matches exceeds the given limit (if supplied), then only top ranked repositories by star count
 // will be associated to the policy in the database and the remainder will be dropped.
 func (s *Store) UpdateReposMatchingPatterns(ctx context.Context, patterns []string, policyID int, repositoryMatchLimit *int) (err error) {
-	ctx, endObservation := s.operations.updateReposMatchingPatterns.With(ctx, &err, observation.Args{LogFields: []log.Field{
-		log.String("pattern", strings.Join(patterns, ",")),
-		log.Int("policyID", policyID),
+	ctx, endObservation := s.operations.updateReposMatchingPatterns.With(ctx, &err, obsv.Args{LogFields: []obsv.Field{
+		obsv.String("pattern", strings.Join(patterns, ",")),
+		obsv.Int("policyID", policyID),
 	}})
-	defer endObservation(1, observation.Args{})
+	defer endObservation(1, obsv.Args{})
 
 	n := len(patterns)
 	if n == 0 {

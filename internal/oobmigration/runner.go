@@ -11,12 +11,11 @@ import (
 	"github.com/cockroachdb/errors"
 	"github.com/derision-test/glock"
 	"github.com/inconshreveable/log15"
-	"github.com/opentracing/opentracing-go/log"
 
 	"github.com/sourcegraph/sourcegraph/internal/actor"
 	"github.com/sourcegraph/sourcegraph/internal/database/dbutil"
 	"github.com/sourcegraph/sourcegraph/internal/goroutine"
-	"github.com/sourcegraph/sourcegraph/internal/observation"
+	obsv "github.com/sourcegraph/sourcegraph/internal/observation"
 )
 
 // Runner correlates out-of-band migration records in the database with a migrator instance,
@@ -39,11 +38,11 @@ type migratorAndOption struct {
 
 var _ goroutine.BackgroundRoutine = &Runner{}
 
-func NewRunnerWithDB(db dbutil.DB, refreshInterval time.Duration, observationContext *observation.Context) *Runner {
+func NewRunnerWithDB(db dbutil.DB, refreshInterval time.Duration, observationContext *obsv.Context) *Runner {
 	return newRunner(NewStoreWithDB(db), glock.NewRealTicker(refreshInterval), observationContext)
 }
 
-func newRunner(store storeIface, refreshTicker glock.Ticker, observationContext *observation.Context) *Runner {
+func newRunner(store storeIface, refreshTicker glock.Ticker, observationContext *obsv.Context) *Runner {
 	// IMPORTANT: actor.WithInternalActor prevents issues caused by
 	// database-level authz checks: migration tasks should always be
 	// privileged.
@@ -379,20 +378,20 @@ func updateProgress(ctx context.Context, store storeIface, migration *Migration,
 }
 
 func runMigrationUp(ctx context.Context, migration *Migration, migrator Migrator, operations *operations) (err error) {
-	ctx, endObservation := operations.upForMigration(migration.ID).With(ctx, &err, observation.Args{LogFields: []log.Field{
-		log.Int("migrationID", migration.ID),
+	ctx, endObservation := operations.upForMigration(migration.ID).With(ctx, &err, obsv.Args{LogFields: []obsv.Field{
+		obsv.Int("migrationID", migration.ID),
 	}})
-	defer endObservation(1, observation.Args{})
+	defer endObservation(1, obsv.Args{})
 
 	log15.Debug("Running up migration", "migrationID", migration.ID)
 	return migrator.Up(ctx)
 }
 
 func runMigrationDown(ctx context.Context, migration *Migration, migrator Migrator, operations *operations) (err error) {
-	ctx, endObservation := operations.downForMigration(migration.ID).With(ctx, &err, observation.Args{LogFields: []log.Field{
-		log.Int("migrationID", migration.ID),
+	ctx, endObservation := operations.downForMigration(migration.ID).With(ctx, &err, obsv.Args{LogFields: []obsv.Field{
+		obsv.Int("migrationID", migration.ID),
 	}})
-	defer endObservation(1, observation.Args{})
+	defer endObservation(1, obsv.Args{})
 
 	log15.Debug("Running down migration", "migrationID", migration.ID)
 	return migrator.Down(ctx)

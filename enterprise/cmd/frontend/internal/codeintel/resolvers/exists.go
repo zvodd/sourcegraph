@@ -5,10 +5,9 @@ import (
 	"strings"
 
 	"github.com/cockroachdb/errors"
-	"github.com/opentracing/opentracing-go/log"
 
 	store "github.com/sourcegraph/sourcegraph/enterprise/internal/codeintel/stores/dbstore"
-	"github.com/sourcegraph/sourcegraph/internal/observation"
+	obsv "github.com/sourcegraph/sourcegraph/internal/observation"
 	"github.com/sourcegraph/sourcegraph/internal/vcs/git"
 )
 
@@ -26,24 +25,24 @@ const numAncestors = 100
 // path is a prefix are returned. These dump IDs should be subsequently passed to invocations of
 // Definitions, References, and Hover.
 func (r *resolver) findClosestDumps(ctx context.Context, cachedCommitChecker *cachedCommitChecker, repositoryID int, commit, path string, exactPath bool, indexer string) (_ []store.Dump, err error) {
-	ctx, traceLog, endObservation := r.operations.findClosestDumps.WithAndLogger(ctx, &err, observation.Args{
-		LogFields: []log.Field{
-			log.Int("repositoryID", repositoryID),
-			log.String("commit", commit),
-			log.String("path", path),
-			log.Bool("exactPath", exactPath),
-			log.String("indexer", indexer),
+	ctx, traceLog, endObservation := r.operations.findClosestDumps.WithAndLogger(ctx, &err, obsv.Args{
+		LogFields: []obsv.Field{
+			obsv.Int("repositoryID", repositoryID),
+			obsv.String("commit", commit),
+			obsv.String("path", path),
+			obsv.Bool("exactPath", exactPath),
+			obsv.String("indexer", indexer),
 		},
 	})
-	defer endObservation(1, observation.Args{})
+	defer endObservation(1, obsv.Args{})
 
 	candidates, err := r.inferClosestUploads(ctx, repositoryID, commit, path, exactPath, indexer)
 	if err != nil {
 		return nil, err
 	}
 	traceLog(
-		log.Int("numCandidates", len(candidates)),
-		log.String("candidates", uploadIDsToString(candidates)),
+		obsv.Int("numCandidates", len(candidates)),
+		obsv.String("candidates", uploadIDsToString(candidates)),
 	)
 
 	candidatesWithCommits, err := filterUploadsWithCommits(ctx, cachedCommitChecker, candidates)
@@ -51,8 +50,8 @@ func (r *resolver) findClosestDumps(ctx context.Context, cachedCommitChecker *ca
 		return nil, err
 	}
 	traceLog(
-		log.Int("numCandidatesWithCommits", len(candidatesWithCommits)),
-		log.String("candidatesWithCommits", uploadIDsToString(candidatesWithCommits)),
+		obsv.Int("numCandidatesWithCommits", len(candidatesWithCommits)),
+		obsv.String("candidatesWithCommits", uploadIDsToString(candidatesWithCommits)),
 	)
 
 	// Filter in-place
@@ -75,8 +74,8 @@ func (r *resolver) findClosestDumps(ctx context.Context, cachedCommitChecker *ca
 		filtered = append(filtered, candidates[i])
 	}
 	traceLog(
-		log.Int("numFiltered", len(filtered)),
-		log.String("filtered", uploadIDsToString(filtered)),
+		obsv.Int("numFiltered", len(filtered)),
+		obsv.String("filtered", uploadIDsToString(filtered)),
 	)
 
 	return filtered, nil

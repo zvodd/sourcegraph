@@ -7,11 +7,10 @@ import (
 
 	"github.com/keegancsmith/sqlf"
 	"github.com/lib/pq"
-	"github.com/opentracing/opentracing-go/log"
 
 	"github.com/sourcegraph/sourcegraph/internal/database"
 	"github.com/sourcegraph/sourcegraph/internal/database/basestore"
-	"github.com/sourcegraph/sourcegraph/internal/observation"
+	obsv "github.com/sourcegraph/sourcegraph/internal/observation"
 	"github.com/sourcegraph/sourcegraph/internal/workerutil"
 	dbworkerstore "github.com/sourcegraph/sourcegraph/internal/workerutil/dbworker/store"
 )
@@ -112,10 +111,10 @@ var ScanFirstIndexRecord = scanFirstIndexRecord
 
 // GetIndexByID returns an index by its identifier and boolean flag indicating its existence.
 func (s *Store) GetIndexByID(ctx context.Context, id int) (_ Index, _ bool, err error) {
-	ctx, endObservation := s.operations.getIndexByID.With(ctx, &err, observation.Args{LogFields: []log.Field{
-		log.Int("id", id),
+	ctx, endObservation := s.operations.getIndexByID.With(ctx, &err, obsv.Args{LogFields: []obsv.Field{
+		obsv.Int("id", id),
 	}})
-	defer endObservation(1, observation.Args{})
+	defer endObservation(1, obsv.Args{})
 
 	authzConds, err := database.AuthzQueryConds(ctx, s.Store.Handle().DB())
 	if err != nil {
@@ -173,10 +172,10 @@ WHERE u.id = %s AND %s
 // GetIndexesByIDs returns an index for each of the given identifiers. Not all given ids will necessarily
 // have a corresponding element in the returned list.
 func (s *Store) GetIndexesByIDs(ctx context.Context, ids ...int) (_ []Index, err error) {
-	ctx, endObservation := s.operations.getIndexesByIDs.With(ctx, &err, observation.Args{LogFields: []log.Field{
-		log.String("ids", intsToString(ids)),
+	ctx, endObservation := s.operations.getIndexesByIDs.With(ctx, &err, obsv.Args{LogFields: []obsv.Field{
+		obsv.String("ids", intsToString(ids)),
 	}})
-	defer endObservation(1, observation.Args{})
+	defer endObservation(1, obsv.Args{})
 
 	if len(ids) == 0 {
 		return nil, nil
@@ -237,14 +236,14 @@ type GetIndexesOptions struct {
 
 // GetIndexes returns a list of indexes and the total count of records matching the given conditions.
 func (s *Store) GetIndexes(ctx context.Context, opts GetIndexesOptions) (_ []Index, _ int, err error) {
-	ctx, traceLog, endObservation := s.operations.getIndexes.WithAndLogger(ctx, &err, observation.Args{LogFields: []log.Field{
-		log.Int("repositoryID", opts.RepositoryID),
-		log.String("state", opts.State),
-		log.String("term", opts.Term),
-		log.Int("limit", opts.Limit),
-		log.Int("offset", opts.Offset),
+	ctx, traceLog, endObservation := s.operations.getIndexes.WithAndLogger(ctx, &err, obsv.Args{LogFields: []obsv.Field{
+		obsv.Int("repositoryID", opts.RepositoryID),
+		obsv.String("state", opts.State),
+		obsv.String("term", opts.Term),
+		obsv.Int("limit", opts.Limit),
+		obsv.Int("offset", opts.Offset),
 	}})
-	defer endObservation(1, observation.Args{})
+	defer endObservation(1, obsv.Args{})
 
 	tx, err := s.transact(ctx)
 	if err != nil {
@@ -280,8 +279,8 @@ func (s *Store) GetIndexes(ctx context.Context, opts GetIndexesOptions) (_ []Ind
 		return nil, 0, err
 	}
 	traceLog(
-		log.Int("totalCount", totalCount),
-		log.Int("numIndexes", len(indexes)),
+		obsv.Int("totalCount", totalCount),
+		obsv.Int("numIndexes", len(indexes)),
 	)
 
 	return indexes, totalCount, nil
@@ -347,11 +346,11 @@ func makeIndexSearchCondition(term string) *sqlf.Query {
 
 // IsQueued returns true if there is an index or an upload for the repository and commit.
 func (s *Store) IsQueued(ctx context.Context, repositoryID int, commit string) (_ bool, err error) {
-	ctx, endObservation := s.operations.isQueued.With(ctx, &err, observation.Args{LogFields: []log.Field{
-		log.Int("repositoryID", repositoryID),
-		log.String("commit", commit),
+	ctx, endObservation := s.operations.isQueued.With(ctx, &err, obsv.Args{LogFields: []obsv.Field{
+		obsv.Int("repositoryID", repositoryID),
+		obsv.String("commit", commit),
 	}})
-	defer endObservation(1, observation.Args{})
+	defer endObservation(1, obsv.Args{})
 
 	count, _, err := basestore.ScanFirstInt(s.Store.Query(ctx, sqlf.Sprintf(isQueuedQuery, repositoryID, commit, repositoryID, commit)))
 	return count > 0, err
@@ -368,10 +367,10 @@ SELECT COUNT(*) WHERE EXISTS (
 
 // InsertIndexes inserts a new index and returns the hydrated index models.
 func (s *Store) InsertIndexes(ctx context.Context, indexes []Index) (_ []Index, err error) {
-	ctx, endObservation := s.operations.insertIndex.With(ctx, &err, observation.Args{})
+	ctx, endObservation := s.operations.insertIndex.With(ctx, &err, obsv.Args{})
 	defer func() {
-		endObservation(1, observation.Args{LogFields: []log.Field{
-			log.Int("numIndexes", len(indexes)),
+		endObservation(1, obsv.Args{LogFields: []obsv.Field{
+			obsv.Int("numIndexes", len(indexes)),
 		}})
 	}()
 
@@ -465,10 +464,10 @@ var IndexColumnsWithNullRank = indexColumnsWithNullRank
 
 // DeleteIndexByID deletes an index by its identifier.
 func (s *Store) DeleteIndexByID(ctx context.Context, id int) (_ bool, err error) {
-	ctx, endObservation := s.operations.deleteIndexByID.With(ctx, &err, observation.Args{LogFields: []log.Field{
-		log.Int("id", id),
+	ctx, endObservation := s.operations.deleteIndexByID.With(ctx, &err, obsv.Args{LogFields: []obsv.Field{
+		obsv.Int("id", id),
 	}})
-	defer endObservation(1, observation.Args{})
+	defer endObservation(1, obsv.Args{})
 
 	tx, err := s.transact(ctx)
 	if err != nil {
@@ -489,8 +488,8 @@ DELETE FROM lsif_indexes WHERE id = %s RETURNING repository_id
 // DeletedRepositoryGracePeriod ago. This returns the repository identifier mapped to the number of indexes
 // that were removed for that repository.
 func (s *Store) DeleteIndexesWithoutRepository(ctx context.Context, now time.Time) (_ map[int]int, err error) {
-	ctx, traceLog, endObservation := s.operations.deleteIndexesWithoutRepository.WithAndLogger(ctx, &err, observation.Args{})
-	defer endObservation(1, observation.Args{})
+	ctx, traceLog, endObservation := s.operations.deleteIndexesWithoutRepository.WithAndLogger(ctx, &err, obsv.Args{})
+	defer endObservation(1, obsv.Args{})
 
 	// TODO(efritz) - this would benefit from an index on repository_id. We currently have
 	// a similar one on this index, but only for uploads that are completed or visible at tip.
@@ -505,8 +504,8 @@ func (s *Store) DeleteIndexesWithoutRepository(ctx context.Context, now time.Tim
 		count += numDeleted
 	}
 	traceLog(
-		log.Int("count", count),
-		log.Int("numRepositories", len(repositories)),
+		obsv.Int("count", count),
+		obsv.Int("numRepositories", len(repositories)),
 	)
 
 	return repositories, nil

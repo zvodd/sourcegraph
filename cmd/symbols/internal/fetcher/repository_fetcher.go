@@ -9,11 +9,10 @@ import (
 	"strings"
 
 	"github.com/cockroachdb/errors"
-	"github.com/opentracing/opentracing-go/log"
 
 	"github.com/sourcegraph/sourcegraph/cmd/symbols/internal/gitserver"
 	"github.com/sourcegraph/sourcegraph/cmd/symbols/internal/types"
-	"github.com/sourcegraph/sourcegraph/internal/observation"
+	obsv "github.com/sourcegraph/sourcegraph/internal/observation"
 )
 
 type RepositoryFetcher interface {
@@ -36,7 +35,7 @@ type parseRequestOrError struct {
 	Err          error
 }
 
-func NewRepositoryFetcher(gitserverClient gitserver.GitserverClient, maximumConcurrentFetches int, observationContext *observation.Context) RepositoryFetcher {
+func NewRepositoryFetcher(gitserverClient gitserver.GitserverClient, maximumConcurrentFetches int, observationContext *obsv.Context) RepositoryFetcher {
 	return &repositoryFetcher{
 		gitserverClient: gitserverClient,
 		fetchSem:        make(chan int, maximumConcurrentFetches),
@@ -61,20 +60,20 @@ func (f *repositoryFetcher) FetchRepositoryArchive(ctx context.Context, args typ
 }
 
 func (f *repositoryFetcher) fetchRepositoryArchive(ctx context.Context, args types.SearchArgs, paths []string, callback func(request ParseRequest)) (err error) {
-	ctx, traceLog, endObservation := f.operations.fetchRepositoryArchive.WithAndLogger(ctx, &err, observation.Args{LogFields: []log.Field{
-		log.String("repo", string(args.Repo)),
-		log.String("commitID", string(args.CommitID)),
-		log.Int("paths", len(paths)),
-		log.String("paths", strings.Join(paths, ":")),
+	ctx, traceLog, endObservation := f.operations.fetchRepositoryArchive.WithAndLogger(ctx, &err, obsv.Args{LogFields: []obsv.Field{
+		obsv.String("repo", string(args.Repo)),
+		obsv.String("commitID", string(args.CommitID)),
+		obsv.Int("paths", len(paths)),
+		obsv.String("paths", strings.Join(paths, ":")),
 	}})
-	defer endObservation(1, observation.Args{})
+	defer endObservation(1, obsv.Args{})
 
 	onDefer, err := f.limitConcurrentFetches(ctx)
 	if err != nil {
 		return err
 	}
 	defer onDefer()
-	traceLog(log.Event("acquired fetch semaphore"))
+	traceLog(obsv.Event("acquired fetch semaphore"))
 
 	f.operations.fetching.Inc()
 	defer f.operations.fetching.Dec()
@@ -101,7 +100,7 @@ func (f *repositoryFetcher) limitConcurrentFetches(ctx context.Context) (func(),
 	}
 }
 
-func readTar(ctx context.Context, tarReader *tar.Reader, callback func(request ParseRequest), traceLog observation.TraceLogger) error {
+func readTar(ctx context.Context, tarReader *tar.Reader, callback func(request ParseRequest), traceLog obsv.TraceLogger) error {
 	for {
 		if ctx.Err() != nil {
 			return ctx.Err()
@@ -120,7 +119,7 @@ func readTar(ctx context.Context, tarReader *tar.Reader, callback func(request P
 	}
 }
 
-func readTarHeader(tarReader *tar.Reader, tarHeader *tar.Header, callback func(request ParseRequest), traceLog observation.TraceLogger) error {
+func readTarHeader(tarReader *tar.Reader, tarHeader *tar.Header, callback func(request ParseRequest), traceLog obsv.TraceLogger) error {
 	if !shouldParse(tarHeader) {
 		return nil
 	}
@@ -128,14 +127,14 @@ func readTarHeader(tarReader *tar.Reader, tarHeader *tar.Header, callback func(r
 	// 32MB is the same size used by io.Copy
 	buffer := make([]byte, 32*1024)
 
-	traceLog(log.Event("reading tar header prefix"))
+	traceLog(obsv.Event("reading tar header prefix"))
 
 	// Read first chunk of tar header contents
 	n, err := tarReader.Read(buffer)
 	if err != nil && err != io.EOF {
 		return err
 	}
-	traceLog(log.Int("n", n))
+	traceLog(obsv.Int("n", n))
 
 	if n == 0 {
 		// Empty file, nothing to parse
@@ -159,13 +158,13 @@ func readTarHeader(tarReader *tar.Reader, tarHeader *tar.Header, callback func(r
 	copy(data, buffer[:n])
 
 	if n < int(tarHeader.Size) {
-		traceLog(log.Event("reading remaining tar header content"))
+		traceLog(obsv.Event("reading remaining tar header content"))
 
 		// Read the remaining contents
 		if _, err := io.ReadFull(tarReader, data[n:]); err != nil {
 			return err
 		}
-		traceLog(log.Int("n", int(tarHeader.Size)-n))
+		traceLog(obsv.Int("n", int(tarHeader.Size)-n))
 	}
 
 	request := ParseRequest{Path: tarHeader.Name, Data: data}

@@ -8,11 +8,10 @@ import (
 	"github.com/cockroachdb/errors"
 	"github.com/keegancsmith/sqlf"
 	"github.com/lib/pq"
-	"github.com/opentracing/opentracing-go/log"
 
 	"github.com/sourcegraph/sourcegraph/internal/database"
 	"github.com/sourcegraph/sourcegraph/internal/database/basestore"
-	"github.com/sourcegraph/sourcegraph/internal/observation"
+	obsv "github.com/sourcegraph/sourcegraph/internal/observation"
 	"github.com/sourcegraph/sourcegraph/internal/timeutil"
 )
 
@@ -127,15 +126,15 @@ type GetConfigurationPoliciesOptions struct {
 // If a repository identifier is supplied (is non-zero), then only the configuration policies that apply
 // to repository are returned. If repository is not supplied, then all policies may be returned.
 func (s *Store) GetConfigurationPolicies(ctx context.Context, opts GetConfigurationPoliciesOptions) (_ []ConfigurationPolicy, totalCount int, err error) {
-	ctx, traceLog, endObservation := s.operations.getConfigurationPolicies.WithAndLogger(ctx, &err, observation.Args{LogFields: []log.Field{
-		log.Int("repositoryID", opts.RepositoryID),
-		log.String("term", opts.Term),
-		log.Bool("forDataRetention", opts.ForDataRetention),
-		log.Bool("forIndexing", opts.ForIndexing),
-		log.Int("limit", opts.Limit),
-		log.Int("offset", opts.Offset),
+	ctx, traceLog, endObservation := s.operations.getConfigurationPolicies.WithAndLogger(ctx, &err, obsv.Args{LogFields: []obsv.Field{
+		obsv.Int("repositoryID", opts.RepositoryID),
+		obsv.String("term", opts.Term),
+		obsv.Bool("forDataRetention", opts.ForDataRetention),
+		obsv.Bool("forIndexing", opts.ForIndexing),
+		obsv.Int("limit", opts.Limit),
+		obsv.Int("offset", opts.Offset),
 	}})
-	defer endObservation(1, observation.Args{})
+	defer endObservation(1, obsv.Args{})
 
 	conds := make([]*sqlf.Query, 0, 5)
 	if opts.RepositoryID != 0 {
@@ -175,7 +174,7 @@ func (s *Store) GetConfigurationPolicies(ctx context.Context, opts GetConfigurat
 	if err != nil {
 		return nil, 0, err
 	}
-	traceLog(log.Int("totalCount", totalCount))
+	traceLog(obsv.Int("totalCount", totalCount))
 
 	configurationPolicies, err := scanConfigurationPolicies(s.Store.Query(ctx, sqlf.Sprintf(
 		getConfigurationPoliciesLimitedQuery,
@@ -186,7 +185,7 @@ func (s *Store) GetConfigurationPolicies(ctx context.Context, opts GetConfigurat
 	if err != nil {
 		return nil, 0, err
 	}
-	traceLog(log.Int("numConfigurationPolicies", len(configurationPolicies)))
+	traceLog(obsv.Int("numConfigurationPolicies", len(configurationPolicies)))
 
 	return configurationPolicies, totalCount, nil
 }
@@ -242,10 +241,10 @@ func makeConfigurationPolicySearchCondition(term string) *sqlf.Query {
 
 // GetConfigurationPolicyByID retrieves the configuration policy with the given identifier.
 func (s *Store) GetConfigurationPolicyByID(ctx context.Context, id int) (_ ConfigurationPolicy, _ bool, err error) {
-	ctx, endObservation := s.operations.getConfigurationPolicyByID.With(ctx, &err, observation.Args{LogFields: []log.Field{
-		log.Int("id", id),
+	ctx, endObservation := s.operations.getConfigurationPolicyByID.With(ctx, &err, obsv.Args{LogFields: []obsv.Field{
+		obsv.Int("id", id),
 	}})
-	defer endObservation(1, observation.Args{})
+	defer endObservation(1, obsv.Args{})
 
 	authzConds, err := database.AuthzQueryConds(ctx, s.Store.Handle().DB())
 	if err != nil {
@@ -281,8 +280,8 @@ WHERE p.id = %s AND (p.repository_id IS NULL OR (%s))
 // CreateConfigurationPolicy creates a configuration policy with the given fields (ignoring ID). The hydrated
 // configuration policy record is returned.
 func (s *Store) CreateConfigurationPolicy(ctx context.Context, configurationPolicy ConfigurationPolicy) (_ ConfigurationPolicy, err error) {
-	ctx, endObservation := s.operations.createConfigurationPolicy.With(ctx, &err, observation.Args{})
-	defer endObservation(1, observation.Args{})
+	ctx, endObservation := s.operations.createConfigurationPolicy.With(ctx, &err, obsv.Args{})
+	defer endObservation(1, obsv.Args{})
 
 	var retentionDurationHours *int
 	if configurationPolicy.RetentionDuration != nil {
@@ -353,16 +352,18 @@ RETURNING
 	index_intermediate_commits
 `
 
-var errUnknownConfigurationPolicy = errors.New("unknown configuration policy")
-var errIllegalConfigurationPolicyUpdate = errors.New("protected configuration policies must keep the same names, types, patterns, and retention values (except duration)")
-var errIllegalConfigurationPolicyDelete = errors.New("protected configuration policies cannot be deleted")
+var (
+	errUnknownConfigurationPolicy       = errors.New("unknown configuration policy")
+	errIllegalConfigurationPolicyUpdate = errors.New("protected configuration policies must keep the same names, types, patterns, and retention values (except duration)")
+	errIllegalConfigurationPolicyDelete = errors.New("protected configuration policies cannot be deleted")
+)
 
 // UpdateConfigurationPolicy updates the fields of the configuration policy record with the given identifier.
 func (s *Store) UpdateConfigurationPolicy(ctx context.Context, policy ConfigurationPolicy) (err error) {
-	ctx, endObservation := s.operations.updateConfigurationPolicy.With(ctx, &err, observation.Args{LogFields: []log.Field{
-		log.Int("id", policy.ID),
+	ctx, endObservation := s.operations.updateConfigurationPolicy.With(ctx, &err, obsv.Args{LogFields: []obsv.Field{
+		obsv.Int("id", policy.ID),
 	}})
-	defer endObservation(1, observation.Args{})
+	defer endObservation(1, obsv.Args{})
 
 	var retentionDuration *int
 	if policy.RetentionDuration != nil {
@@ -458,10 +459,10 @@ WHERE id = %s
 
 // DeleteConfigurationPolicyByID deletes the configuration policy with the given identifier.
 func (s *Store) DeleteConfigurationPolicyByID(ctx context.Context, id int) (err error) {
-	ctx, endObservation := s.operations.deleteConfigurationPolicyByID.With(ctx, &err, observation.Args{LogFields: []log.Field{
-		log.Int("id", id),
+	ctx, endObservation := s.operations.deleteConfigurationPolicyByID.With(ctx, &err, obsv.Args{LogFields: []obsv.Field{
+		obsv.Int("id", id),
 	}})
-	defer endObservation(1, observation.Args{})
+	defer endObservation(1, obsv.Args{})
 
 	protected, ok, err := basestore.ScanFirstBool(s.Store.Query(ctx, sqlf.Sprintf(deleteConfigurationPolicyByIDQuery, id)))
 	if err != nil {
@@ -495,14 +496,14 @@ SELECT protected FROM candidate
 // SelectPoliciesForRepositoryMembershipUpdate returns a slice of configuration policies that should be considered
 // for repository membership updates. Configuration policies are returned in the order of least recently updated.
 func (s *Store) SelectPoliciesForRepositoryMembershipUpdate(ctx context.Context, batchSize int) (configurationPolicies []ConfigurationPolicy, err error) {
-	ctx, traceLog, endObservation := s.operations.selectPoliciesForRepositoryMembershipUpdate.WithAndLogger(ctx, &err, observation.Args{})
-	defer endObservation(1, observation.Args{})
+	ctx, traceLog, endObservation := s.operations.selectPoliciesForRepositoryMembershipUpdate.WithAndLogger(ctx, &err, obsv.Args{})
+	defer endObservation(1, obsv.Args{})
 
 	configurationPolicies, err = scanConfigurationPolicies(s.Store.Query(ctx, sqlf.Sprintf(selectPoliciesForRepositoryMembershipUpdate, batchSize, timeutil.Now())))
 	if err != nil {
 		return nil, err
 	}
-	traceLog(log.Int("numConfigurationPolicies", len(configurationPolicies)))
+	traceLog(obsv.Int("numConfigurationPolicies", len(configurationPolicies)))
 
 	return configurationPolicies, nil
 }

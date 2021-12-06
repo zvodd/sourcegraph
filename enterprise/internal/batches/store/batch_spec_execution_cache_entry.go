@@ -5,11 +5,10 @@ import (
 
 	"github.com/keegancsmith/sqlf"
 	"github.com/lib/pq"
-	"github.com/opentracing/opentracing-go/log"
 
 	btypes "github.com/sourcegraph/sourcegraph/enterprise/internal/batches/types"
 	"github.com/sourcegraph/sourcegraph/internal/database/dbutil"
-	"github.com/sourcegraph/sourcegraph/internal/observation"
+	obsv "github.com/sourcegraph/sourcegraph/internal/observation"
 )
 
 // batchSpecExecutionCacheEntryInsertColumns is the list of
@@ -36,10 +35,10 @@ var BatchSpecExecutionCacheEntryColums = SQLColumns{
 
 // CreateBatchSpecExecutionCacheEntry creates the given batch spec workspace jobs.
 func (s *Store) CreateBatchSpecExecutionCacheEntry(ctx context.Context, ce *btypes.BatchSpecExecutionCacheEntry) (err error) {
-	ctx, endObservation := s.operations.createBatchSpecExecutionCacheEntry.With(ctx, &err, observation.Args{LogFields: []log.Field{
-		log.String("Key", ce.Key),
+	ctx, endObservation := s.operations.createBatchSpecExecutionCacheEntry.With(ctx, &err, obsv.Args{LogFields: []obsv.Field{
+		obsv.String("Key", ce.Key),
 	}})
-	defer endObservation(1, observation.Args{})
+	defer endObservation(1, obsv.Args{})
 
 	q := s.createBatchSpecExecutionCacheEntryQuery(ce)
 
@@ -95,10 +94,10 @@ type ListBatchSpecExecutionCacheEntriesOpts struct {
 
 // ListBatchSpecExecutionCacheEntries gets the BatchSpecExecutionCacheEntries matching the given options.
 func (s *Store) ListBatchSpecExecutionCacheEntries(ctx context.Context, opts ListBatchSpecExecutionCacheEntriesOpts) (cs []*btypes.BatchSpecExecutionCacheEntry, err error) {
-	ctx, endObservation := s.operations.listBatchSpecExecutionCacheEntries.With(ctx, &err, observation.Args{LogFields: []log.Field{
-		log.Int("Count", len(opts.Keys)),
+	ctx, endObservation := s.operations.listBatchSpecExecutionCacheEntries.With(ctx, &err, obsv.Args{LogFields: []obsv.Field{
+		obsv.Int("Count", len(opts.Keys)),
 	}})
-	defer endObservation(1, observation.Args{})
+	defer endObservation(1, obsv.Args{})
 
 	q := listBatchSpecExecutionCacheEntriesQuery(&opts)
 
@@ -146,10 +145,10 @@ WHERE
 
 // MarkUsedBatchSpecExecutionCacheEntries updates the LastUsedAt of the given cache entries.
 func (s *Store) MarkUsedBatchSpecExecutionCacheEntries(ctx context.Context, ids []int64) (err error) {
-	ctx, endObservation := s.operations.markUsedBatchSpecExecutionCacheEntries.With(ctx, &err, observation.Args{LogFields: []log.Field{
-		log.Int("count", len(ids)),
+	ctx, endObservation := s.operations.markUsedBatchSpecExecutionCacheEntries.With(ctx, &err, obsv.Args{LogFields: []obsv.Field{
+		obsv.Int("count", len(ids)),
 	}})
-	defer endObservation(1, observation.Args{})
+	defer endObservation(1, obsv.Args{})
 
 	q := sqlf.Sprintf(
 		markUsedBatchSpecExecutionCacheEntriesQueryFmtstr,
@@ -198,10 +197,10 @@ DELETE FROM batch_spec_execution_cache_entries WHERE id IN (SELECT id FROM ids)
 `
 
 func (s *Store) CleanBatchSpecExecutionCacheEntries(ctx context.Context, maxCacheSize int64) (err error) {
-	ctx, endObservation := s.operations.cleanBatchSpecExecutionCacheEntries.With(ctx, &err, observation.Args{LogFields: []log.Field{
-		log.Int("MaxTableSize", int(maxCacheSize)),
+	ctx, endObservation := s.operations.cleanBatchSpecExecutionCacheEntries.With(ctx, &err, obsv.Args{LogFields: []obsv.Field{
+		obsv.Int("MaxTableSize", int(maxCacheSize)),
 	}})
-	defer endObservation(1, observation.Args{})
+	defer endObservation(1, obsv.Args{})
 
 	return s.Exec(ctx, sqlf.Sprintf(cleanBatchSpecExecutionEntriesQueryFmtstr, maxCacheSize, btypes.CurrentCacheVersion))
 }

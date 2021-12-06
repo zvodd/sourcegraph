@@ -11,22 +11,21 @@ import (
 	"github.com/cockroachdb/errors"
 	"github.com/keegancsmith/sqlf"
 	"github.com/lib/pq"
-	"github.com/opentracing/opentracing-go/log"
 
 	"github.com/sourcegraph/sourcegraph/enterprise/internal/codeintel/stores/lsifstore/apidocs"
 	"github.com/sourcegraph/sourcegraph/internal/database/basestore"
 	"github.com/sourcegraph/sourcegraph/internal/env"
-	"github.com/sourcegraph/sourcegraph/internal/observation"
+	obsv "github.com/sourcegraph/sourcegraph/internal/observation"
 	"github.com/sourcegraph/sourcegraph/lib/codeintel/precise"
 )
 
 // DocumentationPage returns the documentation page with the given PathID.
 func (s *Store) DocumentationPage(ctx context.Context, bundleID int, pathID string) (_ *precise.DocumentationPageData, err error) {
-	ctx, _, endObservation := s.operations.documentationPage.WithAndLogger(ctx, &err, observation.Args{LogFields: []log.Field{
-		log.Int("bundleID", bundleID),
-		log.String("pathID", pathID),
+	ctx, _, endObservation := s.operations.documentationPage.WithAndLogger(ctx, &err, obsv.Args{LogFields: []obsv.Field{
+		obsv.Int("bundleID", bundleID),
+		obsv.String("pathID", pathID),
 	}})
-	defer endObservation(1, observation.Args{})
+	defer endObservation(1, obsv.Args{})
 
 	page, err := s.scanFirstDocumentationPageData(s.Store.Query(ctx, sqlf.Sprintf(documentationPageDataQuery, bundleID, pathID)))
 	if err != nil {
@@ -81,11 +80,11 @@ func (s *Store) scanFirstDocumentationPageData(rows *sql.Rows, queryErr error) (
 
 // DocumentationPathInfo returns info describing what is at the given pathID.
 func (s *Store) DocumentationPathInfo(ctx context.Context, bundleID int, pathID string) (_ *precise.DocumentationPathInfoData, err error) {
-	ctx, _, endObservation := s.operations.documentationPathInfo.WithAndLogger(ctx, &err, observation.Args{LogFields: []log.Field{
-		log.Int("bundleID", bundleID),
-		log.String("pathID", pathID),
+	ctx, _, endObservation := s.operations.documentationPathInfo.WithAndLogger(ctx, &err, obsv.Args{LogFields: []obsv.Field{
+		obsv.Int("bundleID", bundleID),
+		obsv.String("pathID", pathID),
 	}})
-	defer endObservation(1, observation.Args{})
+	defer endObservation(1, obsv.Args{})
 
 	page, err := s.scanFirstDocumentationPathInfoData(s.Store.Query(ctx, sqlf.Sprintf(documentationPathInfoDataQuery, bundleID, pathID)))
 	if err != nil {
@@ -141,11 +140,11 @@ func (s *Store) scanFirstDocumentationPathInfoData(rows *sql.Rows, queryErr erro
 // documentationIDsToPathIDs returns a mapping of the given documentationResult IDs to their
 // associative path IDs. Empty result IDs ("") are ignored.
 func (s *Store) documentationIDsToPathIDs(ctx context.Context, bundleID int, ids []precise.ID) (_ map[precise.ID]string, err error) {
-	ctx, _, endObservation := s.operations.documentationIDsToPathIDs.WithAndLogger(ctx, &err, observation.Args{LogFields: []log.Field{
-		log.Int("bundleID", bundleID),
-		log.String("ids", fmt.Sprint(ids)),
+	ctx, _, endObservation := s.operations.documentationIDsToPathIDs.WithAndLogger(ctx, &err, obsv.Args{LogFields: []obsv.Field{
+		obsv.Int("bundleID", bundleID),
+		obsv.String("ids", fmt.Sprint(ids)),
 	}})
-	defer endObservation(1, observation.Args{})
+	defer endObservation(1, obsv.Args{})
 
 	var wantIDs []uint64
 	for _, id := range ids {
@@ -202,11 +201,11 @@ WHERE
 `
 
 func (s *Store) documentationPathIDToID(ctx context.Context, bundleID int, pathID string) (_ precise.ID, err error) {
-	ctx, _, endObservation := s.operations.documentationPathIDToID.WithAndLogger(ctx, &err, observation.Args{LogFields: []log.Field{
-		log.Int("bundleID", bundleID),
-		log.String("pathID", pathID),
+	ctx, _, endObservation := s.operations.documentationPathIDToID.WithAndLogger(ctx, &err, obsv.Args{LogFields: []obsv.Field{
+		obsv.Int("bundleID", bundleID),
+		obsv.String("pathID", pathID),
 	}})
-	defer endObservation(1, observation.Args{})
+	defer endObservation(1, obsv.Args{})
 
 	resultID, err := s.scanFirstDocumentationResultID(s.Store.Query(ctx, sqlf.Sprintf(documentationPathIDToIDQuery, bundleID, pathID)))
 	if err != nil {
@@ -252,11 +251,11 @@ func (s *Store) scanFirstDocumentationResultID(rows *sql.Rows, queryErr error) (
 // e.g. the file where the documented symbol is located - if the path ID is describing such a
 // symbol, or nil otherwise.
 func (s *Store) documentationPathIDToFilePath(ctx context.Context, bundleID int, pathID string) (_ *string, err error) {
-	ctx, _, endObservation := s.operations.documentationPathIDToFilePath.WithAndLogger(ctx, &err, observation.Args{LogFields: []log.Field{
-		log.Int("bundleID", bundleID),
-		log.String("pathID", pathID),
+	ctx, _, endObservation := s.operations.documentationPathIDToFilePath.WithAndLogger(ctx, &err, obsv.Args{LogFields: []obsv.Field{
+		obsv.Int("bundleID", bundleID),
+		obsv.String("pathID", pathID),
 	}})
-	defer endObservation(1, observation.Args{})
+	defer endObservation(1, obsv.Args{})
 
 	return s.scanFirstDocumentationFilePath(s.Store.Query(ctx, sqlf.Sprintf(documentationPathIDToFilePathQuery, bundleID, pathID)))
 }
@@ -305,18 +304,18 @@ func (s *Store) DocumentationDefinitions(ctx context.Context, bundleID int, path
 func (s *Store) documentationDefinitions(
 	ctx context.Context,
 	extractor func(r precise.RangeData) precise.ID,
-	operation *observation.Operation,
+	operation *obsv.Operation,
 	bundleID int,
 	pathID string,
 	resultID precise.ID,
 	limit,
 	offset int,
 ) (_ []Location, _ int, err error) {
-	ctx, traceLog, endObservation := operation.WithAndLogger(ctx, &err, observation.Args{LogFields: []log.Field{
-		log.Int("bundleID", bundleID),
-		log.String("resultID", string(resultID)),
+	ctx, traceLog, endObservation := operation.WithAndLogger(ctx, &err, obsv.Args{LogFields: []obsv.Field{
+		obsv.Int("bundleID", bundleID),
+		obsv.String("resultID", string(resultID)),
 	}})
-	defer endObservation(1, observation.Args{})
+	defer endObservation(1, obsv.Args{})
 
 	filePath, err := s.documentationPathIDToFilePath(ctx, bundleID, pathID)
 	if err != nil {
@@ -332,7 +331,7 @@ func (s *Store) documentationDefinitions(
 		return nil, 0, err
 	}
 
-	traceLog(log.Int("numRanges", len(documentData.Document.Ranges)))
+	traceLog(obsv.Int("numRanges", len(documentData.Document.Ranges)))
 	var found *precise.RangeData
 	for _, rn := range documentData.Document.Ranges {
 		if rn.DocumentationResultID == resultID {
@@ -340,7 +339,7 @@ func (s *Store) documentationDefinitions(
 			break
 		}
 	}
-	traceLog(log.Bool("found", found == nil))
+	traceLog(obsv.Bool("found", found == nil))
 	if found == nil {
 		return nil, 0, errors.New("not found")
 	}
@@ -350,7 +349,7 @@ func (s *Store) documentationDefinitions(
 	if err != nil {
 		return nil, 0, err
 	}
-	traceLog(log.Int("totalCount", totalCount))
+	traceLog(obsv.Int("totalCount", totalCount))
 
 	locations := make([]Location, 0, limit)
 	for _, resultID := range orderedResultIDs {
@@ -368,11 +367,11 @@ func (s *Store) documentationDefinitions(
 // enforce that the user only has the ability to view results that are from repositories they have
 // access to.
 func (s *Store) documentationSearchRepoNameIDs(ctx context.Context, tableSuffix string, possibleRepos []string) (_ []int64, err error) {
-	ctx, _, endObservation := s.operations.documentationSearchRepoNameIDs.WithAndLogger(ctx, &err, observation.Args{LogFields: []log.Field{
-		log.String("table", tableSuffix),
-		log.String("possibleRepos", fmt.Sprint(possibleRepos)),
+	ctx, _, endObservation := s.operations.documentationSearchRepoNameIDs.WithAndLogger(ctx, &err, obsv.Args{LogFields: []obsv.Field{
+		obsv.String("table", tableSuffix),
+		obsv.String("possibleRepos", fmt.Sprint(possibleRepos)),
 	}})
-	defer endObservation(1, observation.Args{})
+	defer endObservation(1, obsv.Args{})
 
 	return basestore.ScanInt64s(s.Store.Query(ctx, sqlf.Sprintf(
 		strings.ReplaceAll(documentationSearchRepoNameIDsQuery, "$SUFFIX", tableSuffix),
@@ -405,12 +404,12 @@ var debugAPIDocsSearchCandidates, _ = strconv.ParseInt(env.Get("DEBUG_API_DOCS_S
 // enforce that the user only has the ability to view results that are from repositories they have
 // access to.
 func (s *Store) DocumentationSearch(ctx context.Context, tableSuffix, query string, repos []string) (_ []precise.DocumentationSearchResult, err error) {
-	ctx, _, endObservation := s.operations.documentationSearch.WithAndLogger(ctx, &err, observation.Args{LogFields: []log.Field{
-		log.String("table", tableSuffix),
-		log.String("query", query),
-		log.String("repos", fmt.Sprint(repos)),
+	ctx, _, endObservation := s.operations.documentationSearch.WithAndLogger(ctx, &err, obsv.Args{LogFields: []obsv.Field{
+		obsv.String("table", tableSuffix),
+		obsv.String("query", query),
+		obsv.String("repos", fmt.Sprint(repos)),
 	}})
-	defer endObservation(1, observation.Args{})
+	defer endObservation(1, obsv.Args{})
 
 	// If a search would exceed 3 seconds, just give up. We'll issue a lo of searches, so we'd
 	// rather have this than the DB pressure.

@@ -4,21 +4,20 @@ import (
 	"context"
 
 	"github.com/cockroachdb/errors"
-	"github.com/opentracing/opentracing-go/log"
 
-	"github.com/sourcegraph/sourcegraph/internal/observation"
+	obsv "github.com/sourcegraph/sourcegraph/internal/observation"
 )
 
 // DocumentationDefinitions returns the list of source locations that define the symbol found at
 // the given documentation path ID, if any.
 func (r *queryResolver) DocumentationDefinitions(ctx context.Context, pathID string) (_ []AdjustedLocation, err error) {
-	ctx, traceLog, endObservation := observeResolver(ctx, &err, "DocumentationDefinitions", r.operations.definitions, slowDefinitionsRequestThreshold, observation.Args{
-		LogFields: []log.Field{
-			log.Int("repositoryID", r.repositoryID),
-			log.String("commit", r.commit),
-			log.Int("numUploads", len(r.uploads)),
-			log.String("uploads", uploadIDsToString(r.uploads)),
-			log.String("pathID", pathID),
+	ctx, traceLog, endObservation := observeResolver(ctx, &err, "DocumentationDefinitions", r.operations.definitions, slowDefinitionsRequestThreshold, obsv.Args{
+		LogFields: []obsv.Field{
+			obsv.Int("repositoryID", r.repositoryID),
+			obsv.String("commit", r.commit),
+			obsv.Int("numUploads", len(r.uploads)),
+			obsv.String("uploads", uploadIDsToString(r.uploads)),
+			obsv.String("pathID", pathID),
 		},
 	})
 	defer endObservation()
@@ -27,7 +26,7 @@ func (r *queryResolver) DocumentationDefinitions(ctx context.Context, pathID str
 	// going to be found in the "local" bundle, i.e. it's not possible for it to be in another
 	// repository.
 	for _, upload := range r.uploads {
-		traceLog(log.Int("uploadID", upload.ID))
+		traceLog(obsv.Int("uploadID", upload.ID))
 		locations, _, err := r.lsifStore.DocumentationDefinitions(ctx, upload.ID, pathID, DefinitionsLimit, 0)
 		if err != nil {
 			return nil, errors.Wrap(err, "lsifStore.DocumentationDefinitions")

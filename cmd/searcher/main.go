@@ -49,7 +49,7 @@ func main() {
 	logging.Init()
 	tracer.Init(conf.DefaultClient())
 	sentry.Init(conf.DefaultClient())
-	trace.Init()
+	trace.Init(conf.DefaultClient())
 
 	if err := profiler.Init(); err != nil {
 		log.Fatalf("failed to start Google Cloud profiler: %s", err)

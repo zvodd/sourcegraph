@@ -19,6 +19,9 @@ import (
 	"github.com/sourcegraph/sourcegraph/internal/trace/ot"
 )
 
+// because importing conf results in an import cycle
+var ExternalURL string
+
 // ID returns a trace ID, if any, found in the given context.
 func ID(ctx context.Context) string {
 	span := opentracing.SpanFromContext(ctx)
@@ -45,7 +48,7 @@ func URL(traceID, externalURL string) string {
 
 	if os.Getenv("ENABLE_GRAFANA_CLOUD_TRACE_URL") != "true" {
 		// We proxy jaeger so we can construct URLs to traces.
-		return strings.TrimSuffix(externalURL, "/") + "/-/debug/jaeger/trace/" + traceID
+		return strings.TrimSuffix(ExternalURL, "/") + "/-/debug/jaeger/trace/" + traceID
 	}
 
 	return "https://sourcegraph.grafana.net/explore?orgId=1&left=" + url.QueryEscape(fmt.Sprintf(

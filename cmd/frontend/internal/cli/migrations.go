@@ -24,7 +24,7 @@ import (
 // state for the current application version.
 func newOutOfBandMigrationRunner(ctx context.Context, db database.DB) *oobmigration.Runner {
 	outOfBandMigrationRunner := oobmigration.NewRunnerWithDB(db, time.Second*30, &observation.Context{
-		Logger:     log15.Root(),
+		OldLogger:  log15.Root(),
 		Tracer:     &trace.Tracer{Tracer: opentracing.GlobalTracer()},
 		Registerer: prometheus.DefaultRegisterer,
 	})

@@ -4,14 +4,12 @@ import (
 	"context"
 	"time"
 
-	"github.com/opentracing/opentracing-go/log"
-
 	gql "github.com/sourcegraph/sourcegraph/cmd/frontend/graphqlbackend"
 	"github.com/sourcegraph/sourcegraph/enterprise/internal/codeintel/policies"
 	"github.com/sourcegraph/sourcegraph/enterprise/internal/codeintel/stores/dbstore"
 	store "github.com/sourcegraph/sourcegraph/enterprise/internal/codeintel/stores/dbstore"
 	"github.com/sourcegraph/sourcegraph/internal/conf"
-	"github.com/sourcegraph/sourcegraph/internal/observation"
+	obsv "github.com/sourcegraph/sourcegraph/internal/observation"
 	"github.com/sourcegraph/sourcegraph/internal/timeutil"
 	"github.com/sourcegraph/sourcegraph/lib/codeintel/autoindex/config"
 	"github.com/sourcegraph/sourcegraph/lib/codeintel/precise"
@@ -70,7 +68,7 @@ func NewResolver(
 	policyMatcher *policies.Matcher,
 	indexEnqueuer IndexEnqueuer,
 	hunkCache HunkCache,
-	observationContext *observation.Context,
+	observationContext *obsv.Context,
 ) Resolver {
 	return newResolver(dbStore, lsifStore, gitserverClient, policyMatcher, indexEnqueuer, hunkCache, observationContext)
 }
@@ -82,7 +80,7 @@ func newResolver(
 	policyMatcher *policies.Matcher,
 	indexEnqueuer IndexEnqueuer,
 	hunkCache HunkCache,
-	observationContext *observation.Context,
+	observationContext *obsv.Context,
 ) *resolver {
 	return &resolver{
 		dbStore:         dbStore,
@@ -148,13 +146,13 @@ const slowQueryResolverRequestThreshold = time.Second
 // given repository, commit, and path, then constructs a new query resolver instance which
 // can be used to answer subsequent queries.
 func (r *resolver) QueryResolver(ctx context.Context, args *gql.GitBlobLSIFDataArgs) (_ QueryResolver, err error) {
-	ctx, _, endObservation := observeResolver(ctx, &err, "QueryResolver", r.operations.queryResolver, slowQueryResolverRequestThreshold, observation.Args{
-		LogFields: []log.Field{
-			log.Int("repositoryID", int(args.Repo.ID)),
-			log.String("commit", string(args.Commit)),
-			log.String("path", args.Path),
-			log.Bool("exactPath", args.ExactPath),
-			log.String("toolName", args.ToolName),
+	ctx, _, endObservation := observeResolver(ctx, &err, "QueryResolver", r.operations.queryResolver, slowQueryResolverRequestThreshold, obsv.Args{
+		LogFields: []obsv.Field{
+			obsv.Int("repositoryID", int(args.Repo.ID)),
+			obsv.String("commit", string(args.Commit)),
+			obsv.String("path", args.Path),
+			obsv.Bool("exactPath", args.ExactPath),
+			obsv.String("toolName", args.ToolName),
 		},
 	})
 	defer endObservation()

@@ -8,12 +8,11 @@ import (
 
 	"github.com/cockroachdb/errors"
 	"github.com/hashicorp/go-multierror"
-	"github.com/opentracing/opentracing-go/log"
 
 	"github.com/sourcegraph/sourcegraph/enterprise/internal/codeintel/stores/dbstore"
 	store "github.com/sourcegraph/sourcegraph/enterprise/internal/codeintel/stores/dbstore"
 	"github.com/sourcegraph/sourcegraph/enterprise/internal/codeintel/stores/lsifstore"
-	"github.com/sourcegraph/sourcegraph/internal/observation"
+	obsv "github.com/sourcegraph/sourcegraph/internal/observation"
 	"github.com/sourcegraph/sourcegraph/lib/codeintel/bloomfilter"
 	"github.com/sourcegraph/sourcegraph/lib/codeintel/precise"
 )
@@ -22,15 +21,15 @@ const slowReferencesRequestThreshold = time.Second
 
 // References returns the list of source locations that reference the symbol at the given position.
 func (r *queryResolver) References(ctx context.Context, line, character, limit int, rawCursor string) (_ []AdjustedLocation, _ string, err error) {
-	ctx, traceLog, endObservation := observeResolver(ctx, &err, "References", r.operations.references, slowReferencesRequestThreshold, observation.Args{
-		LogFields: []log.Field{
-			log.Int("repositoryID", r.repositoryID),
-			log.String("commit", r.commit),
-			log.String("path", r.path),
-			log.Int("numUploads", len(r.uploads)),
-			log.String("uploads", uploadIDsToString(r.uploads)),
-			log.Int("line", line),
-			log.Int("character", character),
+	ctx, traceLog, endObservation := observeResolver(ctx, &err, "References", r.operations.references, slowReferencesRequestThreshold, obsv.Args{
+		LogFields: []obsv.Field{
+			obsv.Int("repositoryID", r.repositoryID),
+			obsv.String("commit", r.commit),
+			obsv.String("path", r.path),
+			obsv.Int("numUploads", len(r.uploads)),
+			obsv.String("uploads", uploadIDsToString(r.uploads)),
+			obsv.Int("line", line),
+			obsv.Int("character", character),
 		},
 	})
 	defer endObservation()
@@ -66,8 +65,8 @@ func (r *queryResolver) References(ctx context.Context, line, character, limit i
 		}
 	}
 	traceLog(
-		log.Int("numMonikers", len(cursor.OrderedMonikers)),
-		log.String("monikers", monikersToString(cursor.OrderedMonikers)),
+		obsv.Int("numMonikers", len(cursor.OrderedMonikers)),
+		obsv.String("monikers", monikersToString(cursor.OrderedMonikers)),
 	)
 
 	// Phase 1: Gather all "local" locations via LSIF graph traversal. We'll continue to request additional
@@ -132,7 +131,7 @@ func (r *queryResolver) References(ctx context.Context, line, character, limit i
 		}
 	}
 
-	traceLog(log.Int("numLocations", len(locations)))
+	traceLog(obsv.Int("numLocations", len(locations)))
 
 	// Adjust the locations back to the appropriate range in the target commits. This adjusts
 	// locations within the repository the user is browsing so that it appears all references
@@ -142,7 +141,7 @@ func (r *queryResolver) References(ctx context.Context, line, character, limit i
 	if err != nil {
 		return nil, "", err
 	}
-	traceLog(log.Int("numAdjustedLocations", len(adjustedLocations)))
+	traceLog(obsv.Int("numAdjustedLocations", len(adjustedLocations)))
 
 	nextCursor := ""
 	if cursor.Phase != "done" {
@@ -214,7 +213,7 @@ func (r *queryResolver) pageLocalLocations(
 	adjustedUploads []adjustedUpload,
 	cursor *localCursor,
 	limit int,
-	traceLog observation.TraceLogger,
+	traceLog obsv.TraceLogger,
 ) ([]lsifstore.Location, bool, error) {
 	var allLocations []lsifstore.Location
 	for i := range adjustedUploads {
@@ -241,7 +240,7 @@ func (r *queryResolver) pageLocalLocations(
 		}
 
 		numLocations := len(locations)
-		traceLog(log.Int("pageLocalLocations.numLocations", numLocations))
+		traceLog(obsv.Int("pageLocalLocations.numLocations", numLocations))
 		cursor.LocationOffset += numLocations
 
 		if cursor.LocationOffset >= totalCount {
@@ -271,7 +270,7 @@ func (r *queryResolver) pageRemoteLocations(
 	orderedMonikers []precise.QualifiedMonikerData,
 	cursor *remoteCursor,
 	limit int,
-	traceLog observation.TraceLogger,
+	traceLog obsv.TraceLogger,
 ) ([]lsifstore.Location, bool, error) {
 	for len(cursor.UploadBatchIDs) == 0 {
 		if cursor.UploadOffset < 0 {
@@ -319,7 +318,7 @@ func (r *queryResolver) pageRemoteLocations(
 	}
 
 	numLocations := len(locations)
-	traceLog(log.Int("pageLocalLocations.numLocations", numLocations))
+	traceLog(obsv.Int("pageLocalLocations.numLocations", numLocations))
 	cursor.LocationOffset += numLocations
 
 	if cursor.LocationOffset >= totalCount {
@@ -392,7 +391,7 @@ func (r *queryResolver) uploadIDsWithReferences(
 	ignoreIDs []int,
 	limit int,
 	offset int,
-	traceLog observation.TraceLogger,
+	traceLog obsv.TraceLogger,
 ) (ids []int, recordsScanned int, totalCount int, err error) {
 	scanner, totalCount, err := r.dbStore.ReferenceIDsAndFilters(ctx, r.repositoryID, r.commit, orderedMonikers, limit, offset)
 	if err != nil {
@@ -448,8 +447,8 @@ func (r *queryResolver) uploadIDsWithReferences(
 	}
 
 	traceLog(
-		log.Int("uploadIDsWithReferences.numFiltered", len(filtered)),
-		log.Int("uploadIDsWithReferences.numRecordsScanned", recordsScanned),
+		obsv.Int("uploadIDsWithReferences.numFiltered", len(filtered)),
+		obsv.Int("uploadIDsWithReferences.numRecordsScanned", recordsScanned),
 	)
 
 	flattened := make([]int, 0, len(filtered))

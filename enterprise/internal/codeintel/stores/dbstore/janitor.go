@@ -7,10 +7,9 @@ import (
 	"time"
 
 	"github.com/keegancsmith/sqlf"
-	"github.com/opentracing/opentracing-go/log"
 
 	"github.com/sourcegraph/sourcegraph/internal/database/basestore"
-	"github.com/sourcegraph/sourcegraph/internal/observation"
+	obsv "github.com/sourcegraph/sourcegraph/internal/observation"
 )
 
 type SourcedCommits struct {
@@ -62,8 +61,8 @@ func ScanSourcedCommits(rows *sql.Rows, queryErr error) (_ []SourcedCommits, err
 // paths and clean up that occupied (but useless) space. The output is of this method is
 // ordered by repository ID then by commit.
 func (s *Store) StaleSourcedCommits(ctx context.Context, minimumTimeSinceLastCheck time.Duration, limit int, now time.Time) (_ []SourcedCommits, err error) {
-	ctx, traceLog, endObservation := s.operations.staleSourcedCommits.WithAndLogger(ctx, &err, observation.Args{})
-	defer endObservation(1, observation.Args{})
+	ctx, traceLog, endObservation := s.operations.staleSourcedCommits.WithAndLogger(ctx, &err, obsv.Args{})
+	defer endObservation(1, obsv.Args{})
 
 	now = now.UTC()
 	interval := int(minimumTimeSinceLastCheck / time.Second)
@@ -80,8 +79,8 @@ func (s *Store) StaleSourcedCommits(ctx context.Context, minimumTimeSinceLastChe
 		numCommits += len(commits.Commits)
 	}
 	traceLog(
-		log.Int("numRepositories", len(sourcedCommits)),
-		log.Int("numCommits", numCommits),
+		obsv.Int("numRepositories", len(sourcedCommits)),
+		obsv.Int("numCommits", numCommits),
 	)
 
 	return sourcedCommits, nil
@@ -123,11 +122,11 @@ GROUP BY repository_id, commit
 // to the given repository identifier and commit. This method returns the count of upload and index records
 // modified, respectively.
 func (s *Store) UpdateSourcedCommits(ctx context.Context, repositoryID int, commit string, now time.Time) (uploadsUpdated int, indexesUpdated int, err error) {
-	ctx, traceLog, endObservation := s.operations.updateSourcedCommits.WithAndLogger(ctx, &err, observation.Args{LogFields: []log.Field{
-		log.Int("repositoryID", repositoryID),
-		log.String("commit", commit),
+	ctx, traceLog, endObservation := s.operations.updateSourcedCommits.WithAndLogger(ctx, &err, obsv.Args{LogFields: []obsv.Field{
+		obsv.Int("repositoryID", repositoryID),
+		obsv.String("commit", commit),
 	}})
-	defer endObservation(1, observation.Args{})
+	defer endObservation(1, obsv.Args{})
 
 	uploadsUpdated, indexesUpdated, err = scanPairOfCounts(s.Query(ctx, sqlf.Sprintf(
 		updateSourcedCommitsQuery,
@@ -139,8 +138,8 @@ func (s *Store) UpdateSourcedCommits(ctx context.Context, repositoryID int, comm
 		return 0, 0, err
 	}
 	traceLog(
-		log.Int("uploadsUpdated", uploadsUpdated),
-		log.Int("indexesUpdated", indexesUpdated),
+		obsv.Int("uploadsUpdated", uploadsUpdated),
+		obsv.Int("indexesUpdated", indexesUpdated),
 	)
 
 	return uploadsUpdated, indexesUpdated, nil
@@ -196,11 +195,11 @@ candidate_indexes AS (
 // commit. Uploads are soft deleted and indexes are hard-deleted. This method returns the count of upload and
 // index records modified, respectively.
 func (s *Store) DeleteSourcedCommits(ctx context.Context, repositoryID int, commit string, now time.Time) (uploadsDeleted int, indexesDeleted int, err error) {
-	ctx, traceLog, endObservation := s.operations.deleteSourcedCommits.WithAndLogger(ctx, &err, observation.Args{LogFields: []log.Field{
-		log.Int("repositoryID", repositoryID),
-		log.String("commit", commit),
+	ctx, traceLog, endObservation := s.operations.deleteSourcedCommits.WithAndLogger(ctx, &err, obsv.Args{LogFields: []obsv.Field{
+		obsv.Int("repositoryID", repositoryID),
+		obsv.String("commit", commit),
 	}})
-	defer endObservation(1, observation.Args{})
+	defer endObservation(1, obsv.Args{})
 
 	uploadsDeleted, indexesDeleted, err = scanPairOfCounts(s.Query(ctx, sqlf.Sprintf(
 		deleteSourcedCommitsQuery,
@@ -211,8 +210,8 @@ func (s *Store) DeleteSourcedCommits(ctx context.Context, repositoryID int, comm
 		return 0, 0, err
 	}
 	traceLog(
-		log.Int("uploadsDeleted", uploadsDeleted),
-		log.Int("indexesDeleted", indexesDeleted),
+		obsv.Int("uploadsDeleted", uploadsDeleted),
+		obsv.Int("indexesDeleted", indexesDeleted),
 	)
 
 	return uploadsDeleted, indexesDeleted, nil

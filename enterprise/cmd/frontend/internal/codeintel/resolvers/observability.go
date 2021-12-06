@@ -137,7 +137,7 @@ func createHoneyEvent(
 
 	event := honey.NewEventWithFields("codeintel", fields)
 
-	event.AddLogFields(observationArgs.LogFields)
+	event.AddLogFields(observation.FieldsToOTFields(observationArgs.LogFields))
 
 	return event
 }

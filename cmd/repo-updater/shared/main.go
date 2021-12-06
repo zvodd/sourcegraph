@@ -71,7 +71,7 @@ func Main(enterpriseInit EnterpriseInit) {
 	logging.Init()
 	tracer.Init(conf.DefaultClient())
 	sentry.Init(conf.DefaultClient())
-	trace.Init()
+	trace.Init(conf.DefaultClient())
 
 	// Signals health of startup
 	ready := make(chan struct{})

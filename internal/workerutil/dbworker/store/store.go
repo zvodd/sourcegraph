@@ -14,10 +14,9 @@ import (
 	"github.com/derision-test/glock"
 	"github.com/inconshreveable/log15"
 	"github.com/keegancsmith/sqlf"
-	"github.com/opentracing/opentracing-go/log"
 
 	"github.com/sourcegraph/sourcegraph/internal/database/basestore"
-	"github.com/sourcegraph/sourcegraph/internal/observation"
+	obsv "github.com/sourcegraph/sourcegraph/internal/observation"
 	"github.com/sourcegraph/sourcegraph/internal/workerutil"
 )
 
@@ -264,14 +263,14 @@ type RecordScanFn func(rows *sql.Rows, err error) (workerutil.Record, bool, erro
 
 // New creates a new store with the given database handle and options.
 func New(handle *basestore.TransactableHandle, options Options) Store {
-	return NewWithMetrics(handle, options, &observation.TestContext)
+	return NewWithMetrics(handle, options, &obsv.TestContext)
 }
 
-func NewWithMetrics(handle *basestore.TransactableHandle, options Options, observationContext *observation.Context) Store {
+func NewWithMetrics(handle *basestore.TransactableHandle, options Options, observationContext *obsv.Context) Store {
 	return newStore(handle, options, observationContext)
 }
 
-func newStore(handle *basestore.TransactableHandle, options Options, observationContext *observation.Context) *store {
+func newStore(handle *basestore.TransactableHandle, options Options, observationContext *obsv.Context) *store {
 	if options.Name == "" {
 		panic("no name supplied to github.com/sourcegraph/sourcegraph/internal/dbworker/store:newStore")
 	}
@@ -370,8 +369,8 @@ func DefaultColumnExpressions() []*sqlf.Query {
 
 // QueuedCount returns the number of queued records matching the given conditions.
 func (s *store) QueuedCount(ctx context.Context, includeProcessing bool, conditions []*sqlf.Query) (_ int, err error) {
-	ctx, endObservation := s.operations.queuedCount.With(ctx, &err, observation.Args{})
-	defer endObservation(1, observation.Args{})
+	ctx, endObservation := s.operations.queuedCount.With(ctx, &err, obsv.Args{})
+	defer endObservation(1, obsv.Args{})
 
 	stateQueries := make([]*sqlf.Query, 0, 2)
 	stateQueries = append(stateQueries, sqlf.Sprintf("%s", "queued"))
@@ -419,8 +418,8 @@ var columnsUpdatedByDequeue = []string{
 //
 // The supplied conditions may use the alias provided in `ViewName`, if one was supplied.
 func (s *store) Dequeue(ctx context.Context, workerHostname string, conditions []*sqlf.Query) (_ workerutil.Record, _ bool, err error) {
-	ctx, traceLog, endObservation := s.operations.dequeue.WithAndLogger(ctx, &err, observation.Args{})
-	defer endObservation(1, observation.Args{})
+	ctx, traceLog, endObservation := s.operations.dequeue.WithAndLogger(ctx, &err, obsv.Args{})
+	defer endObservation(1, obsv.Args{})
 
 	if s.InTransaction() {
 		return nil, false, ErrDequeueTransaction
@@ -469,7 +468,7 @@ func (s *store) Dequeue(ctx context.Context, workerHostname string, conditions [
 	if !exists {
 		return nil, false, nil
 	}
-	traceLog(log.Int("recordID", record.RecordID()))
+	traceLog(obsv.Int("recordID", record.RecordID()))
 
 	return record, true, nil
 }
@@ -547,8 +546,8 @@ func (s *store) makeDequeueUpdateStatements(updatedColumns map[string]*sqlf.Quer
 }
 
 func (s *store) Heartbeat(ctx context.Context, ids []int, options HeartbeatOptions) (knownIDs []int, err error) {
-	ctx, endObservation := s.operations.heartbeat.With(ctx, &err, observation.Args{})
-	defer endObservation(1, observation.Args{})
+	ctx, endObservation := s.operations.heartbeat.With(ctx, &err, obsv.Args{})
+	defer endObservation(1, obsv.Args{})
 
 	if len(ids) == 0 {
 		return []int{}, nil
@@ -624,11 +623,11 @@ RETURNING {id}
 // Requeue updates the state of the record with the given identifier to queued and adds a processing delay before
 // the next dequeue of this record can be performed.
 func (s *store) Requeue(ctx context.Context, id int, after time.Time) (err error) {
-	ctx, endObservation := s.operations.requeue.With(ctx, &err, observation.Args{LogFields: []log.Field{
-		log.Int("id", id),
-		log.String("after", after.String()),
+	ctx, endObservation := s.operations.requeue.With(ctx, &err, obsv.Args{LogFields: []obsv.Field{
+		obsv.Int("id", id),
+		obsv.String("after", after.String()),
 	}})
-	defer endObservation(1, observation.Args{})
+	defer endObservation(1, obsv.Args{})
 
 	return s.Exec(ctx, s.formatQuery(
 		requeueQuery,
@@ -645,14 +644,14 @@ SET {state} = 'queued', {process_after} = %s
 WHERE {id} = %s
 `
 
-// AddExecutionLogEntry adds an executor log entry to the record and returns the ID of the new entry (which can be
+// AddExecutionLogEntry adds an executor observation entry to the record and returns the ID of the new entry (which can be
 // used with UpdateExecutionLogEntry) and a possible error. When the record is not found (due to options not matching
 // or the record being deleted), ErrExecutionLogEntryNotUpdated is returned.
 func (s *store) AddExecutionLogEntry(ctx context.Context, id int, entry workerutil.ExecutionLogEntry, options ExecutionLogEntryOptions) (entryID int, err error) {
-	ctx, endObservation := s.operations.addExecutionLogEntry.With(ctx, &err, observation.Args{LogFields: []log.Field{
-		log.Int("id", id),
+	ctx, endObservation := s.operations.addExecutionLogEntry.With(ctx, &err, obsv.Args{LogFields: []obsv.Field{
+		obsv.Int("id", id),
 	}})
-	defer endObservation(1, observation.Args{})
+	defer endObservation(1, obsv.Args{})
 
 	conds := []*sqlf.Query{
 		s.formatQuery("{id} = %s", id),
@@ -697,14 +696,14 @@ WHERE
 RETURNING array_length({execution_logs}, 1)
 `
 
-// UpdateExecutionLogEntry updates the executor log entry with the given ID on the given record. When the record is not
+// UpdateExecutionLogEntry updates the executor observation entry with the given ID on the given record. When the record is not
 // found (due to options not matching or the record being deleted), ErrExecutionLogEntryNotUpdated is returned.
 func (s *store) UpdateExecutionLogEntry(ctx context.Context, recordID, entryID int, entry workerutil.ExecutionLogEntry, options ExecutionLogEntryOptions) (err error) {
-	ctx, endObservation := s.operations.updateExecutionLogEntry.With(ctx, &err, observation.Args{LogFields: []log.Field{
-		log.Int("recordID", recordID),
-		log.Int("entryID", entryID),
+	ctx, endObservation := s.operations.updateExecutionLogEntry.With(ctx, &err, obsv.Args{LogFields: []obsv.Field{
+		obsv.Int("recordID", recordID),
+		obsv.Int("entryID", entryID),
 	}})
-	defer endObservation(1, observation.Args{})
+	defer endObservation(1, obsv.Args{})
 
 	conds := []*sqlf.Query{
 		s.formatQuery("{id} = %s", recordID),
@@ -758,10 +757,10 @@ RETURNING
 // the processing state to a terminal state, this method will have no effect. This method returns a boolean flag
 // indicating if the record was updated.
 func (s *store) MarkComplete(ctx context.Context, id int, options MarkFinalOptions) (_ bool, err error) {
-	ctx, endObservation := s.operations.markComplete.With(ctx, &err, observation.Args{LogFields: []log.Field{
-		log.Int("id", id),
+	ctx, endObservation := s.operations.markComplete.With(ctx, &err, obsv.Args{LogFields: []obsv.Field{
+		obsv.Int("id", id),
 	}})
-	defer endObservation(1, observation.Args{})
+	defer endObservation(1, obsv.Args{})
 
 	conds := []*sqlf.Query{
 		s.formatQuery("{id} = %s", id),
@@ -785,10 +784,10 @@ RETURNING {id}
 // if the current state of the record is processing. A requeued record or a record already marked with an
 // error will not be updated. This method returns a boolean flag indicating if the record was updated.
 func (s *store) MarkErrored(ctx context.Context, id int, failureMessage string, options MarkFinalOptions) (_ bool, err error) {
-	ctx, endObservation := s.operations.markErrored.With(ctx, &err, observation.Args{LogFields: []log.Field{
-		log.Int("id", id),
+	ctx, endObservation := s.operations.markErrored.With(ctx, &err, obsv.Args{LogFields: []obsv.Field{
+		obsv.Int("id", id),
 	}})
-	defer endObservation(1, observation.Args{})
+	defer endObservation(1, obsv.Args{})
 
 	conds := []*sqlf.Query{
 		s.formatQuery("{id} = %s", id),
@@ -816,10 +815,10 @@ RETURNING {id}
 // if the current state of the record is processing. A requeued record or a record already marked with an
 // error will not be updated. This method returns a boolean flag indicating if the record was updated.
 func (s *store) MarkFailed(ctx context.Context, id int, failureMessage string, options MarkFinalOptions) (_ bool, err error) {
-	ctx, endObservation := s.operations.markFailed.With(ctx, &err, observation.Args{LogFields: []log.Field{
-		log.Int("id", id),
+	ctx, endObservation := s.operations.markFailed.With(ctx, &err, obsv.Args{LogFields: []obsv.Field{
+		obsv.Int("id", id),
 	}})
-	defer endObservation(1, observation.Args{})
+	defer endObservation(1, obsv.Args{})
 
 	conds := []*sqlf.Query{
 		s.formatQuery("{id} = %s", id),
@@ -851,8 +850,8 @@ const defaultResetFailureMessage = "job processor died while handling this messa
 // identifiers the age of the record's last heartbeat timestamp for each record reset to queued and failed states,
 // respectively.
 func (s *store) ResetStalled(ctx context.Context) (resetLastHeartbeatsByIDs, failedLastHeartbeatsByIDs map[int]time.Duration, err error) {
-	ctx, traceLog, endObservation := s.operations.resetStalled.WithAndLogger(ctx, &err, observation.Args{})
-	defer endObservation(1, observation.Args{})
+	ctx, traceLog, endObservation := s.operations.resetStalled.WithAndLogger(ctx, &err, obsv.Args{})
+	defer endObservation(1, obsv.Args{})
 
 	now := s.now()
 	scan := scanLastHeartbeatTimestampsFrom(now)
@@ -871,7 +870,7 @@ func (s *store) ResetStalled(ctx context.Context) (resetLastHeartbeatsByIDs, fai
 	if err != nil {
 		return resetLastHeartbeatsByIDs, failedLastHeartbeatsByIDs, err
 	}
-	traceLog(log.Int("numResetIDs", len(resetLastHeartbeatsByIDs)))
+	traceLog(obsv.Int("numResetIDs", len(resetLastHeartbeatsByIDs)))
 
 	resetFailureMessage := s.options.ResetFailureMessage
 	if resetFailureMessage == "" {
@@ -893,7 +892,7 @@ func (s *store) ResetStalled(ctx context.Context) (resetLastHeartbeatsByIDs, fai
 	if err != nil {
 		return resetLastHeartbeatsByIDs, failedLastHeartbeatsByIDs, err
 	}
-	traceLog(log.Int("numErroredIDs", len(failedLastHeartbeatsByIDs)))
+	traceLog(obsv.Int("numErroredIDs", len(failedLastHeartbeatsByIDs)))
 
 	return resetLastHeartbeatsByIDs, failedLastHeartbeatsByIDs, nil
 }

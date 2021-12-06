@@ -7,11 +7,10 @@ import (
 	"strings"
 
 	"github.com/keegancsmith/sqlf"
-	"github.com/opentracing/opentracing-go/log"
 
 	"github.com/sourcegraph/sourcegraph/internal/database/basestore"
 	"github.com/sourcegraph/sourcegraph/internal/env"
-	"github.com/sourcegraph/sourcegraph/internal/observation"
+	obsv "github.com/sourcegraph/sourcegraph/internal/observation"
 	"github.com/sourcegraph/sourcegraph/lib/codeintel/precise"
 )
 
@@ -20,11 +19,11 @@ var DefinitionDumpsLimit, _ = strconv.ParseInt(env.Get("PRECISE_CODE_INTEL_DEFIN
 
 // DefinitionDumps returns the set of dumps that define at least one of the given monikers.
 func (s *Store) DefinitionDumps(ctx context.Context, monikers []precise.QualifiedMonikerData) (_ []Dump, err error) {
-	ctx, traceLog, endObservation := s.operations.definitionDumps.WithAndLogger(ctx, &err, observation.Args{LogFields: []log.Field{
-		log.Int("numMonikers", len(monikers)),
-		log.String("monikers", monikersToString(monikers)),
+	ctx, traceLog, endObservation := s.operations.definitionDumps.WithAndLogger(ctx, &err, obsv.Args{LogFields: []obsv.Field{
+		obsv.Int("numMonikers", len(monikers)),
+		obsv.String("monikers", monikersToString(monikers)),
 	}})
-	defer endObservation(1, observation.Args{})
+	defer endObservation(1, obsv.Args{})
 
 	if len(monikers) == 0 {
 		return nil, nil
@@ -39,7 +38,7 @@ func (s *Store) DefinitionDumps(ctx context.Context, monikers []precise.Qualifie
 	if err != nil {
 		return nil, err
 	}
-	traceLog(log.Int("numDumps", len(dumps)))
+	traceLog(obsv.Int("numDumps", len(dumps)))
 
 	return dumps, nil
 }
@@ -117,15 +116,15 @@ rank() OVER (
 // it can be seen from the given index; otherwise, an index is visible if it can be seen from the tip of
 // the default branch of its own repository.
 func (s *Store) ReferenceIDsAndFilters(ctx context.Context, repositoryID int, commit string, monikers []precise.QualifiedMonikerData, limit, offset int) (_ PackageReferenceScanner, _ int, err error) {
-	ctx, traceLog, endObservation := s.operations.referenceIDsAndFilters.WithAndLogger(ctx, &err, observation.Args{LogFields: []log.Field{
-		log.Int("repositoryID", repositoryID),
-		log.String("commit", commit),
-		log.Int("numMonikers", len(monikers)),
-		log.String("monikers", monikersToString(monikers)),
-		log.Int("limit", limit),
-		log.Int("offset", offset),
+	ctx, traceLog, endObservation := s.operations.referenceIDsAndFilters.WithAndLogger(ctx, &err, obsv.Args{LogFields: []obsv.Field{
+		obsv.Int("repositoryID", repositoryID),
+		obsv.String("commit", commit),
+		obsv.Int("numMonikers", len(monikers)),
+		obsv.String("monikers", monikersToString(monikers)),
+		obsv.Int("limit", limit),
+		obsv.Int("offset", offset),
 	}})
-	defer endObservation(1, observation.Args{})
+	defer endObservation(1, obsv.Args{})
 
 	if len(monikers) == 0 {
 		return PackageReferenceScannerFromSlice(), 0, nil
@@ -147,7 +146,7 @@ func (s *Store) ReferenceIDsAndFilters(ctx context.Context, repositoryID int, co
 	if err != nil {
 		return nil, 0, err
 	}
-	traceLog(log.Int("totalCount", totalCount))
+	traceLog(obsv.Int("totalCount", totalCount))
 
 	rows, err := s.Query(ctx, sqlf.Sprintf(
 		referenceIDsAndFiltersQuery,
@@ -204,10 +203,10 @@ func monikersToString(vs []precise.QualifiedMonikerData) string {
 // scanner will return nulls for the Filter field as it's expected to be unused (and rather heavy) by
 // callers.
 func (s *Store) ReferencesForUpload(ctx context.Context, uploadID int) (_ PackageReferenceScanner, err error) {
-	ctx, endObservation := s.operations.referencesForUpload.With(ctx, &err, observation.Args{LogFields: []log.Field{
-		log.Int("uploadID", uploadID),
+	ctx, endObservation := s.operations.referencesForUpload.With(ctx, &err, obsv.Args{LogFields: []obsv.Field{
+		obsv.Int("uploadID", uploadID),
 	}})
-	defer endObservation(1, observation.Args{})
+	defer endObservation(1, obsv.Args{})
 
 	rows, err := s.Query(ctx, sqlf.Sprintf(referencesForUploadQuery, uploadID))
 	if err != nil {

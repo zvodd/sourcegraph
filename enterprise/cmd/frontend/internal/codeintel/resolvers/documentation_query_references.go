@@ -4,9 +4,8 @@ import (
 	"context"
 
 	"github.com/cockroachdb/errors"
-	"github.com/opentracing/opentracing-go/log"
 
-	"github.com/sourcegraph/sourcegraph/internal/observation"
+	obsv "github.com/sourcegraph/sourcegraph/internal/observation"
 )
 
 // defaultReferencesPageSize is the reference result page size when no limit is supplied in the
@@ -18,13 +17,13 @@ const defaultReferencesPageSize = 100
 // DocumentationReferences returns the list of source locations that reference the symbol found at
 // the given documentation path ID, if any.
 func (r *queryResolver) DocumentationReferences(ctx context.Context, pathID string, limit int, rawCursor string) (_ []AdjustedLocation, _ string, err error) {
-	ctx, traceLog, endObservation := observeResolver(ctx, &err, "DocumentationReferences", r.operations.documentationReferences, slowReferencesRequestThreshold, observation.Args{
-		LogFields: []log.Field{
-			log.Int("repositoryID", r.repositoryID),
-			log.String("commit", r.commit),
-			log.Int("numUploads", len(r.uploads)),
-			log.String("uploads", uploadIDsToString(r.uploads)),
-			log.String("pathID", pathID),
+	ctx, traceLog, endObservation := observeResolver(ctx, &err, "DocumentationReferences", r.operations.documentationReferences, slowReferencesRequestThreshold, obsv.Args{
+		LogFields: []obsv.Field{
+			obsv.Int("repositoryID", r.repositoryID),
+			obsv.String("commit", r.commit),
+			obsv.Int("numUploads", len(r.uploads)),
+			obsv.String("uploads", uploadIDsToString(r.uploads)),
+			obsv.String("pathID", pathID),
 		},
 	})
 	defer endObservation()
@@ -37,7 +36,7 @@ func (r *queryResolver) DocumentationReferences(ctx context.Context, pathID stri
 	// What we do here is first resolve the local definitions, then execute a standard references
 	// request on the first location we find.
 	for _, upload := range r.uploads {
-		traceLog(log.Int("uploadID", upload.ID))
+		traceLog(obsv.Int("uploadID", upload.ID))
 
 		// Effectively replicate what we do in r.DocumentationDefinition in order to lookup the definition
 		// locations.

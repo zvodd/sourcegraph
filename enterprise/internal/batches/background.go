@@ -38,7 +38,7 @@ func InitBackgroundJobs(
 	ctx = actor.WithInternalActor(ctx)
 
 	observationContext := &observation.Context{
-		Logger:     log15.Root(),
+		OldLogger:  log15.Root(),
 		Tracer:     &trace.Tracer{Tracer: opentracing.GlobalTracer()},
 		Registerer: prometheus.DefaultRegisterer,
 	}

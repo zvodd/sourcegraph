@@ -7,12 +7,11 @@ import (
 	"github.com/cockroachdb/errors"
 	"github.com/keegancsmith/sqlf"
 	"github.com/lib/pq"
-	"github.com/opentracing/opentracing-go/log"
 
 	btypes "github.com/sourcegraph/sourcegraph/enterprise/internal/batches/types"
 	"github.com/sourcegraph/sourcegraph/internal/database/basestore"
 	"github.com/sourcegraph/sourcegraph/internal/database/dbutil"
-	"github.com/sourcegraph/sourcegraph/internal/observation"
+	obsv "github.com/sourcegraph/sourcegraph/internal/observation"
 	"github.com/sourcegraph/sourcegraph/internal/workerutil"
 	dbworkerstore "github.com/sourcegraph/sourcegraph/internal/workerutil/dbworker/store"
 )
@@ -99,10 +98,10 @@ const executableWorkspaceJobsConditionFmtstr = `
 
 // CreateBatchSpecWorkspaceExecutionJobs creates the given batch spec workspace jobs.
 func (s *Store) CreateBatchSpecWorkspaceExecutionJobs(ctx context.Context, batchSpecID int64) (err error) {
-	ctx, endObservation := s.operations.createBatchSpecWorkspaceExecutionJobs.With(ctx, &err, observation.Args{LogFields: []log.Field{
-		log.Int("batchSpecID", int(batchSpecID)),
+	ctx, endObservation := s.operations.createBatchSpecWorkspaceExecutionJobs.With(ctx, &err, obsv.Args{LogFields: []obsv.Field{
+		obsv.Int("batchSpecID", int(batchSpecID)),
 	}})
-	defer endObservation(1, observation.Args{})
+	defer endObservation(1, obsv.Args{})
 
 	cond := sqlf.Sprintf(executableWorkspaceJobsConditionFmtstr)
 	q := sqlf.Sprintf(createBatchSpecWorkspaceExecutionJobsQueryFmtstr, batchSpecID, cond)
@@ -123,8 +122,8 @@ WHERE
 
 // CreateBatchSpecWorkspaceExecutionJobsForWorkspaces creates the batch spec workspace jobs for the given workspaces.
 func (s *Store) CreateBatchSpecWorkspaceExecutionJobsForWorkspaces(ctx context.Context, workspaceIDs []int64) (err error) {
-	ctx, endObservation := s.operations.createBatchSpecWorkspaceExecutionJobsForWorkspaces.With(ctx, &err, observation.Args{LogFields: []log.Field{}})
-	defer endObservation(1, observation.Args{})
+	ctx, endObservation := s.operations.createBatchSpecWorkspaceExecutionJobsForWorkspaces.With(ctx, &err, obsv.Args{})
+	defer endObservation(1, obsv.Args{})
 
 	q := sqlf.Sprintf(createBatchSpecWorkspaceExecutionJobsForWorkspacesQueryFmtstr, pq.Array(workspaceIDs))
 	return s.Exec(ctx, q)
@@ -141,8 +140,8 @@ RETURNING id
 
 // DeleteBatchSpecWorkspaceExecutionJobs
 func (s *Store) DeleteBatchSpecWorkspaceExecutionJobs(ctx context.Context, ids []int64) (err error) {
-	ctx, endObservation := s.operations.deleteBatchSpecWorkspaceExecutionJobs.With(ctx, &err, observation.Args{LogFields: []log.Field{}})
-	defer endObservation(1, observation.Args{})
+	ctx, endObservation := s.operations.deleteBatchSpecWorkspaceExecutionJobs.With(ctx, &err, obsv.Args{})
+	defer endObservation(1, obsv.Args{})
 
 	q := sqlf.Sprintf(deleteBatchSpecWorkspaceExecutionJobsQueryFmtstr, pq.Array(ids))
 	deleted, err := basestore.ScanInts(s.Query(ctx, q))
@@ -163,10 +162,10 @@ type GetBatchSpecWorkspaceExecutionJobOpts struct {
 
 // GetBatchSpecWorkspaceExecutionJob gets a BatchSpecWorkspaceExecutionJob matching the given options.
 func (s *Store) GetBatchSpecWorkspaceExecutionJob(ctx context.Context, opts GetBatchSpecWorkspaceExecutionJobOpts) (job *btypes.BatchSpecWorkspaceExecutionJob, err error) {
-	ctx, endObservation := s.operations.getBatchSpecWorkspaceExecutionJob.With(ctx, &err, observation.Args{LogFields: []log.Field{
-		log.Int("ID", int(opts.ID)),
+	ctx, endObservation := s.operations.getBatchSpecWorkspaceExecutionJob.With(ctx, &err, obsv.Args{LogFields: []obsv.Field{
+		obsv.Int("ID", int(opts.ID)),
 	}})
-	defer endObservation(1, observation.Args{})
+	defer endObservation(1, obsv.Args{})
 
 	q := getBatchSpecWorkspaceExecutionJobQuery(&opts)
 	var c btypes.BatchSpecWorkspaceExecutionJob
@@ -231,8 +230,8 @@ type ListBatchSpecWorkspaceExecutionJobsOpts struct {
 
 // ListBatchSpecWorkspaceExecutionJobs lists batch changes with the given filters.
 func (s *Store) ListBatchSpecWorkspaceExecutionJobs(ctx context.Context, opts ListBatchSpecWorkspaceExecutionJobsOpts) (cs []*btypes.BatchSpecWorkspaceExecutionJob, err error) {
-	ctx, endObservation := s.operations.listBatchSpecWorkspaceExecutionJobs.With(ctx, &err, observation.Args{})
-	defer endObservation(1, observation.Args{})
+	ctx, endObservation := s.operations.listBatchSpecWorkspaceExecutionJobs.With(ctx, &err, obsv.Args{})
+	defer endObservation(1, obsv.Args{})
 
 	q := listBatchSpecWorkspaceExecutionJobsQuery(opts)
 
@@ -320,8 +319,8 @@ type CancelBatchSpecWorkspaceExecutionJobsOpts struct {
 // The returned list of records may not match the list of the given IDs, if
 // some of the records were already canceled, completed, failed, errored, etc.
 func (s *Store) CancelBatchSpecWorkspaceExecutionJobs(ctx context.Context, opts CancelBatchSpecWorkspaceExecutionJobsOpts) (jobs []*btypes.BatchSpecWorkspaceExecutionJob, err error) {
-	ctx, endObservation := s.operations.cancelBatchSpecWorkspaceExecutionJobs.With(ctx, &err, observation.Args{LogFields: []log.Field{}})
-	defer endObservation(1, observation.Args{})
+	ctx, endObservation := s.operations.cancelBatchSpecWorkspaceExecutionJobs.With(ctx, &err, obsv.Args{})
+	defer endObservation(1, obsv.Args{})
 
 	if opts.BatchSpecID == 0 && len(opts.IDs) == 0 {
 		return nil, errors.New("invalid options: would cancel all jobs")
@@ -411,10 +410,10 @@ func (s *Store) cancelBatchSpecWorkspaceExecutionJobQuery(opts CancelBatchSpecWo
 
 // SetBatchSpecWorkspaceExecutionJobAccessToken sets the access_token_id column to the given ID.
 func (s *Store) SetBatchSpecWorkspaceExecutionJobAccessToken(ctx context.Context, jobID, tokenID int64) (err error) {
-	ctx, endObservation := s.operations.setBatchSpecWorkspaceExecutionJobAccessToken.With(ctx, &err, observation.Args{LogFields: []log.Field{
-		log.Int("ID", int(jobID)),
+	ctx, endObservation := s.operations.setBatchSpecWorkspaceExecutionJobAccessToken.With(ctx, &err, obsv.Args{LogFields: []obsv.Field{
+		obsv.Int("ID", int(jobID)),
 	}})
-	defer endObservation(1, observation.Args{})
+	defer endObservation(1, obsv.Args{})
 
 	q := sqlf.Sprintf(setSpecWorkspaceExecutionJobAccessTokenFmtstr, tokenID, jobID)
 	return s.Exec(ctx, q)

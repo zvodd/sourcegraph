@@ -6,24 +6,23 @@ import (
 	"time"
 
 	"github.com/cockroachdb/errors"
-	"github.com/opentracing/opentracing-go/log"
 
 	"github.com/sourcegraph/sourcegraph/enterprise/internal/codeintel/stores/lsifstore"
-	"github.com/sourcegraph/sourcegraph/internal/observation"
+	obsv "github.com/sourcegraph/sourcegraph/internal/observation"
 )
 
 const slowDiagnosticsRequestThreshold = time.Second
 
 // Diagnostics returns the diagnostics for documents with the given path prefix.
 func (r *queryResolver) Diagnostics(ctx context.Context, limit int) (adjustedDiagnostics []AdjustedDiagnostic, _ int, err error) {
-	ctx, traceLog, endObservation := observeResolver(ctx, &err, "Diagnostics", r.operations.diagnostics, slowDiagnosticsRequestThreshold, observation.Args{
-		LogFields: []log.Field{
-			log.Int("repositoryID", r.repositoryID),
-			log.String("commit", r.commit),
-			log.String("path", r.path),
-			log.Int("numUploads", len(r.uploads)),
-			log.String("uploads", uploadIDsToString(r.uploads)),
-			log.Int("limit", limit),
+	ctx, traceLog, endObservation := observeResolver(ctx, &err, "Diagnostics", r.operations.diagnostics, slowDiagnosticsRequestThreshold, obsv.Args{
+		LogFields: []obsv.Field{
+			obsv.Int("repositoryID", r.repositoryID),
+			obsv.String("commit", r.commit),
+			obsv.String("path", r.path),
+			obsv.Int("numUploads", len(r.uploads)),
+			obsv.String("uploads", uploadIDsToString(r.uploads)),
+			obsv.Int("limit", limit),
 		},
 	})
 	defer endObservation()
@@ -36,7 +35,7 @@ func (r *queryResolver) Diagnostics(ctx context.Context, limit int) (adjustedDia
 	totalCount := 0
 
 	for i := range adjustedUploads {
-		traceLog(log.Int("uploadID", adjustedUploads[i].Upload.ID))
+		traceLog(obsv.Int("uploadID", adjustedUploads[i].Upload.ID))
 
 		diagnostics, count, err := r.lsifStore.Diagnostics(
 			ctx,
@@ -65,8 +64,8 @@ func (r *queryResolver) Diagnostics(ctx context.Context, limit int) (adjustedDia
 		adjustedDiagnostics = adjustedDiagnostics[:limit]
 	}
 	traceLog(
-		log.Int("totalCount", totalCount),
-		log.Int("numDiagnostics", len(adjustedDiagnostics)),
+		obsv.Int("totalCount", totalCount),
+		obsv.Int("numDiagnostics", len(adjustedDiagnostics)),
 	)
 
 	return adjustedDiagnostics, totalCount, nil

@@ -6,13 +6,12 @@ import (
 	"time"
 
 	"github.com/keegancsmith/sqlf"
-	"github.com/opentracing/opentracing-go/log"
 
 	"github.com/sourcegraph/sourcegraph/enterprise/internal/codeintel/commitgraph"
 	"github.com/sourcegraph/sourcegraph/internal/database/basestore"
 	"github.com/sourcegraph/sourcegraph/internal/database/dbutil"
 	"github.com/sourcegraph/sourcegraph/internal/gitserver/gitdomain"
-	"github.com/sourcegraph/sourcegraph/internal/observation"
+	obsv "github.com/sourcegraph/sourcegraph/internal/observation"
 )
 
 // Dump is a subset of the lsif_uploads table (queried via the lsif_dumps_with_repository_name view)
@@ -75,11 +74,11 @@ func scanDumps(rows *sql.Rows, queryErr error) (_ []Dump, err error) {
 
 // GetDumpsByIDs returns a set of dumps by identifiers.
 func (s *Store) GetDumpsByIDs(ctx context.Context, ids []int) (_ []Dump, err error) {
-	ctx, traceLog, endObservation := s.operations.getDumpsByIDs.WithAndLogger(ctx, &err, observation.Args{LogFields: []log.Field{
-		log.Int("numIDs", len(ids)),
-		log.String("ids", intsToString(ids)),
+	ctx, traceLog, endObservation := s.operations.getDumpsByIDs.WithAndLogger(ctx, &err, obsv.Args{LogFields: []obsv.Field{
+		obsv.Int("numIDs", len(ids)),
+		obsv.String("ids", intsToString(ids)),
 	}})
-	defer endObservation(1, observation.Args{})
+	defer endObservation(1, obsv.Args{})
 
 	if len(ids) == 0 {
 		return nil, nil
@@ -94,7 +93,7 @@ func (s *Store) GetDumpsByIDs(ctx context.Context, ids []int) (_ []Dump, err err
 	if err != nil {
 		return nil, err
 	}
-	traceLog(log.Int("numDumps", len(dumps)))
+	traceLog(obsv.Int("numDumps", len(dumps)))
 
 	return dumps, nil
 }
@@ -143,16 +142,16 @@ FROM lsif_dumps_with_repository_name u WHERE u.id IN (%s)
 // splits the repository into multiple dumps. For this reason, the returned dumps are always sorted in most-recently-finished order to
 // prevent returning data from stale dumps.
 func (s *Store) FindClosestDumps(ctx context.Context, repositoryID int, commit, path string, rootMustEnclosePath bool, indexer string) (_ []Dump, err error) {
-	ctx, traceLog, endObservation := s.operations.findClosestDumps.WithAndLogger(ctx, &err, observation.Args{
-		LogFields: []log.Field{
-			log.Int("repositoryID", repositoryID),
-			log.String("commit", commit),
-			log.String("path", path),
-			log.Bool("rootMustEnclosePath", rootMustEnclosePath),
-			log.String("indexer", indexer),
+	ctx, traceLog, endObservation := s.operations.findClosestDumps.WithAndLogger(ctx, &err, obsv.Args{
+		LogFields: []obsv.Field{
+			obsv.Int("repositoryID", repositoryID),
+			obsv.String("commit", commit),
+			obsv.String("path", path),
+			obsv.Bool("rootMustEnclosePath", rootMustEnclosePath),
+			obsv.String("indexer", indexer),
 		},
 	})
-	defer endObservation(1, observation.Args{})
+	defer endObservation(1, obsv.Args{})
 
 	conds := makeFindClosestDumpConditions(path, rootMustEnclosePath, indexer)
 	query := sqlf.Sprintf(findClosestDumpsQuery, makeVisibleUploadsQuery(repositoryID, commit), sqlf.Join(conds, " AND "))
@@ -161,7 +160,7 @@ func (s *Store) FindClosestDumps(ctx context.Context, repositoryID int, commit, 
 	if err != nil {
 		return nil, err
 	}
-	traceLog(log.Int("numDumps", len(dumps)))
+	traceLog(obsv.Int("numDumps", len(dumps)))
 
 	return dumps, nil
 }
@@ -196,17 +195,17 @@ ORDER BY u.finished_at DESC
 // FindClosestDumpsFromGraphFragment returns the set of dumps that can most accurately answer queries for the given repository, commit,
 // path, and optional indexer by only considering the given fragment of the full git graph. See FindClosestDumps for additional details.
 func (s *Store) FindClosestDumpsFromGraphFragment(ctx context.Context, repositoryID int, commit, path string, rootMustEnclosePath bool, indexer string, commitGraph *gitdomain.CommitGraph) (_ []Dump, err error) {
-	ctx, traceLog, endObservation := s.operations.findClosestDumpsFromGraphFragment.WithAndLogger(ctx, &err, observation.Args{
-		LogFields: []log.Field{
-			log.Int("repositoryID", repositoryID),
-			log.String("commit", commit),
-			log.String("path", path),
-			log.Bool("rootMustEnclosePath", rootMustEnclosePath),
-			log.String("indexer", indexer),
-			log.Int("numCommitGraphKeys", len(commitGraph.Order())),
+	ctx, traceLog, endObservation := s.operations.findClosestDumpsFromGraphFragment.WithAndLogger(ctx, &err, obsv.Args{
+		LogFields: []obsv.Field{
+			obsv.Int("repositoryID", repositoryID),
+			obsv.String("commit", commit),
+			obsv.String("path", path),
+			obsv.Bool("rootMustEnclosePath", rootMustEnclosePath),
+			obsv.String("indexer", indexer),
+			obsv.Int("numCommitGraphKeys", len(commitGraph.Order())),
 		},
 	})
-	defer endObservation(1, observation.Args{})
+	defer endObservation(1, obsv.Args{})
 
 	if len(commitGraph.Order()) == 0 {
 		return nil, nil
@@ -225,8 +224,8 @@ func (s *Store) FindClosestDumpsFromGraphFragment(ctx context.Context, repositor
 		return nil, err
 	}
 	traceLog(
-		log.Int("numCommitGraphViewMetaKeys", len(commitGraphView.Meta)),
-		log.Int("numCommitGraphViewTokenKeys", len(commitGraphView.Tokens)),
+		obsv.Int("numCommitGraphViewMetaKeys", len(commitGraphView.Meta)),
+		obsv.Int("numCommitGraphViewTokenKeys", len(commitGraphView.Tokens)),
 	)
 
 	var ids []*sqlf.Query
@@ -244,7 +243,7 @@ func (s *Store) FindClosestDumpsFromGraphFragment(ctx context.Context, repositor
 	if err != nil {
 		return nil, err
 	}
-	traceLog(log.Int("numDumps", len(dumps)))
+	traceLog(obsv.Int("numDumps", len(dumps)))
 
 	return dumps, nil
 }
@@ -367,19 +366,19 @@ func makeFindClosestDumpConditions(path string, rootMustEnclosePath bool, indexe
 // commit, root, and indexer. This is necessary to perform during conversions before changing
 // the state of a processing upload to completed as there is a unique index on these four columns.
 func (s *Store) DeleteOverlappingDumps(ctx context.Context, repositoryID int, commit, root, indexer string) (err error) {
-	ctx, traceLog, endObservation := s.operations.deleteOverlappingDumps.WithAndLogger(ctx, &err, observation.Args{LogFields: []log.Field{
-		log.Int("repositoryID", repositoryID),
-		log.String("commit", commit),
-		log.String("root", root),
-		log.String("indexer", indexer),
+	ctx, traceLog, endObservation := s.operations.deleteOverlappingDumps.WithAndLogger(ctx, &err, obsv.Args{LogFields: []obsv.Field{
+		obsv.Int("repositoryID", repositoryID),
+		obsv.String("commit", commit),
+		obsv.String("root", root),
+		obsv.String("indexer", indexer),
 	}})
-	defer endObservation(1, observation.Args{})
+	defer endObservation(1, obsv.Args{})
 
 	count, _, err := basestore.ScanFirstInt(s.Store.Query(ctx, sqlf.Sprintf(deleteOverlappingDumpsQuery, repositoryID, commit, root, indexer)))
 	if err != nil {
 		return err
 	}
-	traceLog(log.Int("count", count))
+	traceLog(obsv.Int("count", count))
 
 	return nil
 }

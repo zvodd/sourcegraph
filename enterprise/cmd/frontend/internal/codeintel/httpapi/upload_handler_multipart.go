@@ -11,20 +11,19 @@ import (
 	"github.com/aws/aws-sdk-go-v2/feature/s3/manager"
 	"github.com/cockroachdb/errors"
 	"github.com/inconshreveable/log15"
-	"github.com/opentracing/opentracing-go/log"
 
 	"github.com/sourcegraph/sourcegraph/enterprise/internal/codeintel/stores/dbstore"
-	"github.com/sourcegraph/sourcegraph/internal/observation"
+	obsv "github.com/sourcegraph/sourcegraph/internal/observation"
 )
 
 // handleEnqueueMultipartSetup handles the first request in a multipart upload. This creates a
 // new upload record with state 'uploading' and returns the generated ID to be used in subsequent
 // requests for the same upload.
 func (h *UploadHandler) handleEnqueueMultipartSetup(ctx context.Context, uploadState uploadState, _ io.Reader) (_ interface{}, statusCode int, err error) {
-	ctx, traceLog, endObservation := h.operations.handleEnqueueMultipartSetup.WithAndLogger(ctx, &err, observation.Args{})
+	ctx, traceLog, endObservation := h.operations.handleEnqueueMultipartSetup.WithAndLogger(ctx, &err, obsv.Args{})
 	defer func() {
-		endObservation(1, observation.Args{LogFields: []log.Field{
-			log.Int("statusCode", statusCode),
+		endObservation(1, obsv.Args{LogFields: []obsv.Field{
+			obsv.Int("statusCode", statusCode),
 		}})
 	}()
 
@@ -45,7 +44,7 @@ func (h *UploadHandler) handleEnqueueMultipartSetup(ctx context.Context, uploadS
 	if err != nil {
 		return nil, http.StatusInternalServerError, err
 	}
-	traceLog(log.Int("uploadID", id))
+	traceLog(obsv.Int("uploadID", id))
 
 	log15.Info(
 		"codeintel.httpapi: enqueued upload",
@@ -63,10 +62,10 @@ func (h *UploadHandler) handleEnqueueMultipartSetup(ctx context.Context, uploadS
 // handleEnqueueMultipartUpload handles a partial upload in a multipart upload. This proxies the
 // data to the bundle manager and marks the part index in the upload record.
 func (h *UploadHandler) handleEnqueueMultipartUpload(ctx context.Context, uploadState uploadState, body io.Reader) (_ interface{}, statusCode int, err error) {
-	ctx, traceLog, endObservation := h.operations.handleEnqueueMultipartUpload.WithAndLogger(ctx, &err, observation.Args{})
+	ctx, traceLog, endObservation := h.operations.handleEnqueueMultipartUpload.WithAndLogger(ctx, &err, obsv.Args{})
 	defer func() {
-		endObservation(1, observation.Args{LogFields: []log.Field{
-			log.Int("statusCode", statusCode),
+		endObservation(1, obsv.Args{LogFields: []obsv.Field{
+			obsv.Int("statusCode", statusCode),
 		}})
 	}()
 
@@ -79,7 +78,7 @@ func (h *UploadHandler) handleEnqueueMultipartUpload(ctx context.Context, upload
 		h.markUploadAsFailed(context.Background(), h.dbStore, uploadState.uploadID, err)
 		return nil, http.StatusInternalServerError, err
 	}
-	traceLog(log.Int("gzippedUploadPartSize", int(size)))
+	traceLog(obsv.Int("gzippedUploadPartSize", int(size)))
 
 	if err := h.dbStore.AddUploadPart(ctx, uploadState.uploadID, uploadState.index); err != nil {
 		return nil, http.StatusInternalServerError, err
@@ -92,10 +91,10 @@ func (h *UploadHandler) handleEnqueueMultipartUpload(ctx context.Context, upload
 // upload from 'uploading' to 'queued', then instructs the bundle manager to concatenate all of the part
 // files together.
 func (h *UploadHandler) handleEnqueueMultipartFinalize(ctx context.Context, uploadState uploadState, _ io.Reader) (_ interface{}, statusCode int, err error) {
-	ctx, traceLog, endObservation := h.operations.handleEnqueueMultipartFinalize.WithAndLogger(ctx, &err, observation.Args{})
+	ctx, traceLog, endObservation := h.operations.handleEnqueueMultipartFinalize.WithAndLogger(ctx, &err, obsv.Args{})
 	defer func() {
-		endObservation(1, observation.Args{LogFields: []log.Field{
-			log.Int("statusCode", statusCode),
+		endObservation(1, obsv.Args{LogFields: []obsv.Field{
+			obsv.Int("statusCode", statusCode),
 		}})
 	}()
 
@@ -114,8 +113,8 @@ func (h *UploadHandler) handleEnqueueMultipartFinalize(ctx context.Context, uplo
 		sources = append(sources, fmt.Sprintf("upload-%d.%d.lsif.gz", uploadState.uploadID, partNumber))
 	}
 	traceLog(
-		log.Int("numSources", len(sources)),
-		log.String("sources", strings.Join(sources, ",")),
+		obsv.Int("numSources", len(sources)),
+		obsv.String("sources", strings.Join(sources, ",")),
 	)
 
 	size, err := h.uploadStore.Compose(ctx, fmt.Sprintf("upload-%d.lsif.gz", uploadState.uploadID), sources...)
@@ -123,7 +122,7 @@ func (h *UploadHandler) handleEnqueueMultipartFinalize(ctx context.Context, uplo
 		h.markUploadAsFailed(context.Background(), tx, uploadState.uploadID, err)
 		return nil, http.StatusInternalServerError, err
 	}
-	traceLog(log.Int("composedObjectSize", int(size)))
+	traceLog(obsv.Int("composedObjectSize", int(size)))
 
 	if err := tx.MarkQueued(ctx, uploadState.uploadID, &size); err != nil {
 		return nil, http.StatusInternalServerError, err

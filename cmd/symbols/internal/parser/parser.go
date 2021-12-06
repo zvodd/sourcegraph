@@ -8,13 +8,12 @@ import (
 
 	"github.com/cockroachdb/errors"
 	"github.com/inconshreveable/log15"
-	"github.com/opentracing/opentracing-go/log"
 
 	"github.com/sourcegraph/go-ctags"
 
 	"github.com/sourcegraph/sourcegraph/cmd/symbols/internal/fetcher"
 	"github.com/sourcegraph/sourcegraph/cmd/symbols/internal/types"
-	"github.com/sourcegraph/sourcegraph/internal/observation"
+	obsv "github.com/sourcegraph/sourcegraph/internal/observation"
 	"github.com/sourcegraph/sourcegraph/internal/search/result"
 )
 
@@ -35,7 +34,7 @@ func NewParser(
 	repositoryFetcher fetcher.RepositoryFetcher,
 	requestBufferSize int,
 	numParserProcesses int,
-	observationContext *observation.Context,
+	observationContext *obsv.Context,
 ) Parser {
 	return &parser{
 		parserPool:         parserPool,
@@ -47,11 +46,11 @@ func NewParser(
 }
 
 func (p *parser) Parse(ctx context.Context, args types.SearchArgs, paths []string) (_ <-chan result.Symbol, err error) {
-	ctx, traceLog, endObservation := p.operations.parse.WithAndLogger(ctx, &err, observation.Args{LogFields: []log.Field{
-		log.String("repo", string(args.Repo)),
-		log.String("commitID", string(args.CommitID)),
-		log.Int("paths", len(paths)),
-		log.String("paths", strings.Join(paths, ":")),
+	ctx, traceLog, endObservation := p.operations.parse.WithAndLogger(ctx, &err, obsv.Args{LogFields: []obsv.Field{
+		obsv.String("repo", string(args.Repo)),
+		obsv.String("commitID", string(args.CommitID)),
+		obsv.Int("paths", len(paths)),
+		obsv.String("paths", strings.Join(paths, ":")),
 	}})
 	// NOTE: We call endObservation synchronously within this function when we
 	// return an error. Once we get on the success-only path, we install it to
@@ -60,7 +59,7 @@ func (p *parser) Parse(ctx context.Context, args types.SearchArgs, paths []strin
 
 	parseRequestOrErrors := p.repositoryFetcher.FetchRepositoryArchive(ctx, args, paths)
 	if err != nil {
-		endObservation(1, observation.Args{})
+		endObservation(1, obsv.Args{})
 		return nil, errors.Wrap(err, "repositoryFetcher.FetchRepositoryArchive")
 	}
 	defer func() {
@@ -85,8 +84,8 @@ func (p *parser) Parse(ctx context.Context, args types.SearchArgs, paths []strin
 
 		go func() {
 			defer func() {
-				endObservation(1, observation.Args{LogFields: []log.Field{
-					log.Int("numSymbols", int(totalSymbols)),
+				endObservation(1, obsv.Args{LogFields: []obsv.Field{
+					obsv.Int("numSymbols", int(totalSymbols)),
 				}})
 			}()
 
@@ -120,22 +119,22 @@ func (p *parser) Parse(ctx context.Context, args types.SearchArgs, paths []strin
 			return nil, ctx.Err()
 		}
 	}
-	traceLog(log.Int("numRequests", int(totalRequests)))
+	traceLog(obsv.Int("numRequests", int(totalRequests)))
 
 	return symbols, nil
 }
 
 func (p *parser) handleParseRequest(ctx context.Context, symbols chan<- result.Symbol, parseRequest fetcher.ParseRequest, totalSymbols *uint32) (err error) {
-	ctx, traceLog, endObservation := p.operations.handleParseRequest.WithAndLogger(ctx, &err, observation.Args{LogFields: []log.Field{
-		log.Int("fileSize", len(parseRequest.Data)),
+	ctx, traceLog, endObservation := p.operations.handleParseRequest.WithAndLogger(ctx, &err, obsv.Args{LogFields: []obsv.Field{
+		obsv.Int("fileSize", len(parseRequest.Data)),
 	}})
-	defer endObservation(1, observation.Args{})
+	defer endObservation(1, obsv.Args{})
 
 	parser, err := p.parserFromPool(ctx)
 	if err != nil {
 		return err
 	}
-	traceLog(log.Event("acquired parser from pool"))
+	traceLog(obsv.Event("acquired parser from pool"))
 
 	defer func() {
 		if err == nil {
@@ -162,7 +161,7 @@ func (p *parser) handleParseRequest(ctx context.Context, symbols chan<- result.S
 	if err != nil {
 		return errors.Wrap(err, "parser.Parse")
 	}
-	traceLog(log.Int("numEntries", len(entries)))
+	traceLog(obsv.Int("numEntries", len(entries)))
 
 	for _, e := range entries {
 		if !shouldPersistEntry(e) {

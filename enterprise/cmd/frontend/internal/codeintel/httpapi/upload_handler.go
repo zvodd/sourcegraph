@@ -10,11 +10,10 @@ import (
 
 	"github.com/cockroachdb/errors"
 	"github.com/inconshreveable/log15"
-	"github.com/opentracing/opentracing-go/log"
 
 	"github.com/sourcegraph/sourcegraph/enterprise/internal/codeintel/stores/uploadstore"
 	"github.com/sourcegraph/sourcegraph/internal/database/dbutil"
-	"github.com/sourcegraph/sourcegraph/internal/observation"
+	obsv "github.com/sourcegraph/sourcegraph/internal/observation"
 )
 
 type UploadHandler struct {
@@ -77,10 +76,11 @@ func (h *UploadHandler) handleEnqueue(w http.ResponseWriter, r *http.Request) {
 	// easily. The remainder of the function simply serializes the result to the
 	// HTTP response writer.
 	payload, statusCode, err := func() (_ interface{}, statusCode int, err error) {
-		ctx, traceLog, endObservation := h.operations.handleEnqueue.WithAndLogger(r.Context(), &err, observation.Args{})
+		ctx, traceLog, endObservation := h.operations.handleEnqueue.WithAndLogger(r.Context(), &err, obsv.Args{})
 		defer func() {
-			endObservation(1, observation.Args{LogFields: []log.Field{
-				log.Int("statusCode", statusCode),
+			endObservation(1, obsv.Args{LogFields: []obsv.Field{
+				obsv.Int("statusCode", statusCode),
+				obsv.String("superSecretValue", "hello world").Exclude(obsv.HoneySink),
 			}})
 		}()
 
@@ -89,18 +89,19 @@ func (h *UploadHandler) handleEnqueue(w http.ResponseWriter, r *http.Request) {
 			return nil, statusCode, err
 		}
 		traceLog(
-			log.Int("repositoryID", uploadState.repositoryID),
-			log.Int("uploadID", uploadState.uploadID),
-			log.String("commit", uploadState.commit),
-			log.String("root", uploadState.root),
-			log.String("indexer", uploadState.indexer),
-			log.Int("associatedIndexID", uploadState.associatedIndexID),
-			log.Int("numParts", uploadState.numParts),
-			log.Int("numUploadedParts", len(uploadState.uploadedParts)),
-			log.Bool("multipart", uploadState.multipart),
-			log.Bool("suppliedIndex", uploadState.suppliedIndex),
-			log.Int("index", uploadState.index),
-			log.Bool("done", uploadState.done),
+			obsv.String("repositoryName", uploadState.repositoryName).Exclude(obsv.TraceSink, obsv.HoneySink),
+			obsv.Int("repositoryID", uploadState.repositoryID),
+			obsv.Int("uploadID", uploadState.uploadID),
+			obsv.String("commit", uploadState.commit),
+			obsv.String("root", uploadState.root),
+			obsv.String("indexer", uploadState.indexer),
+			obsv.Int("associatedIndexID", uploadState.associatedIndexID),
+			obsv.Int("numParts", uploadState.numParts),
+			obsv.Int("numUploadedParts", len(uploadState.uploadedParts)),
+			obsv.Bool("multipart", uploadState.multipart),
+			obsv.Bool("suppliedIndex", uploadState.suppliedIndex),
+			obsv.Int("index", uploadState.index),
+			obsv.Bool("done", uploadState.done),
 		)
 
 		if uploadHandlerFunc := h.selectUploadHandlerFunc(uploadState); uploadHandlerFunc != nil {

@@ -5,10 +5,9 @@ import (
 	"time"
 
 	"github.com/cockroachdb/errors"
-	"github.com/opentracing/opentracing-go/log"
 
 	"github.com/sourcegraph/sourcegraph/enterprise/internal/codeintel/stores/lsifstore"
-	"github.com/sourcegraph/sourcegraph/internal/observation"
+	obsv "github.com/sourcegraph/sourcegraph/internal/observation"
 )
 
 const slowRangesRequestThreshold = time.Second
@@ -17,15 +16,15 @@ const slowRangesRequestThreshold = time.Second
 // results are partial and do not include references outside the current file, or any location that
 // requires cross-linking of bundles (cross-repo or cross-root).
 func (r *queryResolver) Ranges(ctx context.Context, startLine, endLine int) (adjustedRanges []AdjustedCodeIntelligenceRange, err error) {
-	ctx, traceLog, endObservation := observeResolver(ctx, &err, "Ranges", r.operations.ranges, slowRangesRequestThreshold, observation.Args{
-		LogFields: []log.Field{
-			log.Int("repositoryID", r.repositoryID),
-			log.String("commit", r.commit),
-			log.String("path", r.path),
-			log.Int("numUploads", len(r.uploads)),
-			log.String("uploads", uploadIDsToString(r.uploads)),
-			log.Int("startLine", startLine),
-			log.Int("endLine", endLine),
+	ctx, traceLog, endObservation := observeResolver(ctx, &err, "Ranges", r.operations.ranges, slowRangesRequestThreshold, obsv.Args{
+		LogFields: []obsv.Field{
+			obsv.Int("repositoryID", r.repositoryID),
+			obsv.String("commit", r.commit),
+			obsv.String("path", r.path),
+			obsv.Int("numUploads", len(r.uploads)),
+			obsv.String("uploads", uploadIDsToString(r.uploads)),
+			obsv.Int("startLine", startLine),
+			obsv.Int("endLine", endLine),
 		},
 	})
 	defer endObservation()
@@ -36,7 +35,7 @@ func (r *queryResolver) Ranges(ctx context.Context, startLine, endLine int) (adj
 	}
 
 	for i := range adjustedUploads {
-		traceLog(log.Int("uploadID", adjustedUploads[i].Upload.ID))
+		traceLog(obsv.Int("uploadID", adjustedUploads[i].Upload.ID))
 
 		ranges, err := r.lsifStore.Ranges(
 			ctx,
@@ -61,7 +60,7 @@ func (r *queryResolver) Ranges(ctx context.Context, startLine, endLine int) (adj
 			adjustedRanges = append(adjustedRanges, adjustedRange)
 		}
 	}
-	traceLog(log.Int("numRanges", len(adjustedRanges)))
+	traceLog(obsv.Int("numRanges", len(adjustedRanges)))
 
 	return adjustedRanges, nil
 }

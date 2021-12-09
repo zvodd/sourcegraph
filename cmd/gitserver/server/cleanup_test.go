@@ -356,13 +356,6 @@ func TestCleanupOldLocks(t *testing.T) {
 		"github.com/foo/refslock/.git/refs/heads/stale.lock",
 	}
 
-	for _, f := range files {
-		if filepath.Base(f) == "HEAD" {
-			continue
-		}
-		runCmd(t, root, "git", "init", "--bare", filepath.Dir(f))
-	}
-
 	// Only recent lock files should remain.
 	mkFiles(t, root, files...)
 

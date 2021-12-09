@@ -740,22 +740,9 @@ func gitGC(dir GitDir) error {
 }
 
 func gitConfigGet(dir GitDir, key string) (string, error) {
-	{
-		cmd := exec.Command("find", ".")
-		dir.Set(cmd)
-		cmd.Stdout = os.Stdout
-		cmd.Run()
-
-		cmd = exec.Command("cat", "config")
-		dir.Set(cmd)
-		cmd.Stdout = os.Stdout
-		cmd.Run()
-	}
 	cmd := exec.Command("git", "config", "--get", key)
 	dir.Set(cmd)
-	cmd.Stderr = os.Stderr
 	out, err := cmd.Output()
-	fmt.Println("OUT", dir, string(out))
 	if err != nil {
 		// Exit code 1 means the key is not set.
 		var e *exec.ExitError

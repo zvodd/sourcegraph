@@ -125,10 +125,9 @@ func TestCleanupInactive(t *testing.T) {
 // relevant internal magic numbers and transformations change.
 func TestGitGCAuto(t *testing.T) {
 	// Create a test repository with detectable garbage that GC can prune.
-	root := t.TempDir()
-	repo := filepath.Join(root, "garbage-repo")
-	defer os.RemoveAll(root)
-	runCmd(t, root, "git", "init", repo)
+	wd := t.TempDir()
+	repo := filepath.Join(wd, "garbage-repo")
+	runCmd(t, wd, "git", "init", repo)
 
 	// First we need to generate a moderate number of commits.
 	for i := 0; i < 50; i++ {
@@ -148,6 +147,12 @@ func TestGitGCAuto(t *testing.T) {
 	// Bring everything back together in one branch.
 	runCmd(t, repo, "git", "checkout", "master")
 	runCmd(t, repo, "git", "merge", "secondary")
+
+	// Now create a bare repo like gitserver expects
+	root := t.TempDir()
+	wdRepo := repo
+	repo = filepath.Join(root, "garbage-repo")
+	runCmd(t, root, "git", "clone", "--bare", wdRepo, filepath.Join(repo, ".git"))
 
 	// `git count-objects -v` can indicate objects, packs, etc.
 	// We'll run this before and after to verify that an action
@@ -327,9 +332,9 @@ func TestCleanupExpired(t *testing.T) {
 
 func TestCleanupOldLocks(t *testing.T) {
 	root := t.TempDir()
+	root = "/tmp/test"
 
-	// Only recent lock files should remain.
-	mkFiles(t, root,
+	files := []string{
 		"github.com/foo/empty/.git/HEAD",
 
 		"github.com/foo/freshconfiglock/.git/HEAD",
@@ -349,7 +354,17 @@ func TestCleanupOldLocks(t *testing.T) {
 		"github.com/foo/refslock/.git/refs/heads/fresh.lock",
 		"github.com/foo/refslock/.git/refs/heads/stale",
 		"github.com/foo/refslock/.git/refs/heads/stale.lock",
-	)
+	}
+
+	for _, f := range files {
+		if filepath.Base(f) == "HEAD" {
+			continue
+		}
+		runCmd(t, root, "git", "init", "--bare", filepath.Dir(f))
+	}
+
+	// Only recent lock files should remain.
+	mkFiles(t, root, files...)
 
 	chtime := func(p string, age time.Duration) {
 		err := os.Chtimes(filepath.Join(root, p), time.Now().Add(-age), time.Now().Add(-age))
@@ -361,6 +376,7 @@ func TestCleanupOldLocks(t *testing.T) {
 	chtime("github.com/foo/stalepacked/.git/packed-refs.lock", 2*time.Hour)
 	chtime("github.com/foo/refslock/.git/refs/heads/stale.lock", 2*time.Hour)
 
+	t.Fatal("stop")
 	s := &Server{ReposDir: root}
 	s.Handler() // Handler as a side-effect sets up Server
 	s.cleanupRepos()
@@ -694,11 +710,11 @@ func assertPaths(t *testing.T, root string, want ...string) {
 			paths = append(paths, p)
 		}
 		sort.Strings(paths)
-		t.Errorf("did not find expected paths: %s", strings.Join(paths, " "))
+		t.Errorf("did not find expected paths:\n- %s", strings.Join(paths, "\n- "))
 	}
 	if len(unwanted) > 0 {
 		sort.Strings(unwanted)
-		t.Errorf("found unexpected paths: %s", strings.Join(unwanted, " "))
+		t.Errorf("found unexpected paths:\n- %s", strings.Join(unwanted, "\n- "))
 	}
 }
 

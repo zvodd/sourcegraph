@@ -110,6 +110,17 @@ func (s *Server) cleanupRepos() {
 			return false, err
 		}
 
+		// We have seen repository corruption fail in such a way that the git
+		// config is missing the bare repo option but everything else looks
+		// like it works. This leads to failing fetches, so treat non-bare
+		// repos as corrupt.
+		if v, err := gitConfigGet(dir, "core.bare"); err != nil {
+			return false, err
+		} else if bare, _ := strconv.ParseBool(v); !bare {
+			fmt.Println(bare, v)
+			reason = "non-bare"
+		}
+
 		if reason == "" {
 			return false, nil
 		}
@@ -729,9 +740,22 @@ func gitGC(dir GitDir) error {
 }
 
 func gitConfigGet(dir GitDir, key string) (string, error) {
+	{
+		cmd := exec.Command("find", ".")
+		dir.Set(cmd)
+		cmd.Stdout = os.Stdout
+		cmd.Run()
+
+		cmd = exec.Command("cat", "config")
+		dir.Set(cmd)
+		cmd.Stdout = os.Stdout
+		cmd.Run()
+	}
 	cmd := exec.Command("git", "config", "--get", key)
 	dir.Set(cmd)
+	cmd.Stderr = os.Stderr
 	out, err := cmd.Output()
+	fmt.Println("OUT", dir, string(out))
 	if err != nil {
 		// Exit code 1 means the key is not set.
 		var e *exec.ExitError

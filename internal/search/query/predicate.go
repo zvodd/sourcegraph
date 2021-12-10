@@ -23,6 +23,9 @@ type Predicate interface {
 	// Plan generates a plan of (possibly multiple) queries to execute the
 	// behavior of a predicate in a query Q.
 	Plan(parent Basic) (Plan, error)
+
+	// The kind of predicate that directs logic for evaluating this predicate.
+	Kind() PredicateKind
 }
 
 var DefaultPredicateRegistry = PredicateRegistry{
@@ -35,6 +38,9 @@ var DefaultPredicateRegistry = PredicateRegistry{
 	FieldFile: {
 		"contains.content": func() Predicate { return &FileContainsContentPredicate{} },
 		"contains":         func() Predicate { return &FileContainsContentPredicate{} },
+	},
+	FieldContent: {
+		"version": func() Predicate { return &VersionPredicate{} },
 	},
 }
 
@@ -274,6 +280,13 @@ func (f *FileContainsContentPredicate) ParseParams(params string) error {
 	}
 	f.Pattern = params
 	return nil
+}
+
+func (p VersionPredicate) Field() string { return FieldContent }
+func (p VersionPredicate) Name() string  { return "version" }
+
+func (p *VersionPredicate) Plan(parent Basic) (Plan, error) {
+
 }
 
 func (f FileContainsContentPredicate) Field() string { return FieldFile }

@@ -24,7 +24,6 @@ import (
 	connections "github.com/sourcegraph/sourcegraph/internal/database/connections/live"
 	"github.com/sourcegraph/sourcegraph/internal/database/locker"
 	"github.com/sourcegraph/sourcegraph/internal/observation"
-	"github.com/sourcegraph/sourcegraph/internal/sentry"
 	"github.com/sourcegraph/sourcegraph/internal/trace"
 )
 
@@ -41,10 +40,9 @@ type Services struct {
 	locker          *locker.Locker
 	gitserverClient *gitserver.Client
 	indexEnqueuer   *enqueuer.IndexEnqueuer
-	hub             *sentry.Hub
 }
 
-func NewServices(ctx context.Context, siteConfig conftypes.WatchableSiteConfig, db database.DB) (*Services, error) {
+func NewServices(ctx context.Context, siteConfig conftypes.SiteConfigQuerier, db database.DB) (*Services, error) {
 	if err := config.UploadStoreConfig.Validate(); err != nil {
 		return nil, errors.Errorf("failed to load config: %s", err)
 	}
@@ -55,9 +53,6 @@ func NewServices(ctx context.Context, siteConfig conftypes.WatchableSiteConfig, 
 		Tracer:     &trace.Tracer{Tracer: opentracing.GlobalTracer()},
 		Registerer: prometheus.DefaultRegisterer,
 	}
-
-	// Initialize sentry hub
-	hub := mustInitializeSentryHub(siteConfig)
 
 	// Connect to database
 	codeIntelDB := mustInitializeCodeIntelDB()
@@ -81,7 +76,6 @@ func NewServices(ctx context.Context, siteConfig conftypes.WatchableSiteConfig, 
 			internal,
 			httpapi.DefaultValidatorByCodeHost,
 			operations,
-			hub,
 		)
 	}
 	internalUploadHandler := newUploadHandler(true)
@@ -106,7 +100,6 @@ func NewServices(ctx context.Context, siteConfig conftypes.WatchableSiteConfig, 
 		locker:          locker,
 		gitserverClient: gitserverClient,
 		indexEnqueuer:   indexEnqueuer,
-		hub:             hub,
 	}, nil
 }
 
@@ -119,19 +112,4 @@ func mustInitializeCodeIntelDB() *sql.DB {
 		log.Fatalf("Failed to connect to codeintel database: %s", err)
 	}
 	return db
-}
-
-func mustInitializeSentryHub(c conftypes.WatchableSiteConfig) *sentry.Hub {
-	getDsn := func(c conftypes.SiteConfigQuerier) string {
-		if c.SiteConfig().Log != nil && c.SiteConfig().Log.Sentry != nil {
-			return c.SiteConfig().Log.Sentry.CodeIntelDSN
-		}
-		return ""
-	}
-
-	hub, err := sentry.NewWithDsn(getDsn(c), c, getDsn)
-	if err != nil {
-		log.Fatalf("Failed to initialize sentry hub: %s", err)
-	}
-	return hub
 }

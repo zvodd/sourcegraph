@@ -19,13 +19,14 @@ RUN wget -O coursier.zip https://github.com/sourcegraph/lsif-java/releases/downl
     mv cs-musl /usr/local/bin/coursier && \
     chmod +x /usr/local/bin/coursier
 
-FROM sourcegraph/alpine-3.12:107969_2021-09-10_80f5edc@sha256:ce1ba2f16ec56e5e8007da53e0e6449bc0fa1fe1f972bffbc33dea1ae410b86d as p4-fusion
+FROM sourcegraph/alpine-3.12:120059_2021-12-09_b34c7b2@sha256:9a1fde12f56fea02027cf4caeebdddfedb7b73bf8db6c16f7907a6e04a29134c as p4-fusion
 
 # hadolint ignore=DL3018
 RUN apk add --no-cache \
-	# Gitserver requires Git protocol v2 https://github.com/sourcegraph/sourcegraph/issues/13168
-	'git>=2.18' \
-	make \
+    # We require git 2.34.1 because we use git-repack with flag --write-midx.
+	'git=~2.34.1' --repository=http://dl-cdn.alpinelinux.org/alpine/v3.15/main \
+	&& apk add --no-cache \
+    make \
 	cmake \
 	g++ \
 	gcc \

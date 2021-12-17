@@ -101,6 +101,7 @@ type FileDiff struct {
 // FileReplacement represents a file content been modified by a rewrite operation.
 type FileReplacement struct {
 	URI     string `json:"uri"`
+	Diff    string `json:"diff"`
 	Content string `json:"rewritten_source"`
 }
 

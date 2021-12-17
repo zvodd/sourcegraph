@@ -37,7 +37,11 @@ func replace(ctx context.Context, content []byte, matchPattern MatchPattern, rep
 			return nil, err
 		}
 		// There is only one replacement value since we passed in comby.FileContent.
-		newContent = replacements[0].Content
+		// newContent = replacements[0].Content
+		if len(replacements) == 0 {
+			return nil, err
+		}
+		newContent = replacements[0].Diff
 	default:
 		return nil, errors.Errorf("unsupported replacement operation for match pattern %T", match)
 	}

@@ -7,6 +7,10 @@ export const shouldCompressResponse: CompressionFilter = (request, response) => 
         return false
     }
 
+    if (request.path.startsWith('/compute/stream')) {
+        return false
+    }
+
     // fallback to standard filter function
     return compression.filter(request, response)
 }

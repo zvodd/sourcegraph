@@ -1,0 +1,22 @@
+body {
+  background-color: var(--bg-color);
+}
+
+input {
+    width: 800px;
+    font-family: monospace;
+}
+
+
+pre {
+  margin: 2px;
+}
+
+code {
+  font-size: 16px;
+}
+
+/* make first rectangle in SVG chart added by elm-charts be fill:none */
+svg > rect {
+   fill: none;
+}

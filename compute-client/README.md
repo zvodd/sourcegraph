@@ -1,13 +1,19 @@
 ### Sourcegraph Compute Client
 
+## Super quick start
 
-You *must* run `sg start dotcom` for your Sourcegraph instance (yes `dotcom`) because otherwise requests have to be authed and I didn't figure it out. Start that now before doing anything else or things may not work.
+```
+sg start dotcom # in root sourcegraph repo directory
+npx browser-sync public --server # run in this directory, sourcegraph/compute-client
+```
 
-The `https://sourcegraph.test:3443` endpoint *must* be available, that's what the client app connects to.
+If that didn't work, read on.
 
-## Run the app
+## Quick start
 
-Just statically serve the `public` folder with the server of your choice. These should all work for you:
+- (1) You *must* run `sg start dotcom` for your Sourcegraph instance (yes `dotcom`) because otherwise requests have to be authed and I didn't figure it out. Start that now before doing anything else or things may not work. The `https://sourcegraph.test:3443` endpoint *must* be available, that's what the client app connects to.
+
+- (2) Just statically serve the `public` folder with the server of your choice. These should all work for you:
 
 `npx browser-sync public --server`
 
@@ -21,8 +27,9 @@ Note: you can see the raw HTTP query for each compute request logged in the cons
 https://sourcegraph.test:3443/compute/stream?q=repo%3Asourcegraph%2Fsourcegraph%24%20content%3Aoutput((%5Cw%2B)%20-%3E%20%241)%20type%3Acommit%20after%3A%224%20months%20ago%22%20count%3Aall
 ```
 
-
 ## Develop 
+
+Only if you want to hack on this elm app!
 
 ### Install
 

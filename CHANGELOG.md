@@ -38,7 +38,7 @@ All notable changes to Sourcegraph are documented in this file.
 
 ## 3.35.0
 
-**⚠️ We are currently investigating issues related to Code Insights on this release. Users are advised to hold off on upgrading to 3.35 until a fix is available.**
+**⚠️ This release has bugs related to Code Insights and out-of-band migrations. Users are advised to upgrade directly to 3.35.1.**
 
 ### Added
 

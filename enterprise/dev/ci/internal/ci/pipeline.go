@@ -212,13 +212,14 @@ func GeneratePipeline(c Config) (*bk.Pipeline, error) {
 
 		// Various integration tests
 		ops.Append(
-			backendIntegrationTests(c.candidateImageTag()),
+			// backendIntegrationTests(c.candidateImageTag()),
 			codeIntelQA(c.candidateImageTag()),
-			serverE2E(c.candidateImageTag()),
-			serverQA(c.candidateImageTag()),
+			// serverE2E(c.candidateImageTag()),
+			// serverQA(c.candidateImageTag()),
 			// Flaky deployment. See https://github.com/sourcegraph/sourcegraph/issues/25977
 			// clusterQA(c.candidateImageTag()),
-			testUpgrade(c.candidateImageTag(), minimumUpgradeableVersion))
+			// testUpgrade(c.candidateImageTag(), minimumUpgradeableVersion))
+		)
 
 		// All operations before this point are required
 		ops.Append(wait)

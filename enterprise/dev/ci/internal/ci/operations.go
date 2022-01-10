@@ -49,13 +49,13 @@ func CoreTestOperations(changedFiles changed.Files, opts CoreTestOperationsOptio
 	if runAll || changedFiles.AffectsClient() || changedFiles.AffectsGraphQL() {
 		// If there are any Graphql changes, they are impacting the client as well.
 		ops.Append(
-			clientIntegrationTests,
-			clientChromaticTests(opts.ChromaticShouldAutoAccept),
-			frontendTests,   // ~4.5m
-			addWebApp,       // ~3m
-			addBrowserExt,   // ~2m
-			addBrandedTests, // ~1.5m
-			addTsLint,
+		// clientIntegrationTests,
+		// clientChromaticTests(opts.ChromaticShouldAutoAccept),
+		// frontendTests,   // ~4.5m
+		// addWebApp,       // ~3m
+		// addBrowserExt,   // ~2m
+		// addBrandedTests, // ~1.5m
+		// addTsLint,
 		)
 	}
 
@@ -425,6 +425,7 @@ func codeIntelQA(candidateTag string) operations.Operation {
 		p.AddStep(":docker::brain: Code Intel QA",
 			// Run tests against the candidate server image
 			bk.DependsOn(candidateImageStepKey("server")),
+			bk.Parallelism(20),
 			bk.Env("CANDIDATE_VERSION", candidateTag),
 
 			bk.Env("SOURCEGRAPH_BASE_URL", "http://127.0.0.1:7080"),

@@ -63,3 +63,5 @@ docker run --rm \
   -p 0.0.0.0:${PORT}:5432 \
   -v "${DISK}":/var/lib/postgresql/data \
   ${IMAGE} >"${LOG_FILE}" 2>&1 || finish
+
+timeout 90s bash -c "until docker exec $CONTAINER pg_isready -p 5432 ; do sleep 5 ; done"

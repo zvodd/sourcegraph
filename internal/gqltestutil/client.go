@@ -26,6 +26,10 @@ func NeedsSiteInit(baseURL string) (bool, error) {
 	if err != nil {
 		return false, errors.Wrap(err, "read body")
 	}
+
+	// TODO JH
+	fmt.Println(string(p))
+
 	return strings.Contains(string(p), `"needsSiteInit":true`), nil
 }
 

@@ -2,6 +2,9 @@
 
 set -e
 
+# TODO jh
+yarn install
+
 # Separate out time for go mod from go install
 echo "--- go mod download"
 go mod download

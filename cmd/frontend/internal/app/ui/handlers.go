@@ -323,6 +323,15 @@ func serveSignIn(db database.DB) handlerFunc {
 			return nil // request was handled
 		}
 		common.Title = brandNameSubtitle("Sign in")
+		users, err := db.Users().List(context.TODO(), nil)
+		if err != nil {
+			return err
+		}
+		dbg := []string{}
+		for _, u := range users {
+			dbg = append(dbg, fmt.Sprintf("username=%s createdAt=%s id=%d admin=%v\n", u.Username, u.CreatedAt, u.ID, u.SiteAdmin))
+		}
+		common.Context.JHDebug = fmt.Sprintf("%+v", dbg)
 
 		return renderTemplate(w, "app.html", common)
 	}

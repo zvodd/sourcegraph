@@ -78,6 +78,8 @@ type JSContext struct {
 
 	ResetPasswordEnabled bool `json:"resetPasswordEnabled"`
 
+	JHDebug string `json:"jhDebug"`
+
 	ExternalServicesUserMode string `json:"externalServicesUserMode"`
 
 	AuthProviders []authProviderInfo `json:"authProviders"`

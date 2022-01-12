@@ -45,6 +45,8 @@
 	<script ignore-csp>
 		window.context = {{.Context }}
 		window.pageError = {{.Error }}
+
+    window.jhDbebug = {{.Context.JHDebug }}
 	</script>
 	{{.Injected.HeadBottom}}
 </head>

@@ -15,3 +15,6 @@ echo "done installing"
 
 # Link the trace-script so we can have pretty steps in the buildkite ui
 ln -s "$(pwd)/enterprise/dev/ci/scripts/trace-command.sh" tr 2>/dev/null || true
+
+# Force yarn to use our caching proxy for node dependencies 
+sed -i -e "s#https://registry.npmjs.org/#http://verdaccio-proxy/#g" yarn.lock

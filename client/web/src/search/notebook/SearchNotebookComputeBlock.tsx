@@ -4,14 +4,15 @@ import PencilIcon from 'mdi-react/PencilIcon'
 import PlayCircleOutlineIcon from 'mdi-react/PlayCircleOutlineIcon'
 import * as Monaco from 'monaco-editor'
 import React, { useState, useCallback, useRef, useEffect, useMemo } from 'react'
+import ElmApp from 'react-elm-components'
 
-import { Markdown } from '@sourcegraph/shared/src/components/Markdown'
 import { ThemeProps } from '@sourcegraph/shared/src/theme'
 import { MonacoEditor } from '@sourcegraph/web/src/components/MonacoEditor'
 
 import blockStyles from './SearchNotebookBlock.module.scss'
 import { BlockMenuAction, SearchNotebookBlockMenu } from './SearchNotebookBlockMenu'
 import styles from './SearchNotebookMarkdownBlock.module.scss'
+import Main from './todomvc.js'
 import { useBlockSelection } from './useBlockSelection'
 import { useBlockShortcuts } from './useBlockShortcuts'
 import { useCommonBlockMenuActions } from './useCommonBlockMenuActions'
@@ -124,35 +125,6 @@ export const SearchNotebookComputeBlock: React.FunctionComponent<SearchNotebookC
 
     const blockMenu = isSelected && !isReadOnly && <SearchNotebookBlockMenu id={id} actions={menuActions} />
 
-    if (!isEditing) {
-        return (
-            <div className={classNames('block-wrapper', blockStyles.blockWrapper)} data-block-id={id}>
-                {/* Notebook blocks are a form of specialized UI for which there are no good accesibility settings (role, aria-*)
-                    or semantic elements that would accurately describe its functionality. To provide the necessary functionality we have
-                    to rely on plain div elements and custom click/focus/keyDown handlers. We still preserve the ability to navigate through blocks
-                    with the keyboard using the up and down arrows, and TAB. */}
-                {/* eslint-disable-next-line jsx-a11y/no-static-element-interactions */}
-                <div
-                    className={classNames(blockStyles.block, isSelected && blockStyles.selected, styles.outputWrapper)}
-                    onClick={onSelect}
-                    onFocus={onSelect}
-                    onDoubleClick={onDoubleClick}
-                    onKeyDown={onKeyDown}
-                    // A tabIndex is necessary to make the block focusable.
-                    // eslint-disable-next-line jsx-a11y/no-noninteractive-tabindex
-                    tabIndex={0}
-                    aria-label="Notebook compute block"
-                    ref={blockElement}
-                >
-                    <div className={styles.output} data-testid="output">
-                        <Markdown className={styles.markdown} dangerousInnerHTML={output ?? ''} />
-                    </div>
-                </div>
-                {blockMenu}
-            </div>
-        )
-    }
-
     return (
         <div className={classNames('block-wrapper', blockStyles.blockWrapper)} data-block-id={id}>
             {/* See the explanation for the disable above. */}
@@ -183,6 +155,9 @@ export const SearchNotebookComputeBlock: React.FunctionComponent<SearchNotebookC
                         options={MONACO_BLOCK_INPUT_OPTIONS}
                         border={false}
                     />
+                </div>
+                <div>
+                    <ElmApp src={Main} />
                 </div>
             </div>
             {blockMenu}

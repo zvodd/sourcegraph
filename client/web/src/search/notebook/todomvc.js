@@ -137,7 +137,7 @@
     
     // import Native.List //
     
-    let _elm_lang$core$Native_Array = function() {
+    const _elm_lang$core$Native_Array = function() {
     
     // A RRB-Tree has two distinct data types.
     // Leaf -> "height"  is always 0
@@ -1096,7 +1096,7 @@
     }();
     // import Native.Utils //
     
-    let _elm_lang$core$Native_Basics = function() {
+    const _elm_lang$core$Native_Basics = function() {
     
     function div(a, b)
     {
@@ -1243,12 +1243,12 @@
     
     function eq(rootX, rootY)
     {
-        let stack = [{ x: rootX, y: rootY }];
+        const stack = [{ x: rootX, y: rootY }];
         while (stack.length > 0)
         {
-            let front = stack.pop();
-            let x = front.x;
-            let y = front.y;
+            const front = stack.pop();
+            const x = front.x;
+            const y = front.y;
             if (x === y)
             {
                 continue;
@@ -1256,7 +1256,7 @@
             if (typeof x === 'object')
             {
                 let c = 0;
-                for (let key in x)
+                for (const key in x)
                 {
                     ++c;
                     if (!(key in y))
@@ -1294,7 +1294,7 @@
     // Code in Generate/JavaScript.hs, Basics.js, and List.js depends on
     // the particular integer values assigned to LT, EQ, and GT.
     
-    let LT = -1; var EQ = 0; var GT = 1;
+    const LT = -1; let EQ = 0; let GT = 1;
     
     function cmp(x, y)
     {
@@ -1313,7 +1313,7 @@
                     ? LT
                     : GT;
         }
-        else if (x.ctor === '::' || x.ctor === '[]')
+        if (x.ctor === '::' || x.ctor === '[]')
         {
             while (true)
             {
@@ -1358,7 +1358,7 @@
     
     // COMMON VALUES
     
-    let Tuple0 = {
+    const Tuple0 = {
         ctor: '_Tuple0'
     };
     
@@ -1388,10 +1388,10 @@
     
     function update(oldRecord, updatedFields)
     {
-        let newRecord = {};
-        for (let key in oldRecord)
+        const newRecord = {};
+        for (const key in oldRecord)
         {
-            let value = (key in updatedFields) ? updatedFields[key] : oldRecord[key];
+            const value = (key in updatedFields) ? updatedFields[key] : oldRecord[key];
             newRecord[key] = value;
         }
         return newRecord;
@@ -1399,7 +1399,7 @@
     
     /// / LIST STUFF ////
     
-    let Nil = { ctor: '[]' };
+    const Nil = { ctor: '[]' };
     
     function Cons(hd, tl)
     {
@@ -1423,7 +1423,7 @@
         {
             return ys;
         }
-        let root = Cons(xs._0, Nil);
+        const root = Cons(xs._0, Nil);
         let current = root;
         xs = xs._1;
         while (xs.ctor !== '[]')
@@ -1475,7 +1475,7 @@
     
     function toString(v)
     {
-        let type = typeof v;
+        const type = typeof v;
         if (type === 'function')
         {
             var name = v.func ? v.func.name : v.name;
@@ -1509,7 +1509,7 @@
     
         if (type === 'object' && 'ctor' in v)
         {
-            let ctorStarter = v.ctor.slice(0, 5);
+            const ctorStarter = v.ctor.slice(0, 5);
     
             if (ctorStarter === '_Tupl')
             {
@@ -1568,7 +1568,7 @@
                     name = 'Set';
                     list = A2(
                         _elm_lang$core$List$map,
-                        (x) => {return x._0; },
+                        x => x._0,
                         _elm_lang$core$Dict$toList(v._0)
                     );
                 }
@@ -1581,13 +1581,13 @@
             }
     
             var output = '';
-            for (let index in v)
+            for (const index in v)
             {
-                if (index === 'ctor') continue;
-                var str = toString(v[index]);
-                let c0 = str[0];
-                let parenless = c0 === '{' || c0 === '(' || c0 === '<' || c0 === '"' || !str.includes(' ');
-                output += ' ' + (parenless ? str : '(' + str + ')');
+                if (index === 'ctor') {continue;}
+                let string = toString(v[index]);
+                let c0 = string[0];
+                let parenless = c0 === '{' || c0 === '(' || c0 === '<' || c0 === '"' || !string.includes(' ');
+                output += ' ' + (parenless ? string : '(' + string + ')');
             }
             return v.ctor + output;
         }
@@ -1609,9 +1609,9 @@
         return '<internal structure>';
     }
     
-    function addSlashes(str, isChar)
+    function addSlashes(string, isChar)
     {
-        var s = str.replace(/\\/g, '\\\\')
+        var s = string.replace(/\\/g, '\\\\')
                   .replace(/\n/g, '\\n')
                   .replace(/\t/g, '\\t')
                   .replace(/\r/g, '\\r')
@@ -1619,10 +1619,10 @@
                   .replace(/\0/g, '\\0');
         if (isChar)
         {
-            return s.replace(/\'/g, '\\\'');
+            return s.replace(/'/g, '\\\'');
         }
         
-            return s.replace(/\"/g, '\\"');
+            return s.replace(/"/g, '\\"');
         
     }
     
@@ -1644,76 +1644,68 @@
     };
     
     }();
-    let _elm_lang$core$Basics$uncurry = F2(
+    const _elm_lang$core$Basics$uncurry = F2(
         (f, _p0) => {
             let _p1 = _p0;
             return A2(f, _p1._0, _p1._1);
         });
-    let _elm_lang$core$Basics$curry = F3(
+    const _elm_lang$core$Basics$curry = F3(
         (f, a, b) => {
             return f(
                 {ctor: '_Tuple2', _0: a, _1: b});
         });
-    let _elm_lang$core$Basics$flip = F3(
+    const _elm_lang$core$Basics$flip = F3(
         (f, b, a) => {
             return A2(f, a, b);
         });
-    let _elm_lang$core$Basics$snd = function (_p2) {
+    const _elm_lang$core$Basics$snd = function (_p2) {
         let _p3 = _p2;
         return _p3._1;
     };
-    let _elm_lang$core$Basics$fst = function (_p4) {
+    const _elm_lang$core$Basics$fst = function (_p4) {
         let _p5 = _p4;
         return _p5._0;
     };
-    let _elm_lang$core$Basics$always = F2(
+    const _elm_lang$core$Basics$always = F2(
         (a, _p6) => {
             return a;
         });
-    let _elm_lang$core$Basics$identity = function (x) {
+    const _elm_lang$core$Basics$identity = function (x) {
         return x;
     };
     var _elm_lang$core$Basics_ops = _elm_lang$core$Basics_ops || {};
     _elm_lang$core$Basics_ops['<|'] = F2(
-        (f, x) => {
-            return f(x);
-        });
+        (f, x) => f(x));
     var _elm_lang$core$Basics_ops = _elm_lang$core$Basics_ops || {};
     _elm_lang$core$Basics_ops['|>'] = F2(
-        (x, f) => {
-            return f(x);
-        });
+        (x, f) => f(x));
     var _elm_lang$core$Basics_ops = _elm_lang$core$Basics_ops || {};
     _elm_lang$core$Basics_ops['>>'] = F3(
-        (f, g, x) => {
-            return g(
-                f(x));
-        });
+        (f, g, x) => g(
+                f(x)));
     var _elm_lang$core$Basics_ops = _elm_lang$core$Basics_ops || {};
     _elm_lang$core$Basics_ops['<<'] = F3(
-        (g, f, x) => {
-            return g(
-                f(x));
-        });
+        (g, f, x) => g(
+                f(x)));
     var _elm_lang$core$Basics_ops = _elm_lang$core$Basics_ops || {};
     _elm_lang$core$Basics_ops['++'] = _elm_lang$core$Native_Utils.append;
-    let _elm_lang$core$Basics$toString = _elm_lang$core$Native_Utils.toString;
-    let _elm_lang$core$Basics$isInfinite = _elm_lang$core$Native_Basics.isInfinite;
-    let _elm_lang$core$Basics$isNaN = _elm_lang$core$Native_Basics.isNaN;
-    let _elm_lang$core$Basics$toFloat = _elm_lang$core$Native_Basics.toFloat;
-    let _elm_lang$core$Basics$ceiling = _elm_lang$core$Native_Basics.ceiling;
-    let _elm_lang$core$Basics$floor = _elm_lang$core$Native_Basics.floor;
-    let _elm_lang$core$Basics$truncate = _elm_lang$core$Native_Basics.truncate;
-    let _elm_lang$core$Basics$round = _elm_lang$core$Native_Basics.round;
-    let _elm_lang$core$Basics$not = _elm_lang$core$Native_Basics.not;
-    let _elm_lang$core$Basics$xor = _elm_lang$core$Native_Basics.xor;
+    const _elm_lang$core$Basics$toString = _elm_lang$core$Native_Utils.toString;
+    const _elm_lang$core$Basics$isInfinite = _elm_lang$core$Native_Basics.isInfinite;
+    const _elm_lang$core$Basics$isNaN = _elm_lang$core$Native_Basics.isNaN;
+    const _elm_lang$core$Basics$toFloat = _elm_lang$core$Native_Basics.toFloat;
+    const _elm_lang$core$Basics$ceiling = _elm_lang$core$Native_Basics.ceiling;
+    const _elm_lang$core$Basics$floor = _elm_lang$core$Native_Basics.floor;
+    const _elm_lang$core$Basics$truncate = _elm_lang$core$Native_Basics.truncate;
+    const _elm_lang$core$Basics$round = _elm_lang$core$Native_Basics.round;
+    const _elm_lang$core$Basics$not = _elm_lang$core$Native_Basics.not;
+    const _elm_lang$core$Basics$xor = _elm_lang$core$Native_Basics.xor;
     var _elm_lang$core$Basics_ops = _elm_lang$core$Basics_ops || {};
     _elm_lang$core$Basics_ops['||'] = _elm_lang$core$Native_Basics.or;
     var _elm_lang$core$Basics_ops = _elm_lang$core$Basics_ops || {};
     _elm_lang$core$Basics_ops['&&'] = _elm_lang$core$Native_Basics.and;
-    let _elm_lang$core$Basics$max = _elm_lang$core$Native_Basics.max;
-    let _elm_lang$core$Basics$min = _elm_lang$core$Native_Basics.min;
-    let _elm_lang$core$Basics$compare = _elm_lang$core$Native_Basics.compare;
+    const _elm_lang$core$Basics$max = _elm_lang$core$Native_Basics.max;
+    const _elm_lang$core$Basics$min = _elm_lang$core$Native_Basics.min;
+    const _elm_lang$core$Basics$compare = _elm_lang$core$Native_Basics.compare;
     var _elm_lang$core$Basics_ops = _elm_lang$core$Basics_ops || {};
     _elm_lang$core$Basics_ops['>='] = _elm_lang$core$Native_Basics.ge;
     var _elm_lang$core$Basics_ops = _elm_lang$core$Basics_ops || {};
@@ -1726,25 +1718,25 @@
     _elm_lang$core$Basics_ops['/='] = _elm_lang$core$Native_Basics.neq;
     var _elm_lang$core$Basics_ops = _elm_lang$core$Basics_ops || {};
     _elm_lang$core$Basics_ops['=='] = _elm_lang$core$Native_Basics.eq;
-    let _elm_lang$core$Basics$e = _elm_lang$core$Native_Basics.e;
-    let _elm_lang$core$Basics$pi = _elm_lang$core$Native_Basics.pi;
-    let _elm_lang$core$Basics$clamp = _elm_lang$core$Native_Basics.clamp;
-    let _elm_lang$core$Basics$logBase = _elm_lang$core$Native_Basics.logBase;
-    let _elm_lang$core$Basics$abs = _elm_lang$core$Native_Basics.abs;
-    let _elm_lang$core$Basics$negate = _elm_lang$core$Native_Basics.negate;
-    let _elm_lang$core$Basics$sqrt = _elm_lang$core$Native_Basics.sqrt;
-    let _elm_lang$core$Basics$atan2 = _elm_lang$core$Native_Basics.atan2;
-    let _elm_lang$core$Basics$atan = _elm_lang$core$Native_Basics.atan;
-    let _elm_lang$core$Basics$asin = _elm_lang$core$Native_Basics.asin;
-    let _elm_lang$core$Basics$acos = _elm_lang$core$Native_Basics.acos;
-    let _elm_lang$core$Basics$tan = _elm_lang$core$Native_Basics.tan;
-    let _elm_lang$core$Basics$sin = _elm_lang$core$Native_Basics.sin;
-    let _elm_lang$core$Basics$cos = _elm_lang$core$Native_Basics.cos;
+    const _elm_lang$core$Basics$e = _elm_lang$core$Native_Basics.e;
+    const _elm_lang$core$Basics$pi = _elm_lang$core$Native_Basics.pi;
+    const _elm_lang$core$Basics$clamp = _elm_lang$core$Native_Basics.clamp;
+    const _elm_lang$core$Basics$logBase = _elm_lang$core$Native_Basics.logBase;
+    const _elm_lang$core$Basics$abs = _elm_lang$core$Native_Basics.abs;
+    const _elm_lang$core$Basics$negate = _elm_lang$core$Native_Basics.negate;
+    const _elm_lang$core$Basics$sqrt = _elm_lang$core$Native_Basics.sqrt;
+    const _elm_lang$core$Basics$atan2 = _elm_lang$core$Native_Basics.atan2;
+    const _elm_lang$core$Basics$atan = _elm_lang$core$Native_Basics.atan;
+    const _elm_lang$core$Basics$asin = _elm_lang$core$Native_Basics.asin;
+    const _elm_lang$core$Basics$acos = _elm_lang$core$Native_Basics.acos;
+    const _elm_lang$core$Basics$tan = _elm_lang$core$Native_Basics.tan;
+    const _elm_lang$core$Basics$sin = _elm_lang$core$Native_Basics.sin;
+    const _elm_lang$core$Basics$cos = _elm_lang$core$Native_Basics.cos;
     var _elm_lang$core$Basics_ops = _elm_lang$core$Basics_ops || {};
     _elm_lang$core$Basics_ops['^'] = _elm_lang$core$Native_Basics.exp;
     var _elm_lang$core$Basics_ops = _elm_lang$core$Basics_ops || {};
     _elm_lang$core$Basics_ops['%'] = _elm_lang$core$Native_Basics.mod;
-    let _elm_lang$core$Basics$rem = _elm_lang$core$Native_Basics.rem;
+    const _elm_lang$core$Basics$rem = _elm_lang$core$Native_Basics.rem;
     var _elm_lang$core$Basics_ops = _elm_lang$core$Basics_ops || {};
     _elm_lang$core$Basics_ops['//'] = _elm_lang$core$Native_Basics.div;
     var _elm_lang$core$Basics_ops = _elm_lang$core$Basics_ops || {};
@@ -1755,21 +1747,21 @@
     _elm_lang$core$Basics_ops['-'] = _elm_lang$core$Native_Basics.sub;
     var _elm_lang$core$Basics_ops = _elm_lang$core$Basics_ops || {};
     _elm_lang$core$Basics_ops['+'] = _elm_lang$core$Native_Basics.add;
-    let _elm_lang$core$Basics$toPolar = _elm_lang$core$Native_Basics.toPolar;
-    let _elm_lang$core$Basics$fromPolar = _elm_lang$core$Native_Basics.fromPolar;
-    let _elm_lang$core$Basics$turns = _elm_lang$core$Native_Basics.turns;
-    let _elm_lang$core$Basics$degrees = _elm_lang$core$Native_Basics.degrees;
-    let _elm_lang$core$Basics$radians = function (t) {
+    const _elm_lang$core$Basics$toPolar = _elm_lang$core$Native_Basics.toPolar;
+    const _elm_lang$core$Basics$fromPolar = _elm_lang$core$Native_Basics.fromPolar;
+    const _elm_lang$core$Basics$turns = _elm_lang$core$Native_Basics.turns;
+    const _elm_lang$core$Basics$degrees = _elm_lang$core$Native_Basics.degrees;
+    const _elm_lang$core$Basics$radians = function (t) {
         return t;
     };
-    let _elm_lang$core$Basics$GT = {ctor: 'GT'};
-    let _elm_lang$core$Basics$EQ = {ctor: 'EQ'};
-    let _elm_lang$core$Basics$LT = {ctor: 'LT'};
-    let _elm_lang$core$Basics$Never = function (a) {
+    const _elm_lang$core$Basics$GT = {ctor: 'GT'};
+    const _elm_lang$core$Basics$EQ = {ctor: 'EQ'};
+    const _elm_lang$core$Basics$LT = {ctor: 'LT'};
+    const _elm_lang$core$Basics$Never = function (a) {
         return {ctor: 'Never', _0: a};
     };
     
-    let _elm_lang$core$Maybe$withDefault = F2(
+    const _elm_lang$core$Maybe$withDefault = F2(
         ($default, maybe) => {
             let _p0 = maybe;
             if (_p0.ctor === 'Just') {
@@ -1778,8 +1770,8 @@
                 return $default;
             }
         });
-    let _elm_lang$core$Maybe$Nothing = {ctor: 'Nothing'};
-    let _elm_lang$core$Maybe$oneOf = function (maybes) {
+    const _elm_lang$core$Maybe$Nothing = {ctor: 'Nothing'};
+    const _elm_lang$core$Maybe$oneOf = function (maybes) {
         oneOf:
         while (true) {
             var _p1 = maybes;
@@ -1798,7 +1790,7 @@
             
         }
     };
-    let _elm_lang$core$Maybe$andThen = F2(
+    const _elm_lang$core$Maybe$andThen = F2(
         (maybeValue, callback) => {
             let _p4 = maybeValue;
             if (_p4.ctor === 'Just') {
@@ -1807,10 +1799,10 @@
                 return _elm_lang$core$Maybe$Nothing;
             }
         });
-    let _elm_lang$core$Maybe$Just = function (a) {
+    const _elm_lang$core$Maybe$Just = function (a) {
         return {ctor: 'Just', _0: a};
     };
-    let _elm_lang$core$Maybe$map = F2(
+    const _elm_lang$core$Maybe$map = F2(
         (f, maybe) => {
             let _p5 = maybe;
             if (_p5.ctor === 'Just') {
@@ -1820,7 +1812,7 @@
                 return _elm_lang$core$Maybe$Nothing;
             }
         });
-    let _elm_lang$core$Maybe$map2 = F3(
+    const _elm_lang$core$Maybe$map2 = F3(
         (func, ma, mb) => {
             let _p6 = {ctor: '_Tuple2', _0: ma, _1: mb};
             if (((_p6.ctor === '_Tuple2') && (_p6._0.ctor === 'Just')) && (_p6._1.ctor === 'Just')) {
@@ -1830,7 +1822,7 @@
                 return _elm_lang$core$Maybe$Nothing;
             }
         });
-    let _elm_lang$core$Maybe$map3 = F4(
+    const _elm_lang$core$Maybe$map3 = F4(
         (func, ma, mb, mc) => {
             let _p7 = {ctor: '_Tuple3', _0: ma, _1: mb, _2: mc};
             if ((((_p7.ctor === '_Tuple3') && (_p7._0.ctor === 'Just')) && (_p7._1.ctor === 'Just')) && (_p7._2.ctor === 'Just')) {
@@ -1840,7 +1832,7 @@
                 return _elm_lang$core$Maybe$Nothing;
             }
         });
-    let _elm_lang$core$Maybe$map4 = F5(
+    const _elm_lang$core$Maybe$map4 = F5(
         (func, ma, mb, mc, md) => {
             let _p8 = {ctor: '_Tuple4', _0: ma, _1: mb, _2: mc, _3: md};
             if (((((_p8.ctor === '_Tuple4') && (_p8._0.ctor === 'Just')) && (_p8._1.ctor === 'Just')) && (_p8._2.ctor === 'Just')) && (_p8._3.ctor === 'Just')) {
@@ -1850,7 +1842,7 @@
                 return _elm_lang$core$Maybe$Nothing;
             }
         });
-    let _elm_lang$core$Maybe$map5 = F6(
+    const _elm_lang$core$Maybe$map5 = F6(
         (func, ma, mb, mc, md, me) => {
             let _p9 = {ctor: '_Tuple5', _0: ma, _1: mb, _2: mc, _3: md, _4: me};
             if ((((((_p9.ctor === '_Tuple5') && (_p9._0.ctor === 'Just')) && (_p9._1.ctor === 'Just')) && (_p9._2.ctor === 'Just')) && (_p9._3.ctor === 'Just')) && (_p9._4.ctor === 'Just')) {
@@ -1865,7 +1857,7 @@
     
     var _elm_lang$core$Native_List = function() {
     
-    let Nil = { ctor: '[]' };
+    const Nil = { ctor: '[]' };
     
     function Cons(hd, tl)
     {
@@ -1874,17 +1866,17 @@
     
     function fromArray(array)
     {
-        var out = Nil;
-        for (var i = array.length; i--; )
+        let out = Nil;
+        for (let index = array.length; index--; )
         {
-            out = Cons(array[i], out);
+            out = Cons(array[index], out);
         }
         return out;
     }
     
     function toArray(xs)
     {
-        let out = [];
+        const out = [];
         while (xs.ctor !== '[]')
         {
             out.push(xs._0);
@@ -1909,18 +1901,18 @@
     
     function foldr(f, b, xs)
     {
-        let array = toArray(xs);
-        var acc = b;
+        const array = toArray(xs);
+        let accumulator = b;
         for (var i = array.length; i--; )
         {
-            acc = A2(f, array[i], acc);
+            accumulator = A2(f, array[i], accumulator);
         }
-        return acc;
+        return accumulator;
     }
     
     function map2(f, xs, ys)
     {
-        let array = [];
+        const array = [];
         while (xs.ctor !== '[]' && ys.ctor !== '[]')
         {
             array.push(A2(f, xs._0, ys._0));
@@ -1932,7 +1924,7 @@
     
     function map3(f, xs, ys, zs)
     {
-        let array = [];
+        const array = [];
         while (xs.ctor !== '[]' && ys.ctor !== '[]' && zs.ctor !== '[]')
         {
             array.push(A3(f, xs._0, ys._0, zs._0));
@@ -1945,7 +1937,7 @@
     
     function map4(f, ws, xs, ys, zs)
     {
-        let array = [];
+        const array = [];
         while (   ws.ctor !== '[]'
                && xs.ctor !== '[]'
                && ys.ctor !== '[]'
@@ -1962,7 +1954,7 @@
     
     function map5(f, vs, ws, xs, ys, zs)
     {
-        let array = [];
+        const array = [];
         while (   vs.ctor !== '[]'
                && ws.ctor !== '[]'
                && xs.ctor !== '[]'
@@ -1981,15 +1973,13 @@
     
     function sortBy(f, xs)
     {
-        return fromArray(toArray(xs).sort((a, b) => {
-            return _elm_lang$core$Native_Utils.cmp(f(a), f(b));
-        }));
+        return fromArray(toArray(xs).sort((a, b) => _elm_lang$core$Native_Utils.cmp(f(a), f(b))));
     }
     
     function sortWith(f, xs)
     {
         return fromArray(toArray(xs).sort((a, b) => {
-            let ord = f(a)(b).ctor;
+            const ord = f(a)(b).ctor;
             return ord === 'EQ' ? 0 : ord === 'LT' ? -1 : 1;
         }));
     }
@@ -2013,12 +2003,12 @@
     };
     
     }();
-    let _elm_lang$core$List$sortWith = _elm_lang$core$Native_List.sortWith;
-    let _elm_lang$core$List$sortBy = _elm_lang$core$Native_List.sortBy;
-    let _elm_lang$core$List$sort = function (xs) {
+    const _elm_lang$core$List$sortWith = _elm_lang$core$Native_List.sortWith;
+    const _elm_lang$core$List$sortBy = _elm_lang$core$Native_List.sortBy;
+    const _elm_lang$core$List$sort = function (xs) {
         return A2(_elm_lang$core$List$sortBy, _elm_lang$core$Basics$identity, xs);
     };
-    let _elm_lang$core$List$drop = F2(
+    const _elm_lang$core$List$drop = F2(
         (n, list) => {
             drop:
             while (true) {
@@ -2038,11 +2028,11 @@
                 }
             }
         });
-    let _elm_lang$core$List$map5 = _elm_lang$core$Native_List.map5;
-    let _elm_lang$core$List$map4 = _elm_lang$core$Native_List.map4;
-    let _elm_lang$core$List$map3 = _elm_lang$core$Native_List.map3;
-    let _elm_lang$core$List$map2 = _elm_lang$core$Native_List.map2;
-    let _elm_lang$core$List$any = F2(
+    const _elm_lang$core$List$map5 = _elm_lang$core$Native_List.map5;
+    const _elm_lang$core$List$map4 = _elm_lang$core$Native_List.map4;
+    const _elm_lang$core$List$map3 = _elm_lang$core$Native_List.map3;
+    const _elm_lang$core$List$map2 = _elm_lang$core$Native_List.map2;
+    const _elm_lang$core$List$any = F2(
         (isOkay, list) => {
             any:
             while (true) {
@@ -2060,7 +2050,7 @@
                     }
             }
         });
-    let _elm_lang$core$List$all = F2(
+    const _elm_lang$core$List$all = F2(
         (isOkay, list) => {
             return _elm_lang$core$Basics$not(
                 A2(
@@ -2071,8 +2061,8 @@
                     },
                     list));
         });
-    let _elm_lang$core$List$foldr = _elm_lang$core$Native_List.foldr;
-    let _elm_lang$core$List$foldl = F3(
+    const _elm_lang$core$List$foldr = _elm_lang$core$Native_List.foldr;
+    const _elm_lang$core$List$foldl = F3(
         (func, acc, list) => {
             foldl:
             while (true) {
@@ -2090,7 +2080,7 @@
                 }
             }
         });
-    let _elm_lang$core$List$length = function (xs) {
+    const _elm_lang$core$List$length = function (xs) {
         return A3(
             _elm_lang$core$List$foldl,
             F2(
@@ -2100,7 +2090,7 @@
             0,
             xs);
     };
-    let _elm_lang$core$List$sum = function (numbers) {
+    const _elm_lang$core$List$sum = function (numbers) {
         return A3(
             _elm_lang$core$List$foldl,
             F2(
@@ -2110,7 +2100,7 @@
             0,
             numbers);
     };
-    let _elm_lang$core$List$product = function (numbers) {
+    const _elm_lang$core$List$product = function (numbers) {
         return A3(
             _elm_lang$core$List$foldl,
             F2(
@@ -2120,7 +2110,7 @@
             1,
             numbers);
     };
-    let _elm_lang$core$List$maximum = function (list) {
+    const _elm_lang$core$List$maximum = function (list) {
         var _p5 = list;
         if (_p5.ctor === '::') {
             return _elm_lang$core$Maybe$Just(
@@ -2129,7 +2119,7 @@
             return _elm_lang$core$Maybe$Nothing;
         
     };
-    let _elm_lang$core$List$minimum = function (list) {
+    const _elm_lang$core$List$minimum = function (list) {
         var _p6 = list;
         if (_p6.ctor === '::') {
             return _elm_lang$core$Maybe$Just(
@@ -2138,7 +2128,7 @@
             return _elm_lang$core$Maybe$Nothing;
         
     };
-    let _elm_lang$core$List$indexedMap = F2(
+    const _elm_lang$core$List$indexedMap = F2(
         (f, xs) => {
             return A3(
                 _elm_lang$core$List$map2,
@@ -2148,7 +2138,7 @@
                     _elm_lang$core$List$length(xs) - 1),
                 xs);
         });
-    let _elm_lang$core$List$member = F2(
+    const _elm_lang$core$List$member = F2(
         (x, xs) => {
             return A2(
                 _elm_lang$core$List$any,
@@ -2157,7 +2147,7 @@
                 },
                 xs);
         });
-    let _elm_lang$core$List$isEmpty = function (xs) {
+    const _elm_lang$core$List$isEmpty = function (xs) {
         var _p7 = xs;
         if (_p7.ctor === '[]') {
             return true;
@@ -2165,7 +2155,7 @@
             return false;
         
     };
-    let _elm_lang$core$List$tail = function (list) {
+    const _elm_lang$core$List$tail = function (list) {
         var _p8 = list;
         if (_p8.ctor === '::') {
             return _elm_lang$core$Maybe$Just(_p8._1);
@@ -2173,7 +2163,7 @@
             return _elm_lang$core$Maybe$Nothing;
         
     };
-    let _elm_lang$core$List$head = function (list) {
+    const _elm_lang$core$List$head = function (list) {
         var _p9 = list;
         if (_p9.ctor === '::') {
             return _elm_lang$core$Maybe$Just(_p9._0);
@@ -2184,8 +2174,7 @@
     var _elm_lang$core$List_ops = _elm_lang$core$List_ops || {};
     _elm_lang$core$List_ops['::'] = _elm_lang$core$Native_List.cons;
     var _elm_lang$core$List$map = F2(
-        (f, xs) => {
-            return A3(
+        (f, xs) => A3(
                 _elm_lang$core$List$foldr,
                 F2(
                     (x, acc) => {
@@ -2196,9 +2185,8 @@
                     }),
                 _elm_lang$core$Native_List.fromArray(
                     []),
-                xs);
-        });
-    let _elm_lang$core$List$filter = F2(
+                xs));
+    const _elm_lang$core$List$filter = F2(
         (pred, xs) => {
             let conditionalCons = F2(
                 (x, xs$) => {
@@ -2211,7 +2199,7 @@
                     []),
                 xs);
         });
-    let _elm_lang$core$List$maybeCons = F3(
+    const _elm_lang$core$List$maybeCons = F3(
         (f, mx, xs) => {
             let _p10 = f(mx);
             if (_p10.ctor === 'Just') {
@@ -2220,7 +2208,7 @@
                 return xs;
             }
         });
-    let _elm_lang$core$List$filterMap = F2(
+    const _elm_lang$core$List$filterMap = F2(
         (f, xs) => {
             return A3(
                 _elm_lang$core$List$foldr,
@@ -2229,7 +2217,7 @@
                     []),
                 xs);
         });
-    let _elm_lang$core$List$reverse = function (list) {
+    const _elm_lang$core$List$reverse = function (list) {
         return A3(
             _elm_lang$core$List$foldl,
             F2(
@@ -2240,7 +2228,7 @@
                 []),
             list);
     };
-    let _elm_lang$core$List$scanl = F3(
+    const _elm_lang$core$List$scanl = F3(
         (f, b, xs) => {
             let scan1 = F2(
                 (x, accAcc) => {
@@ -2263,7 +2251,7 @@
                         [b]),
                     xs));
         });
-    let _elm_lang$core$List$append = F2(
+    const _elm_lang$core$List$append = F2(
         (xs, ys) => {
             let _p12 = ys;
             if (_p12.ctor === '[]') {
@@ -2279,7 +2267,7 @@
                     xs);
             }
         });
-    let _elm_lang$core$List$concat = function (lists) {
+    const _elm_lang$core$List$concat = function (lists) {
         return A3(
             _elm_lang$core$List$foldr,
             _elm_lang$core$List$append,
@@ -2287,12 +2275,12 @@
                 []),
             lists);
     };
-    let _elm_lang$core$List$concatMap = F2(
+    const _elm_lang$core$List$concatMap = F2(
         (f, list) => {
             return _elm_lang$core$List$concat(
                 A2(_elm_lang$core$List$map, f, list));
         });
-    let _elm_lang$core$List$partition = F2(
+    const _elm_lang$core$List$partition = F2(
         (pred, list) => {
             let step = F2(
                 (x, _p13) => {
@@ -2321,7 +2309,7 @@
                 },
                 list);
         });
-    let _elm_lang$core$List$unzip = function (pairs) {
+    const _elm_lang$core$List$unzip = function (pairs) {
         let step = F2(
             (_p18, _p17) => {
                 let _p19 = _p18;
@@ -2344,7 +2332,7 @@
             },
             pairs);
     };
-    let _elm_lang$core$List$intersperse = F2(
+    const _elm_lang$core$List$intersperse = F2(
         (sep, xs) => {
             let _p21 = xs;
             if (_p21.ctor === '[]') {
@@ -2372,7 +2360,7 @@
             if (_elm_lang$core$Native_Utils.cmp(n, 0) < 1) {
                 return _elm_lang$core$Native_List.fromArray(
                     []);
-            } else {
+            } 
                 let _p22 = list;
                 if (_p22.ctor === '[]') {
                     return list;
@@ -2382,9 +2370,9 @@
                         _p22._0,
                         A2(_elm_lang$core$List$take, n - 1, _p22._1));
                 }
-            }
+            
         });
-    let _elm_lang$core$List$repeatHelp = F3(
+    const _elm_lang$core$List$repeatHelp = F3(
         (result, n, value) => {
             repeatHelp:
             while (true) {
@@ -2401,7 +2389,7 @@
                 }
             }
         });
-    let _elm_lang$core$List$repeat = F2(
+    const _elm_lang$core$List$repeat = F2(
         (n, value) => {
             return A3(
                 _elm_lang$core$List$repeatHelp,
@@ -2411,25 +2399,25 @@
                 value);
         });
     
-    let _elm_lang$core$Array$append = _elm_lang$core$Native_Array.append;
-    let _elm_lang$core$Array$length = _elm_lang$core$Native_Array.length;
-    let _elm_lang$core$Array$isEmpty = function (array) {
+    const _elm_lang$core$Array$append = _elm_lang$core$Native_Array.append;
+    const _elm_lang$core$Array$length = _elm_lang$core$Native_Array.length;
+    const _elm_lang$core$Array$isEmpty = function (array) {
         return _elm_lang$core$Native_Utils.eq(
             _elm_lang$core$Array$length(array),
             0);
     };
-    let _elm_lang$core$Array$slice = _elm_lang$core$Native_Array.slice;
-    let _elm_lang$core$Array$set = _elm_lang$core$Native_Array.set;
-    let _elm_lang$core$Array$get = F2(
+    const _elm_lang$core$Array$slice = _elm_lang$core$Native_Array.slice;
+    const _elm_lang$core$Array$set = _elm_lang$core$Native_Array.set;
+    const _elm_lang$core$Array$get = F2(
         (i, array) => {
             return ((_elm_lang$core$Native_Utils.cmp(0, i) < 1) && (_elm_lang$core$Native_Utils.cmp(
                 i,
                 _elm_lang$core$Native_Array.length(array)) < 0)) ? _elm_lang$core$Maybe$Just(
                 A2(_elm_lang$core$Native_Array.get, i, array)) : _elm_lang$core$Maybe$Nothing;
         });
-    let _elm_lang$core$Array$push = _elm_lang$core$Native_Array.push;
-    let _elm_lang$core$Array$empty = _elm_lang$core$Native_Array.empty;
-    let _elm_lang$core$Array$filter = F2(
+    const _elm_lang$core$Array$push = _elm_lang$core$Native_Array.push;
+    const _elm_lang$core$Array$empty = _elm_lang$core$Native_Array.empty;
+    const _elm_lang$core$Array$filter = F2(
         (isOkay, arr) => {
             let update = F2(
                 (x, xs) => {
@@ -2437,11 +2425,11 @@
                 });
             return A3(_elm_lang$core$Native_Array.foldl, update, _elm_lang$core$Native_Array.empty, arr);
         });
-    let _elm_lang$core$Array$foldr = _elm_lang$core$Native_Array.foldr;
-    let _elm_lang$core$Array$foldl = _elm_lang$core$Native_Array.foldl;
-    let _elm_lang$core$Array$indexedMap = _elm_lang$core$Native_Array.indexedMap;
-    let _elm_lang$core$Array$map = _elm_lang$core$Native_Array.map;
-    let _elm_lang$core$Array$toIndexedList = function (array) {
+    const _elm_lang$core$Array$foldr = _elm_lang$core$Native_Array.foldr;
+    const _elm_lang$core$Array$foldl = _elm_lang$core$Native_Array.foldl;
+    const _elm_lang$core$Array$indexedMap = _elm_lang$core$Native_Array.indexedMap;
+    const _elm_lang$core$Array$map = _elm_lang$core$Native_Array.map;
+    const _elm_lang$core$Array$toIndexedList = function (array) {
         return A3(
             _elm_lang$core$List$map2,
             F2(
@@ -2454,20 +2442,20 @@
             _elm_lang$core$Native_Array.toList(array));
     };
     var _elm_lang$core$Array$toList = _elm_lang$core$Native_Array.toList;
-    let _elm_lang$core$Array$fromList = _elm_lang$core$Native_Array.fromList;
-    let _elm_lang$core$Array$initialize = _elm_lang$core$Native_Array.initialize;
-    let _elm_lang$core$Array$repeat = F2(
+    const _elm_lang$core$Array$fromList = _elm_lang$core$Native_Array.fromList;
+    const _elm_lang$core$Array$initialize = _elm_lang$core$Native_Array.initialize;
+    const _elm_lang$core$Array$repeat = F2(
         (n, e) => {
             return A2(
                 _elm_lang$core$Array$initialize,
                 n,
                 _elm_lang$core$Basics$always(e));
         });
-    let _elm_lang$core$Array$Array = {ctor: 'Array'};
+    const _elm_lang$core$Array$Array = {ctor: 'Array'};
     
     // import Native.Utils //
     
-    let _elm_lang$core$Native_Char = function() {
+    const _elm_lang$core$Native_Char = function() {
     
     return {
         fromCode(c) { return _elm_lang$core$Native_Utils.chr(String.fromCharCode(c)); },
@@ -2479,13 +2467,13 @@
     };
     
     }();
-    let _elm_lang$core$Char$fromCode = _elm_lang$core$Native_Char.fromCode;
-    let _elm_lang$core$Char$toCode = _elm_lang$core$Native_Char.toCode;
-    let _elm_lang$core$Char$toLocaleLower = _elm_lang$core$Native_Char.toLocaleLower;
-    let _elm_lang$core$Char$toLocaleUpper = _elm_lang$core$Native_Char.toLocaleUpper;
-    let _elm_lang$core$Char$toLower = _elm_lang$core$Native_Char.toLower;
-    let _elm_lang$core$Char$toUpper = _elm_lang$core$Native_Char.toUpper;
-    let _elm_lang$core$Char$isBetween = F3(
+    const _elm_lang$core$Char$fromCode = _elm_lang$core$Native_Char.fromCode;
+    const _elm_lang$core$Char$toCode = _elm_lang$core$Native_Char.toCode;
+    const _elm_lang$core$Char$toLocaleLower = _elm_lang$core$Native_Char.toLocaleLower;
+    const _elm_lang$core$Char$toLocaleUpper = _elm_lang$core$Native_Char.toLocaleUpper;
+    const _elm_lang$core$Char$toLower = _elm_lang$core$Native_Char.toLower;
+    const _elm_lang$core$Char$toUpper = _elm_lang$core$Native_Char.toUpper;
+    const _elm_lang$core$Char$isBetween = F3(
         (low, high, $char) => {
             let code = _elm_lang$core$Char$toCode($char);
             return (_elm_lang$core$Native_Utils.cmp(
@@ -2494,23 +2482,23 @@
                 code,
                 _elm_lang$core$Char$toCode(high)) < 1);
         });
-    let _elm_lang$core$Char$isUpper = A2(
+    const _elm_lang$core$Char$isUpper = A2(
         _elm_lang$core$Char$isBetween,
         _elm_lang$core$Native_Utils.chr('A'),
         _elm_lang$core$Native_Utils.chr('Z'));
-    let _elm_lang$core$Char$isLower = A2(
+    const _elm_lang$core$Char$isLower = A2(
         _elm_lang$core$Char$isBetween,
         _elm_lang$core$Native_Utils.chr('a'),
         _elm_lang$core$Native_Utils.chr('z'));
-    let _elm_lang$core$Char$isDigit = A2(
+    const _elm_lang$core$Char$isDigit = A2(
         _elm_lang$core$Char$isBetween,
         _elm_lang$core$Native_Utils.chr('0'),
         _elm_lang$core$Native_Utils.chr('9'));
-    let _elm_lang$core$Char$isOctDigit = A2(
+    const _elm_lang$core$Char$isOctDigit = A2(
         _elm_lang$core$Char$isBetween,
         _elm_lang$core$Native_Utils.chr('0'),
         _elm_lang$core$Native_Utils.chr('7'));
-    let _elm_lang$core$Char$isHexDigit = function ($char) {
+    const _elm_lang$core$Char$isHexDigit = function ($char) {
         return _elm_lang$core$Char$isDigit($char) || (A3(
             _elm_lang$core$Char$isBetween,
             _elm_lang$core$Native_Utils.chr('a'),
@@ -2524,7 +2512,7 @@
     
     // import Native.Utils //
     
-    let _elm_lang$core$Native_Scheduler = function() {
+    const _elm_lang$core$Native_Scheduler = function() {
     
     let MAX_STEPS = 10000;
     
@@ -2797,7 +2785,7 @@
     }();
     // import //
     
-    let _elm_lang$core$Native_Platform = function() {
+    const _elm_lang$core$Native_Platform = function() {
     
     // PROGRAMS
     
@@ -3360,20 +3348,20 @@
     };
     
     }();
-    let _elm_lang$core$Platform$hack = _elm_lang$core$Native_Scheduler.succeed;
-    let _elm_lang$core$Platform$sendToSelf = _elm_lang$core$Native_Platform.sendToSelf;
-    let _elm_lang$core$Platform$sendToApp = _elm_lang$core$Native_Platform.sendToApp;
-    let _elm_lang$core$Platform$Program = {ctor: 'Program'};
-    let _elm_lang$core$Platform$Task = {ctor: 'Task'};
-    let _elm_lang$core$Platform$ProcessId = {ctor: 'ProcessId'};
-    let _elm_lang$core$Platform$Router = {ctor: 'Router'};
+    const _elm_lang$core$Platform$hack = _elm_lang$core$Native_Scheduler.succeed;
+    const _elm_lang$core$Platform$sendToSelf = _elm_lang$core$Native_Platform.sendToSelf;
+    const _elm_lang$core$Platform$sendToApp = _elm_lang$core$Native_Platform.sendToApp;
+    const _elm_lang$core$Platform$Program = {ctor: 'Program'};
+    const _elm_lang$core$Platform$Task = {ctor: 'Task'};
+    const _elm_lang$core$Platform$ProcessId = {ctor: 'ProcessId'};
+    const _elm_lang$core$Platform$Router = {ctor: 'Router'};
     
-    let _elm_lang$core$Platform_Command$batch = _elm_lang$core$Native_Platform.batch;
-    var _elm_lang$core$Platform_Cmd$none = _elm_lang$core$Platform_Command$batch(
+    const _elm_lang$core$Platform_Command$batch = _elm_lang$core$Native_Platform.batch;
+    let _elm_lang$core$Platform_Command$none = _elm_lang$core$Platform_Command$batch(
         _elm_lang$core$Native_List.fromArray(
             []));
-    var _elm_lang$core$Platform_Cmd_ops = _elm_lang$core$Platform_Cmd_ops || {};
-    _elm_lang$core$Platform_Cmd_ops['!'] = F2(
+    var _elm_lang$core$Platform_Command_ops = _elm_lang$core$Platform_Command_ops || {};
+    _elm_lang$core$Platform_Command_ops['!'] = F2(
         function (model, commands) {
             return {
                 ctor: '_Tuple2',
@@ -7143,7 +7131,7 @@
             {
                 init: function (_p3) {
                     return A2(
-                        _elm_lang$core$Platform_Cmd_ops['!'],
+                        _elm_lang$core$Platform_Command_ops['!'],
                         _p2.model,
                         _elm_lang$core$Native_List.fromArray(
                             []));
@@ -7151,7 +7139,7 @@
                 update: F2(
                     function (msg, model) {
                         return A2(
-                            _elm_lang$core$Platform_Cmd_ops['!'],
+                            _elm_lang$core$Platform_Command_ops['!'],
                             A2(_p2.update, msg, model),
                             _elm_lang$core$Native_List.fromArray(
                                 []));
@@ -7647,17 +7635,7 @@
                     []),
                 _elm_lang$core$Native_List.fromArray(
                     [
-                        _elm_lang$html$Html$text('Written by '),
-                        A2(
-                        _elm_lang$html$Html$a,
-                        _elm_lang$core$Native_List.fromArray(
-                            [
-                                _elm_lang$html$Html_Attributes$href('https://github.com/evancz')
-                            ]),
-                        _elm_lang$core$Native_List.fromArray(
-                            [
-                                _elm_lang$html$Html$text('Evan Czaplicki')
-                            ]))
+
                     ])),
                 A2(
                 _elm_lang$html$Html$p,
@@ -7714,7 +7692,7 @@
     };
     var _evancz$elm_todomvc$Todo$init = function (savedModel) {
         return A2(
-            _elm_lang$core$Platform_Cmd_ops['!'],
+            _elm_lang$core$Platform_Command_ops['!'],
             A2(_elm_lang$core$Maybe$withDefault, _evancz$elm_todomvc$Todo$emptyModel, savedModel),
             _elm_lang$core$Native_List.fromArray(
                 []));
@@ -7743,13 +7721,13 @@
             switch (_p0.ctor) {
                 case 'NoOp':
                     return A2(
-                        _elm_lang$core$Platform_Cmd_ops['!'],
+                        _elm_lang$core$Platform_Command_ops['!'],
                         model,
                         _elm_lang$core$Native_List.fromArray(
                             []));
                 case 'Add':
                     return A2(
-                        _elm_lang$core$Platform_Cmd_ops['!'],
+                        _elm_lang$core$Platform_Command_ops['!'],
                         _elm_lang$core$Native_Utils.update(
                             model,
                             {
@@ -7767,7 +7745,7 @@
                             []));
                 case 'UpdateField':
                     return A2(
-                        _elm_lang$core$Platform_Cmd_ops['!'],
+                        _elm_lang$core$Platform_Command_ops['!'],
                         _elm_lang$core$Native_Utils.update(
                             model,
                             {field: _p0._0}),
@@ -7781,7 +7759,7 @@
                             {editing: _p0._1}) : t;
                     };
                     return A2(
-                        _elm_lang$core$Platform_Cmd_ops['!'],
+                        _elm_lang$core$Platform_Command_ops['!'],
                         _elm_lang$core$Native_Utils.update(
                             model,
                             {
@@ -7802,7 +7780,7 @@
                             {description: _p0._1}) : t;
                     };
                     return A2(
-                        _elm_lang$core$Platform_Cmd_ops['!'],
+                        _elm_lang$core$Platform_Command_ops['!'],
                         _elm_lang$core$Native_Utils.update(
                             model,
                             {
@@ -7812,7 +7790,7 @@
                             []));
                 case 'Delete':
                     return A2(
-                        _elm_lang$core$Platform_Cmd_ops['!'],
+                        _elm_lang$core$Platform_Command_ops['!'],
                         _elm_lang$core$Native_Utils.update(
                             model,
                             {
@@ -7827,7 +7805,7 @@
                             []));
                 case 'DeleteComplete':
                     return A2(
-                        _elm_lang$core$Platform_Cmd_ops['!'],
+                        _elm_lang$core$Platform_Command_ops['!'],
                         _elm_lang$core$Native_Utils.update(
                             model,
                             {
@@ -7850,7 +7828,7 @@
                             {completed: _p0._1}) : t;
                     };
                     return A2(
-                        _elm_lang$core$Platform_Cmd_ops['!'],
+                        _elm_lang$core$Platform_Command_ops['!'],
                         _elm_lang$core$Native_Utils.update(
                             model,
                             {
@@ -7865,7 +7843,7 @@
                             {completed: _p0._0});
                     };
                     return A2(
-                        _elm_lang$core$Platform_Cmd_ops['!'],
+                        _elm_lang$core$Platform_Command_ops['!'],
                         _elm_lang$core$Native_Utils.update(
                             model,
                             {
@@ -7875,7 +7853,7 @@
                             []));
                 default:
                     return A2(
-                        _elm_lang$core$Platform_Cmd_ops['!'],
+                        _elm_lang$core$Platform_Command_ops['!'],
                         _elm_lang$core$Native_Utils.update(
                             model,
                             {visibility: _p0._0}),
@@ -7883,11 +7861,11 @@
                             []));
             }
         });
-    var _evancz$elm_todomvc$Todo$updateWithStorage = F2(
-        function (msg, model) {
-            var _p3 = A2(_evancz$elm_todomvc$Todo$update, msg, model);
-            var newModel = _p3._0;
-            var cmds = _p3._1;
+    let _evancz$elm_todomvc$Todo$updateWithStorage = F2(
+        (msg, model) => {
+            let _p3 = A2(_evancz$elm_todomvc$Todo$update, msg, model);
+            let newModel = _p3._0;
+            let commands = _p3._1;
             return {
                 ctor: '_Tuple2',
                 _0: newModel,
@@ -7895,22 +7873,22 @@
                     _elm_lang$core$Native_List.fromArray(
                         [
                             _evancz$elm_todomvc$Todo$setStorage(newModel),
-                            cmds
+                            commands
                         ]))
             };
         });
-    let _evancz$elm_todomvc$Todo$Model = F4(
+    const _evancz$elm_todomvc$Todo$Model = F4(
         (a, b, c, d) => {
             return {entries: a, field: b, uid: c, visibility: d};
         });
-    let _evancz$elm_todomvc$Todo$Entry = F4(
+    const _evancz$elm_todomvc$Todo$Entry = F4(
         (a, b, c, d) => {
             return {description: a, completed: b, editing: c, id: d};
         });
-    let _evancz$elm_todomvc$Todo$ChangeVisibility = function (a) {
+    const _evancz$elm_todomvc$Todo$ChangeVisibility = function (a) {
         return {ctor: 'ChangeVisibility', _0: a};
     };
-    let _evancz$elm_todomvc$Todo$visibilitySwap = F3(
+    const _evancz$elm_todomvc$Todo$visibilitySwap = F3(
         (uri, visibility, actualVisibility) => {
             return A2(
                 _elm_lang$html$Html$li,
@@ -7942,7 +7920,7 @@
                             ]))
                     ]));
         });
-    let _evancz$elm_todomvc$Todo$viewControlsFilters = function (visibility) {
+    const _evancz$elm_todomvc$Todo$viewControlsFilters = function (visibility) {
         return A2(
             _elm_lang$html$Html$ul,
             _elm_lang$core$Native_List.fromArray(
@@ -7958,15 +7936,15 @@
                     A3(_evancz$elm_todomvc$Todo$visibilitySwap, '#/completed', 'Completed', visibility)
                 ]));
     };
-    let _evancz$elm_todomvc$Todo$CheckAll = function (a) {
+    const _evancz$elm_todomvc$Todo$CheckAll = function (a) {
         return {ctor: 'CheckAll', _0: a};
     };
-    let _evancz$elm_todomvc$Todo$Check = F2(
+    const _evancz$elm_todomvc$Todo$Check = F2(
         (a, b) => {
             return {ctor: 'Check', _0: a, _1: b};
         });
-    let _evancz$elm_todomvc$Todo$DeleteComplete = {ctor: 'DeleteComplete'};
-    let _evancz$elm_todomvc$Todo$viewControlsClear = function (entriesCompleted) {
+    const _evancz$elm_todomvc$Todo$DeleteComplete = {ctor: 'DeleteComplete'};
+    const _evancz$elm_todomvc$Todo$viewControlsClear = function (entriesCompleted) {
         return A2(
             _elm_lang$html$Html$button,
             _elm_lang$core$Native_List.fromArray(
@@ -7988,7 +7966,7 @@
                             ')')))
                 ]));
     };
-    let _evancz$elm_todomvc$Todo$viewControls = F2(
+    const _evancz$elm_todomvc$Todo$viewControls = F2(
         (visibility, entries) => {
             let entriesCompleted = _elm_lang$core$List$length(
                 A2(
@@ -8013,23 +7991,23 @@
                         A2(_elm_lang$html$Html_Lazy$lazy, _evancz$elm_todomvc$Todo$viewControlsClear, entriesCompleted)
                     ]));
         });
-    let _evancz$elm_todomvc$Todo$Delete = function (a) {
+    const _evancz$elm_todomvc$Todo$Delete = function (a) {
         return {ctor: 'Delete', _0: a};
     };
-    let _evancz$elm_todomvc$Todo$Add = {ctor: 'Add'};
-    let _evancz$elm_todomvc$Todo$UpdateEntry = F2(
+    const _evancz$elm_todomvc$Todo$Add = {ctor: 'Add'};
+    const _evancz$elm_todomvc$Todo$UpdateEntry = F2(
         (a, b) => {
             return {ctor: 'UpdateEntry', _0: a, _1: b};
         });
-    let _evancz$elm_todomvc$Todo$EditingEntry = F2(
+    const _evancz$elm_todomvc$Todo$EditingEntry = F2(
         (a, b) => {
             return {ctor: 'EditingEntry', _0: a, _1: b};
         });
-    let _evancz$elm_todomvc$Todo$UpdateField = function (a) {
+    const _evancz$elm_todomvc$Todo$UpdateField = function (a) {
         return {ctor: 'UpdateField', _0: a};
     };
-    let _evancz$elm_todomvc$Todo$NoOp = {ctor: 'NoOp'};
-    let _evancz$elm_todomvc$Todo$onEnter = function (message) {
+    const _evancz$elm_todomvc$Todo$NoOp = {ctor: 'NoOp'};
+    const _evancz$elm_todomvc$Todo$onEnter = function (message) {
         var tagger = function (code) {
             return _elm_lang$core$Native_Utils.eq(code, 13) ? message : _evancz$elm_todomvc$Todo$NoOp;
         };
@@ -8038,7 +8016,7 @@
             'keydown',
             A2(_elm_lang$core$Json_Decode$map, tagger, _elm_lang$html$Html_Events$keyCode));
     };
-    let _evancz$elm_todomvc$Todo$viewInput = function (task) {
+    const _evancz$elm_todomvc$Todo$viewInput = function (task) {
         return A2(
             _elm_lang$html$Html$header,
             _elm_lang$core$Native_List.fromArray(
@@ -8071,7 +8049,7 @@
                         []))
                 ]));
     };
-    let _evancz$elm_todomvc$Todo$viewEntry = function (todo) {
+    const _evancz$elm_todomvc$Todo$viewEntry = function (todo) {
         return A2(
             _elm_lang$html$Html$li,
             _elm_lang$core$Native_List.fromArray(
@@ -8153,14 +8131,14 @@
                         []))
                 ]));
     };
-    let _evancz$elm_todomvc$Todo$viewKeyedEntry = function (todo) {
+    const _evancz$elm_todomvc$Todo$viewKeyedEntry = function (todo) {
         return {
             ctor: '_Tuple2',
             _0: _elm_lang$core$Basics$toString(todo.id),
             _1: A2(_elm_lang$html$Html_Lazy$lazy, _evancz$elm_todomvc$Todo$viewEntry, todo)
         };
     };
-    let _evancz$elm_todomvc$Todo$viewEntries = F2(
+    const _evancz$elm_todomvc$Todo$viewEntries = F2(
         (visibility, entries) => {
             let cssVisibility = _elm_lang$core$List$isEmpty(entries) ? 'hidden' : 'visible';
             let allCompleted = A2(
@@ -8229,7 +8207,7 @@
                             A2(_elm_lang$core$List$filter, isVisible, entries)))
                     ]));
         });
-    let _evancz$elm_todomvc$Todo$view = function (model) {
+    const _evancz$elm_todomvc$Todo$view = function (model) {
         return A2(
             _elm_lang$html$Html$div,
             _elm_lang$core$Native_List.fromArray(
@@ -8238,7 +8216,7 @@
                     _elm_lang$html$Html_Attributes$style(
                     _elm_lang$core$Native_List.fromArray(
                         [
-                            {ctor: '_Tuple2', _0: 'visibility', _1: 'hidden'}
+                            {ctor: '_Tuple2' }
                         ]))
                 ]),
             _elm_lang$core$Native_List.fromArray(
@@ -8258,7 +8236,7 @@
                     _evancz$elm_todomvc$Todo$infoFooter
                 ]));
     };
-    let _evancz$elm_todomvc$Todo$main = {
+    const _evancz$elm_todomvc$Todo$main = {
         main: _elm_lang$html$Html_App$programWithFlags(
             {
                 init: _evancz$elm_todomvc$Todo$init,
@@ -8325,13 +8303,13 @@
                 ]))
     };
     
-    let Elm = {};
+    const Elm = {};
     Elm.Todo = Elm.Todo || {};
     _elm_lang$core$Native_Platform.addPublicModule(Elm.Todo, 'Todo', typeof _evancz$elm_todomvc$Todo$main === 'undefined' ? null : _evancz$elm_todomvc$Todo$main);
     
     if (typeof define === 'function' && define.amd)
     {
-      define([], () => { return Elm; });
+      define([], () => Elm);
       return;
     }
     
@@ -8341,14 +8319,14 @@
       return;
     }
     
-    let globalElm = this.Elm;
+    const globalElm = this.Elm;
     if (typeof globalElm === 'undefined')
     {
       this.Elm = Elm;
       return;
     }
     
-    for (let publicModule in Elm)
+    for (const publicModule in Elm)
     {
       if (publicModule in globalElm)
       {

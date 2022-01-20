@@ -1,24 +1,32 @@
+/* eslint-disable import/order */
+/* eslint-disable @typescript-eslint/no-var-requires */
 import classNames from 'classnames'
-import { noop } from 'lodash'
 import PencilIcon from 'mdi-react/PencilIcon'
 import PlayCircleOutlineIcon from 'mdi-react/PlayCircleOutlineIcon'
 import * as Monaco from 'monaco-editor'
 import React, { useState, useCallback, useRef, useEffect, useMemo } from 'react'
-import ElmApp from 'react-elm-components'
 
 import { ThemeProps } from '@sourcegraph/shared/src/theme'
-import { MonacoEditor } from '@sourcegraph/web/src/components/MonacoEditor'
 
+// eslint-disable-next-line import/extensions
+// import Main from './compute.js'
 import blockStyles from './SearchNotebookBlock.module.scss'
 import { BlockMenuAction, SearchNotebookBlockMenu } from './SearchNotebookBlockMenu'
-import styles from './SearchNotebookMarkdownBlock.module.scss'
+import styles from './SearchNotebookComputeBlock.module.scss'
+// eslint-disable-next-line import/extensions
 import Main from './todomvc.js'
+
+// import Main from './todomvc.js'
 import { useBlockSelection } from './useBlockSelection'
 import { useBlockShortcuts } from './useBlockShortcuts'
 import { useCommonBlockMenuActions } from './useCommonBlockMenuActions'
-import { MONACO_BLOCK_INPUT_OPTIONS } from './useMonacoBlockInput'
 
 import { BlockProps, ComputeBlock } from '.'
+
+// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const Elm = require('react-elm-components')
 
 interface SearchNotebookComputeBlockProps extends BlockProps, ComputeBlock, ThemeProps {
     isMacPlatform: boolean
@@ -145,6 +153,7 @@ export const SearchNotebookComputeBlock: React.FunctionComponent<SearchNotebookC
                 ref={blockElement}
             >
                 <div className={blockStyles.monacoWrapper}>
+                    {/*
                     <MonacoEditor
                         language="markdown"
                         value={input}
@@ -155,9 +164,10 @@ export const SearchNotebookComputeBlock: React.FunctionComponent<SearchNotebookC
                         options={MONACO_BLOCK_INPUT_OPTIONS}
                         border={false}
                     />
+                    */}
                 </div>
-                <div>
-                    <ElmApp src={Main} />
+                <div className="elm">
+                    <Elm src={Main.Todo} flags={null} />
                 </div>
             </div>
             {blockMenu}

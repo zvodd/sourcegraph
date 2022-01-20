@@ -61,6 +61,21 @@ export const SearchNotebookAddBlockButtons: React.FunctionComponent<SearchNotebo
             >
                 + Code
             </Button>
+            <Button
+                className={classNames('ml-2', styles.addBlockButton)}
+                onClick={() =>
+                    onAddBlock(index, {
+                        type: 'compute',
+                        input: 'placeholder',
+                    })
+                }
+                data-testid="add-compute-button"
+                outline={true}
+                variant="secondary"
+                size="sm"
+            >
+                + Compute
+            </Button>
         </div>
     </div>
 )

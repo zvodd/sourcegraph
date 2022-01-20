@@ -18,7 +18,7 @@ import { renderMarkdown } from '@sourcegraph/shared/src/util/markdown'
 
 import { LATEST_VERSION } from '../results/StreamingSearchResults'
 
-export type BlockType = 'md' | 'query' | 'file'
+export type BlockType = 'md' | 'query' | 'file' | 'compute'
 
 interface BaseBlock<I, O> {
     id: string
@@ -46,12 +46,17 @@ export interface FileBlock extends BaseBlock<FileBlockInput, Observable<string[]
     type: 'file'
 }
 
-export type Block = QueryBlock | MarkdownBlock | FileBlock
+export interface ComputeBlock extends BaseBlock<string, string> {
+    type: 'compute'
+}
+
+export type Block = QueryBlock | MarkdownBlock | FileBlock | ComputeBlock
 
 export type BlockInput =
     | Pick<FileBlock, 'type' | 'input'>
     | Pick<MarkdownBlock, 'type' | 'input'>
     | Pick<QueryBlock, 'type' | 'input'>
+    | Pick<ComputeBlock, 'type' | 'input'>
 
 export type BlockInit = Omit<FileBlock, 'output'> | Omit<MarkdownBlock, 'output'> | Omit<QueryBlock, 'output'>
 

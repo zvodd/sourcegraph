@@ -21,6 +21,7 @@ import { SearchNotebookFileBlock } from './fileBlock/SearchNotebookFileBlock'
 import { FileBlockValidationFunctions } from './fileBlock/useFileBlockInputValidation'
 import styles from './SearchNotebook.module.scss'
 import { SearchNotebookAddBlockButtons } from './SearchNotebookAddBlockButtons'
+import { SearchNotebookComputeBlock } from './SearchNotebookComputeBlock'
 import { SearchNotebookMarkdownBlock } from './SearchNotebookMarkdownBlock'
 import { SearchNotebookQueryBlock } from './SearchNotebookQueryBlock'
 import { isMonacoEditorDescendant } from './useBlockSelection'
@@ -278,6 +279,8 @@ export const SearchNotebook: React.FunctionComponent<SearchNotebookProps> = ({
                             sourcegraphSearchLanguageId={sourcegraphSearchLanguageId}
                         />
                     )
+                case 'compute':
+                    return <SearchNotebookComputeBlock {...block} {...blockProps} />
             }
         },
         [

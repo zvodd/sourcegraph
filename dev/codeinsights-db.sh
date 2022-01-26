@@ -61,5 +61,4 @@ docker run --rm \
   --memory=1g \
   -e POSTGRES_PASSWORD=password \
   -p 0.0.0.0:${PORT}:5432 \
-  -v "${DISK}":/var/lib/postgresql/data \
   ${IMAGE} >"${LOG_FILE}" 2>&1 || finish

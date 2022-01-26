@@ -25,7 +25,7 @@ function go_test() {
   set +eo pipefail # so we still get the result if the test failed
   local test_exit_code
   # shellcheck disable=SC2086
-  go test \
+  richgo test \
     -timeout 10m \
     -coverprofile=coverage.txt \
     -covermode=atomic \
@@ -94,6 +94,7 @@ fi
 # https://github.com/sourcegraph/sourcegraph/issues/28469
 # TODO is that the best way to handle this?
 go install github.com/jstemmer/go-junit-report@latest
+go install github.com/kyoh86/richgo@latest
 asdf reshim golang
 
 # TODO move to manifest

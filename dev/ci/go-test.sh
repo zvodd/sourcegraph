@@ -25,13 +25,13 @@ function go_test() {
   set +eo pipefail # so we still get the result if the test failed
   local test_exit_code
   # shellcheck disable=SC2086
-  richgo test \
+  go test \
     -timeout 10m \
     -coverprofile=coverage.txt \
     -covermode=atomic \
     -race \
     -v \
-    $test_packages | tee "$tmpfile"
+    $test_packages | tee >(richgo testfilter) | tee "$tmpfile"
   # Save the test exit code so we can return it after submitting the test run to the analytics.
   test_exit_code="${PIPESTATUS[0]}"
   set -eo pipefail # resume being strict about errors

@@ -1,6 +1,10 @@
 import { Observable } from 'rxjs'
 import * as vscode from 'vscode'
 
+import { SearchPatternType } from '@sourcegraph/search'
+import { LATEST_VERSION } from '@sourcegraph/shared/src/search/stream'
+
+import { browserActions } from '../backend/browserActions'
 import { initializeSourcegraphSettings } from '../backend/sourcegraphSettings'
 import { ExtensionCoreAPI } from '../contract'
 
@@ -96,6 +100,39 @@ export function registerWebviews({
             },
             { webviewOptions: { retainContextWhenHidden: true } }
         )
+    )
+
+    // Search Selected Text in Sourcegraph Search Tab
+    context.subscriptions.push(
+        vscode.commands.registerCommand('sourcegraph.selectionSearch', async () => {
+            const editor = vscode.window.activeTextEditor
+            const selectedQuery = editor?.document.getText(editor.selection)
+            if (!editor || !selectedQuery) {
+                throw new Error('No selection detected')
+            }
+            if (!currentActiveWebviewPanel) {
+                await vscode.commands.executeCommand('sourcegraph.search')
+            }
+            extensionCoreAPI.streamSearch(selectedQuery, {
+                caseSensitive: false,
+                patternType: SearchPatternType.literal,
+                version: LATEST_VERSION,
+                trace: undefined,
+            })
+            currentActiveWebviewPanel?.reveal()
+        })
+    )
+
+    context.subscriptions.push(
+        vscode.commands.registerCommand('sourcegraph.openBrowserLink', async () => {
+            await browserActions('open')
+        })
+    )
+
+    context.subscriptions.push(
+        vscode.commands.registerCommand('sourcegraph.copyBrowserLink', async () => {
+            await browserActions('copy')
+        })
     )
 }
 

@@ -12,7 +12,7 @@ import { TooltipController } from '@sourcegraph/wildcard'
 
 import { ExtensionCoreAPI } from '../../contract'
 
-import { vscodeTelemetryService } from './telemetryService'
+import { EventLogger } from './eventLogger'
 
 export interface VSCodePlatformContext
     extends Pick<
@@ -53,7 +53,7 @@ export function createPlatformContext(extensionCoreAPI: Comlink.Remote<Extension
         settings: wrapRemoteObservable(extensionCoreAPI.observeSourcegraphSettings()),
         // TODO: implement GQL mutation, settings refresh (called by extensions, impl w/ ext. host).
         updateSettings: () => Promise.resolve(),
-        telemetryService: vscodeTelemetryService,
+        telemetryService: new EventLogger(extensionCoreAPI),
         sideloadedExtensionURL: new BehaviorSubject<string | null>(null),
         clientApplication: 'other', // TODO add 'vscode-extension' to `clientApplication`,
         getScriptURLForExtension: () => undefined,

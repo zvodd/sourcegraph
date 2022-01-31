@@ -20,6 +20,7 @@
   ],
   "activationEvents": [
     "onCommand:sourcegraph.search",
+    "onCommand:sourcegraph.selectionSearch",
     "onView:sourcegraph.searchSidebar",
     "onWebviewPanel:sourcegraphSearch"
   ],
@@ -31,6 +32,21 @@
         "command": "sourcegraph.search",
         "category": "Sourcegraph",
         "title": "Open Sourcegraph Search Tab"
+      },
+      {
+        "command": "sourcegraph.selectionSearch",
+        "category": "Sourcegraph",
+        "title": "Search Selection in Sourcegraph"
+      },
+      {
+        "command": "sourcegraph.openBrowserLink",
+        "category": "Sourcegraph",
+        "title": "Open File in Sourcegraph Web"
+      },
+      {
+        "command": "sourcegraph.copyBrowserLink",
+        "category": "Sourcegraph",
+        "title": "Copy Sourcegraph File Link"
       }
     ],
     "viewsContainers": {
@@ -89,10 +105,28 @@
         "command": "sourcegraph.search",
         "key": "ctrl+shift+8",
         "mac": "cmd+shift+8"
+      },
+      {
+        "command": "sourcegraph.selectionSearch",
+        "key": "alt+q",
+        "mac": "option+q"
       }
     ],
     "menus": {
       "editor/context": [
+        {
+          "command": "sourcegraph.openBrowserLink",
+          "group": "sourcegraph"
+        },
+        {
+          "command": "sourcegraph.copyBrowserLink",
+          "group": "sourcegraph"
+        },
+        {
+          "command": "sourcegraph.selectionSearch",
+          "group": "sourcegraph",
+          "when": "editorHasSelection"
+        }
       ]
     }
   },

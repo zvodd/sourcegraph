@@ -4,6 +4,7 @@ import { ProxySubscribable } from '@sourcegraph/shared/src/api/extension/api/com
 import { AuthenticatedUser } from '@sourcegraph/shared/src/auth'
 import { SearchMatch, StreamSearchOptions } from '@sourcegraph/shared/src/search/stream'
 import { SettingsCascadeOrError } from '@sourcegraph/shared/src/settings/settings'
+import { Event } from '@sourcegraph/web/src/graphql-operations'
 
 import { VSCEState, VSCEStateMachine } from './state'
 
@@ -30,6 +31,11 @@ export interface ExtensionCoreAPI {
     streamSearch: (query: string, options: StreamSearchOptions) => void
     fetchStreamSuggestions: (query: string, sourcegraphURL: string) => ProxySubscribable<SearchMatch[]>
     setSelectedSearchContextSpec: (spec: string) => void
+
+    getLocalStorageItem: (key: string) => string
+    setLocalStorageItem: (key: string, value: string) => Promise<boolean>
+    // For Telemetry Service
+    logEvents: (variables: Event) => void
 }
 
 // Data flows one way for now (one sidebar <-> one panel UX),

@@ -161,3 +161,4 @@ sitemap_query.db
 
 # Buildkite analytics files
 jest-junit.xml
+mocha-junit.xml

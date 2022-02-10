@@ -18,7 +18,7 @@ export async function handleAccessTokenError(badToken?: string): Promise<void> {
 
         const message = !badToken
             ? `Sourcegraph extension requires an access token to make requests to ${endpointHostnameSetting()}`
-            : `Sourcegraph extension is is unable to use the access token ${badToken} for ${endpointHostnameSetting()}.`
+            : `Sourcegraph extension is unable to use the access token ${badToken} for ${endpointHostnameSetting()}.`
 
         await vscode.window.showErrorMessage(message)
         showingAccessTokenErrorMessage = false

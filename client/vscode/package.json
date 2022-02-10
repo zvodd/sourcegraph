@@ -2,7 +2,7 @@
   "private": true,
   "name": "sourcegraph",
   "displayName": "Sourcegraph",
-  "version": "2.0.7",
+  "version": "2.1.0",
   "description": "Sourcegraph for VS Code",
   "publisher": "sourcegraph",
   "sideEffects": false,
@@ -13,7 +13,7 @@
     "url": "https://github.com/sourcegraph/sourcegraph.git"
   },
   "engines": {
-    "vscode": "^1.61.0"
+    "vscode": "^1.63.2"
   },
   "categories": [
     "Other"
@@ -31,6 +31,7 @@
     "onWebviewPanel:sourcegraphSearch"
   ],
   "main": "./dist/node/extension.js",
+  "browser": "./dist/webworker/extension.js",
   "contributes": {
     "commands": [
       {
@@ -195,5 +196,9 @@
     "build:web": "TARGET_TYPE=webworker yarn task:gulp webpack",
     "watch:node": "NODE_ENV=development TARGET_TYPE=node yarn task:gulp watchWebpack",
     "watch:web": "NODE_ENV=development TARGET_TYPE=webworker yarn task:gulp watchWebpack"
+  },
+  "dependencies": {
+    "https-browserify": "^1.0.0",
+    "stream-http": "^3.2.0"
   }
 }

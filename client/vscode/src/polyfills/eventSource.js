@@ -104,11 +104,10 @@ function EventSource(url, eventSourceInitDict) {
   var reconnectUrl = null
 
   function connect() {
-    const options = parse(url)
+    const streamApi = url.replace('search/stream?q=', '.api/search/stream?q=')
+    const options = parse(streamApi)
     let isSecure = options.protocol === 'https:'
     options.headers = {
-      'Cache-Control': 'no-cache',
-      Accept: 'text/event-stream',
       ...fixedHeaders,
     }
     if (lastEventId) {

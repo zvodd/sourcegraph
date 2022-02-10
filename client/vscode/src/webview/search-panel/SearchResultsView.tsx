@@ -47,7 +47,7 @@ export const SearchResultsView: React.FunctionComponent<SearchResultsViewProps> 
 }) => {
     const [userQueryState, setUserQueryState] = useState<QueryState>(context.submittedSearchQueryState.queryState)
     const [repoToShow, setRepoToShow] = useState<RepositoryMatch | null>(null)
-
+    const [trackDoubleClick, setTrackDoubleClick] = useState(0)
     // Editor focus.
     const editorReference = useRef<SearchBoxEditor>()
     const setEditor = useCallback((editor: SearchBoxEditor) => {
@@ -330,7 +330,10 @@ export const SearchResultsView: React.FunctionComponent<SearchResultsViewProps> 
                     // and bubbles up to its container (w/o index).
                     // We can't just stop propogation, so may want to introduce a separate callback.
                     const index = matchIndex || 0
-                    if (typeof index === 'number') {
+                    if (trackDoubleClick < 1) {
+                        setTrackDoubleClick(trackDoubleClick + 1)
+                    }
+                    if (typeof index === 'number' && trackDoubleClick >= 1) {
                         const { lineNumber, offsetAndLengths } = result.lineMatches[index]
                         const [start] = offsetAndLengths[0]
 
@@ -356,12 +359,13 @@ export const SearchResultsView: React.FunctionComponent<SearchResultsViewProps> 
                         extensionCoreAPI.openSourcegraphFile(uri).catch(error => {
                             console.error('Error opening Sourcegraph file', error)
                         })
+                        setTrackDoubleClick(0)
                     }
                     break
                 }
             }
         },
-        [authenticatedUser, extensionCoreAPI, instanceURL, platformContext.telemetryService]
+        [authenticatedUser, extensionCoreAPI, instanceURL, platformContext.telemetryService, trackDoubleClick]
     )
 
     const clearRepositoryToShow = (): void => setRepoToShow(null)

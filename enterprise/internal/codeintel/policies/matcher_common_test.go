@@ -2,6 +2,7 @@ package policies
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/sourcegraph/sourcegraph/internal/gitserver/gitdomain"
@@ -16,7 +17,7 @@ func testUploadExpirerMockGitserverClient(defaultBranchName string, now time.Tim
 	//   \                        \               \               \         \                   \
 	//    xy/feature-y            xy/feature-x    zw/feature-z     v1.2.2    v1.2.3              develop
 
-	var branchHeads = map[string]string{
+	branchHeads := map[string]string{
 		"develop":      "deadbeef01",
 		"feat/blank":   "deadbeef02",
 		"xy/feature-x": "deadbeef07",
@@ -24,21 +25,26 @@ func testUploadExpirerMockGitserverClient(defaultBranchName string, now time.Tim
 		"xy/feature-y": "deadbeef09",
 	}
 
-	var tagHeads = map[string]string{
+	tagHeads := map[string]string{
 		"v1.2.3": "deadbeef04",
 		"v1.2.2": "deadbeef05",
 		"v2.2.2": "deadbeef06",
 	}
 
-	var branchMembers = map[string][]string{
+	branchMembers := map[string][]string{
 		"develop":      {"deadbeef01", "deadbeef03", "deadbeef04", "deadbeef05"},
 		"feat/blank":   {"deadbeef02"},
 		"xy/feature-x": {"deadbeef07", "deadbeef08"},
 		"xy/feature-y": {"deadbeef09"},
 		"zw/feature-z": {"deadbeef06"},
+		"deadbeef01":   {"deadbeef01", "deadbeef03", "deadbeef04", "deadbeef05"},
+		"deadbeef02":   {"deadbeef02"},
+		"deadbeef06":   {"deadbeef06"},
+		"deadbeef07":   {"deadbeef07", "deadbeef08"},
+		"deadbeef09":   {"deadbeef09"},
 	}
 
-	var createdAt = map[string]time.Time{
+	createdAt := map[string]time.Time{
 		"deadbeef01": now.Add(-time.Hour * 5),
 		"deadbeef02": now.Add(-time.Hour * 5),
 		"deadbeef03": now.Add(-time.Hour * 5),
@@ -79,6 +85,7 @@ func testUploadExpirerMockGitserverClient(defaultBranchName string, now time.Tim
 
 	commitsUniqueToBranch := func(ctx context.Context, repositoryID int, branchName string, isDefaultBranch bool, maxAge *time.Time) (map[string]time.Time, error) {
 		branches := map[string]time.Time{}
+		fmt.Println(branchName)
 		for _, commit := range branchMembers[branchName] {
 			if maxAge == nil || !createdAt[commit].Before(*maxAge) {
 				branches[commit] = createdAt[commit]

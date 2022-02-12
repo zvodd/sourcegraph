@@ -95,20 +95,22 @@ func NewParallelJob(children ...Job) Job {
 	if len(children) == 1 {
 		return children[0]
 	}
-	return ParallelJob(children)
+	return &ParallelJob{children: children}
 }
 
-type ParallelJob []Job
+type ParallelJob struct {
+	children []Job
+}
 
-func (p ParallelJob) Name() string {
+func (p *ParallelJob) Name() string {
 	var childNames []string
-	for _, job := range p {
+	for _, job := range p.children {
 		childNames = append(childNames, job.Name())
 	}
 	return fmt.Sprintf("ParallelJob{%s}", strings.Join(childNames, ", "))
 }
 
-func (p ParallelJob) Run(ctx context.Context, db database.DB, s streaming.Sender) (_ *search.Alert, err error) {
+func (p *ParallelJob) Run(ctx context.Context, db database.DB, s streaming.Sender) (_ *search.Alert, err error) {
 	tr, ctx := trace.New(ctx, "ParallelJob", "")
 	defer func() {
 		tr.SetError(err)
@@ -119,7 +121,7 @@ func (p ParallelJob) Run(ctx context.Context, db database.DB, s streaming.Sender
 		g          errors.Group
 		maxAlerter search.MaxAlerter
 	)
-	for _, job := range p {
+	for _, job := range p.children {
 		job := job
 		g.Go(func() error {
 			alert, err := job.Run(ctx, db, s)

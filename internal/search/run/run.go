@@ -2,6 +2,7 @@ package run
 
 import (
 	"context"
+	"strings"
 	"time"
 
 	"github.com/sourcegraph/sourcegraph/internal/database"
@@ -160,8 +161,8 @@ func (m *Mapper) Map(job Job) Job {
 		return NewOrJob(children...)
 
 	case *ParallelJob:
-		children := make([]Job, 0, len(*j))
-		for _, child := range *j {
+		children := make([]Job, 0, len(j.children))
+		for _, child := range j.children {
 			children = append(children, m.Map(child))
 		}
 		if m.MapParallelJob != nil {
@@ -206,4 +207,48 @@ func (m *Mapper) Map(job Job) Job {
 	}
 	// Unreachable
 	return job
+}
+
+func PrettyPrint(job Job) string {
+	switch j := job.(type) {
+	case
+		*RepoSearch,
+		*textsearch.RepoSubsetTextSearch,
+		*textsearch.RepoUniverseTextSearch,
+		*structural.StructuralSearch,
+		*commit.CommitSearch,
+		*symbol.RepoSubsetSymbolSearch,
+		*symbol.RepoUniverseSymbolSearch,
+		*repos.ComputeExcludedRepos:
+		return j.Name()
+	case *AndJob:
+		var jobs []string
+		for _, child := range j.children {
+			jobs = append(jobs, PrettyPrint(child))
+		}
+		return "(and " + strings.Join(jobs, " ") + ")"
+	case *OrJob:
+		var jobs []string
+		for _, child := range j.children {
+			jobs = append(jobs, PrettyPrint(child))
+		}
+		return "(or " + strings.Join(jobs, " ") + ")"
+	case *ParallelJob:
+		var jobs []string
+		for _, child := range j.children {
+			jobs = append(jobs, PrettyPrint(child))
+		}
+		return "(parallel " + strings.Join(jobs, " ") + ")"
+	case *PriorityJob:
+		return "(priority (optional " + PrettyPrint(j.optional) + ") (required " + PrettyPrint(j.required) + ")"
+
+	case
+		*TimeoutJob,
+		*LimitJob,
+		*subRepoPermsFilterJob,
+		*noopJob:
+		return j.Name()
+	}
+	// Unreachable
+	return ""
 }

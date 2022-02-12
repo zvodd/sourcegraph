@@ -4,6 +4,7 @@
 const path = require('path')
 
 const MiniCssExtractPlugin = require('mini-css-extract-plugin')
+const webpack = require('webpack')
 
 const {
   getMonacoWebpackPlugin,
@@ -63,6 +64,8 @@ function getExtensionCoreConfiguration(targetType) {
               path: require.resolve('path-browserify'),
               assert: require.resolve('assert'),
               util: require.resolve('util'),
+              http: require.resolve('stream-http'),
+              https: require.resolve('https-browserify'),
             }
           : {},
     },
@@ -80,6 +83,12 @@ function getExtensionCoreConfiguration(targetType) {
         },
       ],
     },
+    plugins: [
+      new webpack.ProvidePlugin({
+        Buffer: ['buffer', 'Buffer'],
+        process: 'process/browser', // provide a shim for the global `process` variable
+      }),
+    ],
   }
 }
 
@@ -112,7 +121,14 @@ const webviewConfig = {
     path: path.resolve(__dirname, 'dist/webview'),
     filename: '[name].js',
   },
-  plugins: [new MiniCssExtractPlugin(), getMonacoWebpackPlugin()],
+  plugins: [
+    new MiniCssExtractPlugin(),
+    getMonacoWebpackPlugin(),
+    new webpack.ProvidePlugin({
+      Buffer: ['buffer', 'Buffer'],
+      process: 'process/browser', // provide a shim for the global `process` variable
+    }),
+  ],
   externals: {
     // the vscode-module is created on-the-fly and must be excluded. Add other modules that cannot be webpack'ed, 📖 -> https://webpack.js.org/configuration/externals/
     vscode: 'commonjs vscode',
@@ -127,6 +143,8 @@ const webviewConfig = {
     fallback: {
       path: require.resolve('path-browserify'),
       process: require.resolve('process/browser'),
+      http: require.resolve('stream-http'),
+      https: require.resolve('https-browserify'),
     },
   },
   module: {

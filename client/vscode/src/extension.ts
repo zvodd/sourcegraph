@@ -88,7 +88,7 @@ export function activate(context: vscode.ExtensionContext): void {
 
     const { fs } = initializeSourcegraphFileSystem({ context, initialInstanceURL })
 
-    const streamSearch = createStreamSearch({ context, stateMachine, sourcegraphURL: initialInstanceURL })
+    const streamSearch = createStreamSearch({ context, stateMachine, sourcegraphURL: `${initialInstanceURL}/.api` })
 
     const extensionCoreAPI: ExtensionCoreAPI = {
         panelInitialized: panelId => initializedPanelIDs.next(panelId),

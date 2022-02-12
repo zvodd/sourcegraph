@@ -766,7 +766,7 @@ func TestSearchContext(t *testing.T) {
 	}
 }
 
-func Test_toSearchInputs(t *testing.T) {
+func Test_toSearchJob(t *testing.T) {
 	orig := envvar.SourcegraphDotComMode()
 	envvar.MockSourcegraphDotComMode(true)
 	defer envvar.MockSourcegraphDotComMode(orig)
@@ -781,7 +781,7 @@ func Test_toSearchInputs(t *testing.T) {
 			},
 		}
 		job, _ := resolver.toSearchJob(q)
-		return job.Name()
+		return run.PrettyPrint(job)
 	}
 
 	// Job generation for global vs non-global search
@@ -803,6 +803,10 @@ func Test_toSearchInputs(t *testing.T) {
 	autogold.Want("diff", "ParallelJob{Diff, ComputeExcludedRepos}").Equal(t, test("type:diff test", query.ParseRegexp))
 	autogold.Want("file or commit", "JobWithOptional{Required: ParallelJob{RepoUniverseText, ComputeExcludedRepos}, Optional: Commit}").Equal(t, test("type:file type:commit test", query.ParseRegexp))
 	autogold.Want("many types", "JobWithOptional{Required: ParallelJob{RepoSubsetText, Repo, ComputeExcludedRepos}, Optional: ParallelJob{RepoSubsetSymbol, Commit}}").Equal(t, test("type:file type:path type:repo type:commit type:symbol repo:test test", query.ParseRegexp))
+
+	// Job generation for optimized Zoekt searches
+	autogold.Want("Zoekt optimized", "").Equal(t, test("repo:foo (a or b) type:file", query.ParseRegexp))
+
 }
 
 func TestZeroElapsedMilliseconds(t *testing.T) {

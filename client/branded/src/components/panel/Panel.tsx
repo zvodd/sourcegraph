@@ -298,8 +298,8 @@ export const Panel = React.memo<Props>(props => {
                         </div>
                     }
                 >
-                    {items.map(({ label, id, trackTabClick }) => (
-                        <Tab key={id}>
+                    {items.map(({ label, id, trackTabClick }, index) => (
+                        <Tab key={id} index={index}>
                             <span className="tablist-wrapper--tab-label" onClick={trackTabClick} role="none">
                                 {label}
                             </span>
@@ -309,8 +309,13 @@ export const Panel = React.memo<Props>(props => {
             </div>
             <TabPanels className={styles.tabs}>
                 {activeTab ? (
-                    items.map(({ id, element }) => (
-                        <TabPanel key={id} className={styles.tabsContent} data-testid="panel-tabs-content">
+                    items.map(({ id, element }, index) => (
+                        <TabPanel
+                            index={index}
+                            key={id}
+                            className={styles.tabsContent}
+                            data-testid="panel-tabs-content"
+                        >
                             {id === activeTab.id ? element : null}
                         </TabPanel>
                     ))

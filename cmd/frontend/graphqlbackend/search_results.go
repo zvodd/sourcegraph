@@ -581,7 +581,7 @@ func toFeatures(flags featureflag.FlagSet) search.Features {
 // query on all indexed repositories) then we need to convert our tree to
 // Zoekt's internal inputs and representation. These concerns are all handled by
 // toSearchJob.
-func (r *searchResolver) toSearchJob(q query.Q) (run.Job, error) {
+func (r *searchResolver) toSearchJob(q query.Q) (job.Job, error) {
 	// MaxResults depends on the query's `count:` parameter, and we should
 	// use the passed-in query to do this. However, `r.MaxResults()` uses
 	// the query stored on the resolver's SearchInputs rather than the passed-in
@@ -630,8 +630,8 @@ func (r *searchResolver) toSearchJob(q query.Q) (run.Job, error) {
 	// still relies on all of args. In time it should depend only on the bits it truly needs.
 	args.RepoOptions = repoOptions
 
-	var requiredJobs, optionalJobs []run.Job
-	addJob := func(required bool, job run.Job) {
+	var requiredJobs, optionalJobs []job.Job
+	addJob := func(required bool, job job.Job) {
 		// Filter out any jobs that aren't commit jobs as they are added
 		if inputs.CodeMonitorID != nil {
 			if _, ok := job.(*commit.CommitSearch); !ok {
@@ -939,9 +939,9 @@ func (r *searchResolver) toSearchJob(q query.Q) (run.Job, error) {
 		Options: repoOptions,
 	})
 
-	job := run.NewPriorityJob(
-		run.NewParallelJob(requiredJobs...),
-		run.NewParallelJob(optionalJobs...),
+	job := job.NewPriorityJob(
+		job.NewParallelJob(requiredJobs...),
+		job.NewParallelJob(optionalJobs...),
 	)
 
 	checker := authz.DefaultSubRepoPermsChecker
@@ -953,7 +953,7 @@ func (r *searchResolver) toSearchJob(q query.Q) (run.Job, error) {
 }
 
 // toAndJob creates a new job from a basic query whose pattern is an And operator at the root.
-func (r *searchResolver) toAndJob(q query.Basic) (run.Job, error) {
+func (r *searchResolver) toAndJob(q query.Basic) (job.Job, error) {
 	// Invariant: this function is only reachable from callers that
 	// guarantee a root node with one or more queryOperands.
 	queryOperands := q.Pattern.(query.Operator).Operands
@@ -979,7 +979,7 @@ func (r *searchResolver) toAndJob(q query.Basic) (run.Job, error) {
 }
 
 // toOrJob creates a new job from a basic query whose pattern is an Or operator at the top level
-func (r *searchResolver) toOrJob(q query.Basic) (run.Job, error) {
+func (r *searchResolver) toOrJob(q query.Basic) (job.Job, error) {
 	// Invariant: this function is only reachable from callers that
 	// guarantee a root node with one or more queryOperands.
 	queryOperands := q.Pattern.(query.Operator).Operands
@@ -995,7 +995,7 @@ func (r *searchResolver) toOrJob(q query.Basic) (run.Job, error) {
 	return run.NewOrJob(operands...), nil
 }
 
-func (r *searchResolver) toPatternExpressionJob(q query.Basic) (run.Job, error) {
+func (r *searchResolver) toPatternExpressionJob(q query.Basic) (job.Job, error) {
 	switch term := q.Pattern.(type) {
 	case query.Operator:
 		if len(term.Operands) == 0 {
@@ -1020,7 +1020,7 @@ func (r *searchResolver) toPatternExpressionJob(q query.Basic) (run.Job, error) 
 	return nil, errors.Errorf("unrecognized type %T in evaluatePatternExpression", q.Pattern)
 }
 
-func (r *searchResolver) toEvaluateJob(q query.Basic) (run.Job, error) {
+func (r *searchResolver) toEvaluateJob(q query.Basic) (job.Job, error) {
 	maxResults := r.MaxResults()
 	timeout := search.TimeoutDuration(q)
 
@@ -1377,7 +1377,7 @@ func searchResultsToFileNodes(matches []result.Match) ([]query.Node, error) {
 // A search job represents a tree of evaluation steps. If the deadline
 // is exceeded, returns a search alert with a did-you-mean link for the same
 // query with a longer timeout.
-func (r *searchResolver) evaluateJob(ctx context.Context, stream streaming.Sender, job run.Job) (_ *search.Alert, err error) {
+func (r *searchResolver) evaluateJob(ctx context.Context, stream streaming.Sender, job job.Job) (_ *search.Alert, err error) {
 	tr, ctx := trace.New(ctx, "evaluateJob", "")
 	defer func() {
 		tr.SetError(err)

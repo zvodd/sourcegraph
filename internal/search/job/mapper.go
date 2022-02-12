@@ -5,6 +5,7 @@ import (
 
 	"github.com/sourcegraph/sourcegraph/internal/search/commit"
 	"github.com/sourcegraph/sourcegraph/internal/search/repos"
+	"github.com/sourcegraph/sourcegraph/internal/search/run"
 	"github.com/sourcegraph/sourcegraph/internal/search/structural"
 	"github.com/sourcegraph/sourcegraph/internal/search/symbol"
 	"github.com/sourcegraph/sourcegraph/internal/search/textsearch"
@@ -14,7 +15,7 @@ type Mapper struct {
 	MapJob func(job Job) Job
 
 	// Search Jobs (leaf nodes)
-	MapRepoSearchJob               func(*RepoSearch) *RepoSearch
+	MapRepoSearchJob               func(*run.RepoSearch) *run.RepoSearch
 	MapRepoSubsetTextSearchJob     func(*textsearch.RepoSubsetTextSearch) *textsearch.RepoSubsetTextSearch
 	MapRepoUniverseTextSearchJob   func(*textsearch.RepoUniverseTextSearch) *textsearch.RepoUniverseTextSearch
 	MapStructuralSearchJob         func(*structural.StructuralSearch) *structural.StructuralSearch
@@ -43,7 +44,7 @@ func (m *Mapper) Map(job Job) Job {
 	}
 
 	switch j := job.(type) {
-	case *RepoSearch:
+	case *run.RepoSearch:
 		if m.MapRepoSearchJob != nil {
 			j = m.MapRepoSearchJob(j)
 		}

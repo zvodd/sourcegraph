@@ -571,6 +571,10 @@ func toFeatures(flags featureflag.FlagSet) search.Features {
 	}
 }
 
+type JobArgs struct {
+	protocol search.Protocol
+}
+
 // toSearchJob converts a query parse tree to the _internal_ representation
 // needed to run a search routine. To understand why this conversion matters, think
 // about the fact that the query parse tree doesn't know anything about our
@@ -581,14 +585,14 @@ func toFeatures(flags featureflag.FlagSet) search.Features {
 // query on all indexed repositories) then we need to convert our tree to
 // Zoekt's internal inputs and representation. These concerns are all handled by
 // toSearchJob.
-func (r *searchResolver) toSearchJob(q query.Q) (run.Job, error) {
+func (r *searchResolver) toSearchJob(jargs *JobArgs, q query.Q) (run.Job, error) {
 	maxResults := q.MaxResults(r.SearchInputs.DefaultLimit)
 
 	b, err := query.ToBasicQuery(q)
 	if err != nil {
 		return nil, err
 	}
-	p := search.ToTextPatternInfo(b, r.protocol(), query.Identity)
+	p := search.ToTextPatternInfo(b, jargs.protocol, query.Identity)
 
 	forceResultTypes := result.TypeEmpty
 	if r.PatternType == query.SearchTypeStructural {
@@ -610,7 +614,7 @@ func (r *searchResolver) toSearchJob(q query.Q) (run.Job, error) {
 		Timeout:     search.TimeoutDuration(b),
 
 		// UseFullDeadline if timeout: set or we are streaming.
-		UseFullDeadline: q.Timeout() != nil || q.Count() != nil || r.protocol() == search.Streaming,
+		UseFullDeadline: q.Timeout() != nil || q.Count() != nil || jargs.protocol == search.Streaming,
 
 		Zoekt:        r.zoekt,
 		SearcherURLs: r.searcherURLs,
@@ -945,7 +949,7 @@ func (r *searchResolver) toSearchJob(q query.Q) (run.Job, error) {
 }
 
 // toAndJob creates a new job from a basic query whose pattern is an And operator at the root.
-func (r *searchResolver) toAndJob(q query.Basic) (run.Job, error) {
+func (r *searchResolver) toAndJob(args *JobArgs, q query.Basic) (run.Job, error) {
 	// Invariant: this function is only reachable from callers that
 	// guarantee a root node with one or more queryOperands.
 	queryOperands := q.Pattern.(query.Operator).Operands
@@ -960,7 +964,7 @@ func (r *searchResolver) toAndJob(q query.Basic) (run.Job, error) {
 
 	operands := make([]run.Job, 0, len(queryOperands))
 	for _, queryOperand := range queryOperands {
-		operand, err := r.toPatternExpressionJob(q.MapPattern(queryOperand))
+		operand, err := r.toPatternExpressionJob(args, q.MapPattern(queryOperand))
 		if err != nil {
 			return nil, err
 		}
@@ -971,14 +975,14 @@ func (r *searchResolver) toAndJob(q query.Basic) (run.Job, error) {
 }
 
 // toOrJob creates a new job from a basic query whose pattern is an Or operator at the top level
-func (r *searchResolver) toOrJob(q query.Basic) (run.Job, error) {
+func (r *searchResolver) toOrJob(args *JobArgs, q query.Basic) (run.Job, error) {
 	// Invariant: this function is only reachable from callers that
 	// guarantee a root node with one or more queryOperands.
 	queryOperands := q.Pattern.(query.Operator).Operands
 
 	operands := make([]run.Job, 0, len(queryOperands))
 	for _, term := range queryOperands {
-		operand, err := r.toPatternExpressionJob(q.MapPattern(term))
+		operand, err := r.toPatternExpressionJob(args, q.MapPattern(term))
 		if err != nil {
 			return nil, err
 		}
@@ -987,7 +991,7 @@ func (r *searchResolver) toOrJob(q query.Basic) (run.Job, error) {
 	return run.NewOrJob(operands...), nil
 }
 
-func (r *searchResolver) toPatternExpressionJob(q query.Basic) (run.Job, error) {
+func (r *searchResolver) toPatternExpressionJob(args *JobArgs, q query.Basic) (run.Job, error) {
 	switch term := q.Pattern.(type) {
 	case query.Operator:
 		if len(term.Operands) == 0 {
@@ -996,14 +1000,14 @@ func (r *searchResolver) toPatternExpressionJob(q query.Basic) (run.Job, error) 
 
 		switch term.Kind {
 		case query.And:
-			return r.toAndJob(q)
+			return r.toAndJob(args, q)
 		case query.Or:
-			return r.toOrJob(q)
+			return r.toOrJob(args, q)
 		case query.Concat:
-			return r.toSearchJob(q.ToParseTree())
+			return r.toSearchJob(args, q.ToParseTree())
 		}
 	case query.Pattern:
-		return r.toSearchJob(q.ToParseTree())
+		return r.toSearchJob(args, q.ToParseTree())
 	case query.Parameter:
 		// evaluatePatternExpression does not process Parameter nodes.
 		return run.NewNoopJob(), nil
@@ -1012,21 +1016,21 @@ func (r *searchResolver) toPatternExpressionJob(q query.Basic) (run.Job, error) 
 	return nil, errors.Errorf("unrecognized type %T in evaluatePatternExpression", q.Pattern)
 }
 
-func (r *searchResolver) toEvaluateJob(q query.Basic) (run.Job, error) {
+func (r *searchResolver) toEvaluateJob(args *JobArgs, q query.Basic) (run.Job, error) {
 	maxResults := q.ToParseTree().MaxResults(r.SearchInputs.DefaultLimit)
 	timeout := search.TimeoutDuration(q)
 
 	if q.Pattern == nil {
-		job, err := r.toSearchJob(query.ToNodes(q.Parameters))
+		job, err := r.toSearchJob(args, query.ToNodes(q.Parameters))
 		return run.NewTimeoutJob(timeout, run.NewLimitJob(maxResults, job)), err
 	}
-	job, err := r.toPatternExpressionJob(q)
+	job, err := r.toPatternExpressionJob(args, q)
 	return run.NewTimeoutJob(timeout, run.NewLimitJob(maxResults, job)), err
 }
 
 // evaluate evaluates all expressions of a search query. The value of stream must be non-nil
-func (r *searchResolver) evaluate(ctx context.Context, stream streaming.Sender, q query.Basic) (*search.Alert, error) {
-	j, err := r.toEvaluateJob(q)
+func (r *searchResolver) evaluate(ctx context.Context, args *JobArgs, stream streaming.Sender, q query.Basic) (*search.Alert, error) {
+	j, err := r.toEvaluateJob(args, q)
 	if err != nil {
 		return nil, err
 	}
@@ -1216,13 +1220,15 @@ func (r *searchResolver) resultsRecursive(ctx context.Context, stream streaming.
 				newResult, err = r.resultsRecursive(ctx, stream, predicatePlan)
 			} else if stream != nil {
 				var alert *search.Alert
-				alert, err = r.evaluate(ctx, stream, q)
+				args := &JobArgs{} // FIXME
+				alert, err = r.evaluate(ctx, args, stream, q)
 				newResult = &SearchResults{Alert: alert}
 			} else {
 				// Always pass a non-nil stream to evaluate
 				agg := streaming.NewAggregatingStream()
 				var alert *search.Alert
-				alert, err = r.evaluate(ctx, agg, q)
+				args := &JobArgs{} // FIXME
+				alert, err = r.evaluate(ctx, args, agg, q)
 				newResult = &SearchResults{
 					Matches: agg.Results,
 					Stats:   agg.Stats,
@@ -1569,10 +1575,11 @@ func (r *searchResolver) Stats(ctx context.Context) (stats *searchResultsStats, 
 	searchResultsStatsCounter.WithLabelValues("miss").Inc()
 	attempts := 0
 	var v *SearchResultsResolver
+	args := &JobArgs{} // FIXME
 	for {
 		// Query search results.
 		var err error
-		job, err := r.toSearchJob(r.Query)
+		job, err := r.toSearchJob(args, r.Query)
 		if err != nil {
 			return nil, err
 		}

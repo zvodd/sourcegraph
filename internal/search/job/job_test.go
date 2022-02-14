@@ -11,7 +11,7 @@ import (
 	"github.com/sourcegraph/sourcegraph/schema"
 )
 
-func TestToSearchInputs(t *testing.T) {
+func TestToSearchJob(t *testing.T) {
 	test := func(input string, protocol search.Protocol, parser func(string) (query.Q, error)) string {
 		q, _ := parser(input)
 		args := &Args{
@@ -148,4 +148,47 @@ func TestToSearchInputs(t *testing.T) {
       RepoSubsetSymbol
       Commit)))
 `).Equal(t, test("type:file type:path type:repo type:commit type:symbol repo:test test", search.Batch, query.ParseRegexp))
+
+}
+
+func TestNewJob(t *testing.T) {
+	test := func(input string, parser func(string) (query.Q, error)) string {
+		q, _ := parser(input)
+		args := &Args{
+			SearchInputs: &run.SearchInputs{
+				UserSettings: &schema.Settings{},
+				PatternType:  query.SearchTypeLiteral,
+			},
+			OnSourcegraphDotCom: true,
+			Protocol:            search.Streaming,
+		}
+
+		b, err := query.ToBasicQuery(q)
+		if err != nil {
+			return input + "is not a basic query"
+		}
+		j, _ := NewJob(args, b)
+		return "\n" + PrettySexp(j) + "\n"
+	}
+
+	// Job optimization
+	autogold.Want("Optimization for Zoekt textsearch", `
+(TIMEOUT
+  20s
+  (LIMIT
+    30
+    (AND
+      (LIMIT
+        40000
+        (PARALLEL
+          RepoUniverseText
+          Repo
+          ComputeExcludedRepos))
+      (LIMIT
+        40000
+        (PARALLEL
+          RepoUniverseText
+          Repo
+          ComputeExcludedRepos)))))
+`).Equal(t, test(`repo:sg (foo and bar) type:file`, query.ParseLiteral))
 }

@@ -609,7 +609,7 @@ func toPatternExpressionJob(args *Args, q query.Basic) (Job, error) {
 	return nil, errors.Errorf("unrecognized type %T in evaluatePatternExpression", q.Pattern)
 }
 
-func ToEvaluateJob(args *Args, q query.Basic) (Job, error) {
+func NewJob(args *Args, q query.Basic) (Job, error) {
 	maxResults := q.ToParseTree().MaxResults(args.SearchInputs.DefaultLimit)
 	timeout := search.TimeoutDuration(q)
 

@@ -152,13 +152,31 @@ func writeNode(b *bytes.Buffer, id *int, label string) {
 	*id++
 }
 
+func openSubgraph(b *bytes.Buffer, id *int, label string) {
+	if label == "" {
+		label = "&nbsp"
+	}
+	b.WriteString("subgraph ")
+	b.WriteString(strconv.Itoa(*id))
+	b.WriteByte('[')
+	b.WriteString(label)
+	b.WriteByte(']')
+	b.WriteByte('\n')
+	*id++
+}
+
+func closeSubgraph(b *bytes.Buffer) {
+	b.WriteString("end\n")
+}
+
 // PrettyMermaid outputs a Mermaid flowchart. See https://mermaid-js.github.io.
 func PrettyMermaid(job Job) string {
+	subgraphId := 10000
 	id := 0
 	b := new(bytes.Buffer)
 	b.WriteString("flowchart TB\n")
-	var writeMermaid func(Job) int
-	writeMermaid = func(job Job) int {
+	var writeMermaid func(Job)
+	writeMermaid = func(job Job) {
 		switch j := job.(type) {
 		case
 			*run.RepoSearch,
@@ -172,20 +190,25 @@ func PrettyMermaid(job Job) string {
 			*noopJob:
 			writeNode(b, &id, j.Name())
 		case *AndJob:
+			openSubgraph(b, &subgraphId, "")
 			srcId := id
 			writeNode(b, &id, "AND")
 			for _, child := range j.children {
 				writeEdge(b, srcId, id)
 				writeMermaid(child)
 			}
+			closeSubgraph(b)
 		case *OrJob:
+			openSubgraph(b, &subgraphId, "")
 			srcId := id
 			writeNode(b, &id, "OR")
 			for _, child := range j.children {
 				writeEdge(b, srcId, id)
 				writeMermaid(child)
 			}
+			closeSubgraph(b)
 		case *PriorityJob:
+			openSubgraph(b, &subgraphId, "")
 			srcId := id
 			writeNode(b, &id, "PRIORITY")
 
@@ -200,38 +223,46 @@ func PrettyMermaid(job Job) string {
 			writeNode(b, &id, "OPTIONAL")
 			writeEdge(b, optionalId, id)
 			writeMermaid(j.optional)
+			closeSubgraph(b)
 		case *ParallelJob:
+			openSubgraph(b, &subgraphId, "")
 			srcId := id
 			writeNode(b, &id, "PARALLEL")
 			for _, child := range j.children {
 				writeEdge(b, srcId, id)
 				writeMermaid(child)
 			}
+			closeSubgraph(b)
 		case *TimeoutJob:
+			openSubgraph(b, &subgraphId, "")
 			srcId := id
 			writeNode(b, &id, "TIMEOUT")
 			writeEdge(b, srcId, id)
 			writeNode(b, &id, j.timeout.String())
 			writeEdge(b, srcId, id)
 			writeMermaid(j.child)
+			closeSubgraph(b)
 		case *LimitJob:
+			openSubgraph(b, &subgraphId, "")
 			srcId := id
 			writeNode(b, &id, "LIMIT")
 			writeEdge(b, srcId, id)
 			writeNode(b, &id, strconv.Itoa(j.limit))
 			writeEdge(b, srcId, id)
 			writeMermaid(j.child)
+			closeSubgraph(b)
 		case *subRepoPermsFilterJob:
+			openSubgraph(b, &subgraphId, "")
 			srcId := id
 			writeNode(b, &id, "FILTER")
 			writeEdge(b, srcId, id)
 			writeNode(b, &id, "SubRepoPermissions")
 			writeEdge(b, srcId, id)
 			writeMermaid(j.child)
+			closeSubgraph(b)
 		default:
 			panic(fmt.Sprintf("unsupported job %T for SexpFormat printer", job))
 		}
-		return id
 	}
 	writeMermaid(job)
 	return b.String()

@@ -8,6 +8,7 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import { useHistory, useLocation } from 'react-router'
 import { Collapse } from 'reactstrap'
 
+import { SettingsCascadeOrError } from '@sourcegraph/client-api'
 import { HoveredToken } from '@sourcegraph/codeintellify'
 import {
     addLineRangeQueryParameter,
@@ -24,7 +25,6 @@ import { useQuery } from '@sourcegraph/http-client'
 import { Markdown } from '@sourcegraph/shared/src/components/Markdown'
 import { displayRepoName } from '@sourcegraph/shared/src/components/RepoFileLink'
 import { Resizable } from '@sourcegraph/shared/src/components/Resizable'
-import { SettingsCascadeOrError } from '@sourcegraph/shared/src/settings/settings'
 import {
     RepoSpec,
     RevisionSpec,

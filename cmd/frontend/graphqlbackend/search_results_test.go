@@ -45,9 +45,7 @@ func TestSearchResults(t *testing.T) {
 	db := database.NewMockDB()
 
 	getResults := func(t *testing.T, query, version string) []string {
-		r, err := newSchemaResolver(db).Search(ctx, &SearchArgs{Query: query, Version: version})
-		require.Nil(t, err)
-
+		r := newSchemaResolver(db).Search(&SearchArgs{Query: query, Version: version})
 		results, err := r.Results(ctx)
 		require.NoError(t, err)
 

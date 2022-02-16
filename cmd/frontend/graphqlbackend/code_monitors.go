@@ -25,7 +25,7 @@ type CodeMonitorsResolver interface {
 
 	NodeResolvers() map[string]NodeByIDFunc
 
-	CodeMonitorSearch(context.Context, *SearchArgs) (SearchImplementer, error)
+	CodeMonitorSearch(*SearchArgs) SearchImplementer
 }
 
 type MonitorConnectionResolver interface {

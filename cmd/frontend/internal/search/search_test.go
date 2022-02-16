@@ -23,7 +23,6 @@ import (
 	"github.com/sourcegraph/sourcegraph/internal/search/streaming/api"
 	streamhttp "github.com/sourcegraph/sourcegraph/internal/search/streaming/http"
 	"github.com/sourcegraph/sourcegraph/internal/types"
-	"github.com/sourcegraph/sourcegraph/schema"
 )
 
 func TestServeStream_empty(t *testing.T) {
@@ -36,8 +35,8 @@ func TestServeStream_empty(t *testing.T) {
 	ts := httptest.NewServer(&streamHandler{
 		flushTickerInternal: 1 * time.Millisecond,
 		pingTickerInterval:  1 * time.Millisecond,
-		newSearchResolver: func(context.Context, database.DB, *graphqlbackend.SearchArgs) (searchResolver, error) {
-			return mock, nil
+		newSearchResolver: func(database.DB, *graphqlbackend.SearchArgs) searchResolver {
+			return mock
 		}})
 	defer ts.Close()
 
@@ -55,17 +54,6 @@ func TestServeStream_empty(t *testing.T) {
 	}
 	if testing.Verbose() {
 		t.Logf("GET:\n%s", b)
-	}
-}
-
-// Ensures graphqlbackend matches the interface we expect
-func TestDefaultNewSearchResolver(t *testing.T) {
-	_, err := defaultNewSearchResolver(context.Background(), database.NewMockDB(), &graphqlbackend.SearchArgs{
-		Version:  "V2",
-		Settings: &schema.Settings{},
-	})
-	if err != nil {
-		t.Fatal(err)
 	}
 }
 
@@ -144,7 +132,7 @@ func TestDisplayLimit(t *testing.T) {
 				db:                  db,
 				flushTickerInternal: 1 * time.Millisecond,
 				pingTickerInterval:  1 * time.Millisecond,
-				newSearchResolver: func(_ context.Context, _ database.DB, args *graphqlbackend.SearchArgs) (searchResolver, error) {
+				newSearchResolver: func(_ database.DB, args *graphqlbackend.SearchArgs) searchResolver {
 					q, err := query.Parse(c.queryString, query.Literal)
 					if err != nil {
 						t.Fatal(err)
@@ -152,7 +140,7 @@ func TestDisplayLimit(t *testing.T) {
 					mock.inputs = &run.SearchInputs{
 						Query: q,
 					}
-					return mock, nil
+					return mock
 				}})
 			defer ts.Close()
 

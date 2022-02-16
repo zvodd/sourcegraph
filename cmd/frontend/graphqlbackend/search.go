@@ -45,13 +45,13 @@ type SearchImplementer interface {
 }
 
 // NewSearchResolver returns a SearchImplementer that provides search results and suggestions.
-func NewSearchResolver(ctx context.Context, db database.DB, args *SearchArgs) (_ *searchResolver, err error) {
+func NewSearchResolver(db database.DB, args *SearchArgs) *searchResolver {
 	return &searchResolver{
 		db:           db,
 		args:         args,
 		zoekt:        search.Indexed(),
 		searcherURLs: search.SearcherURLs(),
-	}, nil
+	}
 }
 
 func argsToInputs(ctx context.Context, db database.DB, protocol search.Protocol, args *SearchArgs) (_ *run.SearchInputs, _ *search.Alert, err error) {
@@ -136,8 +136,8 @@ func argsToInputs(ctx context.Context, db database.DB, protocol search.Protocol,
 	return inputs, nil, nil
 }
 
-func (r *schemaResolver) Search(ctx context.Context, args *SearchArgs) (SearchImplementer, error) {
-	return NewSearchResolver(ctx, r.db, args)
+func (r *schemaResolver) Search(args *SearchArgs) SearchImplementer {
+	return NewSearchResolver(r.db, args)
 }
 
 // detectSearchType returns the search type to perform ("regexp", or

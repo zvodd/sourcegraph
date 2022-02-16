@@ -27,6 +27,7 @@ import (
 	"github.com/sourcegraph/sourcegraph/internal/honey"
 	searchhoney "github.com/sourcegraph/sourcegraph/internal/honey/search"
 	"github.com/sourcegraph/sourcegraph/internal/lazyregexp"
+	"github.com/sourcegraph/sourcegraph/internal/search"
 	"github.com/sourcegraph/sourcegraph/internal/search/result"
 	"github.com/sourcegraph/sourcegraph/internal/search/run"
 	"github.com/sourcegraph/sourcegraph/internal/search/streaming"
@@ -220,26 +221,22 @@ LOOP:
 		}
 	}
 
-	resultsResolver, err := results()
+	alert, err := results()
 	if err != nil {
 		_ = eventWriter.Event("error", streamhttp.EventError{Message: err.Error()})
 		return
 	}
-
-	alert := resultsResolver.Alert()
 	if alert != nil {
 		var pqs []streamhttp.ProposedQuery
-		if proposed := alert.ProposedQueries(); proposed != nil {
-			for _, pq := range *proposed {
-				pqs = append(pqs, streamhttp.ProposedQuery{
-					Description: fromStrPtr(pq.Description()),
-					Query:       pq.Query(),
-				})
-			}
+		for _, pq := range alert.ProposedQueries {
+			pqs = append(pqs, streamhttp.ProposedQuery{
+				Description: pq.Description,
+				Query:       pq.Query,
+			})
 		}
 		_ = eventWriter.Event("alert", streamhttp.EventAlert{
-			Title:           alert.Title(),
-			Description:     fromStrPtr(alert.Description()),
+			Title:           alert.Title,
+			Description:     alert.Description,
 			ProposedQueries: pqs,
 		})
 	}
@@ -247,9 +244,9 @@ LOOP:
 	_ = eventWriter.Event("progress", progress.Final())
 
 	var status, alertType string
-	status = graphqlbackend.DetermineStatusForLogs(resultsResolver, err)
+	status = graphqlbackend.DetermineStatusForLogs(progress.Stats, alert, err)
 	if alert != nil {
-		alertType = alert.PrometheusType()
+		alertType = alert.PrometheusType
 	}
 
 	isSlow := time.Since(start) > searchlogs.LogSlowSearchesThreshold()
@@ -278,29 +275,28 @@ LOOP:
 // startSearch will start a search. It returns the events channel which
 // streams out search events. Once events is closed you can call results which
 // will return the results resolver and error.
-func (h *streamHandler) startSearch(ctx context.Context, a *args) (events <-chan streaming.SearchEvent, inputs run.SearchInputs, results func() (*graphqlbackend.SearchResultsResolver, error)) {
+func (h *streamHandler) startSearch(ctx context.Context, a *args) (events <-chan streaming.SearchEvent, inputs run.SearchInputs, results func() (*search.Alert, error)) {
 	eventsC := make(chan streaming.SearchEvent)
 	stream := streaming.StreamFunc(func(event streaming.SearchEvent) {
 		eventsC <- event
 	})
 	batchedStream := streaming.NewBatchingStream(50*time.Millisecond, stream)
 
-	search, err := h.newSearchResolver(ctx, h.db, &graphqlbackend.SearchArgs{
+	searchResolver, err := h.newSearchResolver(ctx, h.db, &graphqlbackend.SearchArgs{
 		Query:       a.Query,
 		Version:     a.Version,
 		PatternType: strPtr(a.PatternType),
-		Stream:      batchedStream,
 	})
 	if err != nil {
 		close(eventsC)
-		return eventsC, run.SearchInputs{}, func() (*graphqlbackend.SearchResultsResolver, error) {
+		return eventsC, run.SearchInputs{}, func() (*search.Alert, error) {
 			return nil, err
 		}
 	}
 
 	type finalResult struct {
-		resultsResolver *graphqlbackend.SearchResultsResolver
-		err             error
+		alert *search.Alert
+		err   error
 	}
 	final := make(chan finalResult, 1)
 	go func() {
@@ -308,18 +304,18 @@ func (h *streamHandler) startSearch(ctx context.Context, a *args) (events <-chan
 		defer close(eventsC)
 		defer batchedStream.Done()
 
-		r, err := search.Results(ctx)
-		final <- finalResult{resultsResolver: r, err: err}
+		alert, err := searchResolver.ResultsStreaming(ctx, batchedStream)
+		final <- finalResult{alert: alert, err: err}
 	}()
 
-	return eventsC, search.Inputs(ctx), func() (*graphqlbackend.SearchResultsResolver, error) {
+	return eventsC, searchResolver.Inputs(ctx), func() (*search.Alert, error) {
 		f := <-final
-		return f.resultsResolver, f.err
+		return f.alert, f.err
 	}
 }
 
 type searchResolver interface {
-	Results(context.Context) (*graphqlbackend.SearchResultsResolver, error)
+	ResultsStreaming(context.Context, streaming.Sender) (*search.Alert, error)
 	Inputs(context.Context) run.SearchInputs
 }
 

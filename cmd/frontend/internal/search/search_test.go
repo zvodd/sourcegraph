@@ -15,6 +15,7 @@ import (
 	"github.com/sourcegraph/sourcegraph/cmd/frontend/graphqlbackend"
 	api2 "github.com/sourcegraph/sourcegraph/internal/api"
 	"github.com/sourcegraph/sourcegraph/internal/database"
+	"github.com/sourcegraph/sourcegraph/internal/search"
 	"github.com/sourcegraph/sourcegraph/internal/search/query"
 	"github.com/sourcegraph/sourcegraph/internal/search/result"
 	"github.com/sourcegraph/sourcegraph/internal/search/run"
@@ -28,6 +29,7 @@ import (
 func TestServeStream_empty(t *testing.T) {
 	mock := &mockSearchResolver{
 		done: make(chan struct{}),
+		c:    make(chan streaming.SearchEvent),
 	}
 	mock.Close()
 
@@ -122,6 +124,7 @@ func TestDisplayLimit(t *testing.T) {
 		t.Run(fmt.Sprintf("q=%s;displayLimit=%d", c.queryString, c.displayLimit), func(t *testing.T) {
 			mock := &mockSearchResolver{
 				done: make(chan struct{}),
+				c:    make(chan streaming.SearchEvent),
 			}
 
 			repos := database.NewStrictMockRepoStore()
@@ -142,7 +145,6 @@ func TestDisplayLimit(t *testing.T) {
 				flushTickerInternal: 1 * time.Millisecond,
 				pingTickerInterval:  1 * time.Millisecond,
 				newSearchResolver: func(_ context.Context, _ database.DB, args *graphqlbackend.SearchArgs) (searchResolver, error) {
-					mock.c = args.Stream
 					q, err := query.Parse(c.queryString, query.Literal)
 					if err != nil {
 						t.Fatal(err)
@@ -187,9 +189,9 @@ func TestDisplayLimit(t *testing.T) {
 			})
 
 			// Send 2 repository matches.
-			mock.c.Send(streaming.SearchEvent{
+			mock.c <- streaming.SearchEvent{
 				Results: []result.Match{mkRepoMatch(1), mkRepoMatch(2)},
-			})
+			}
 			mock.Close()
 			if err := g.Wait(); err != nil {
 				t.Fatal(err)
@@ -221,19 +223,20 @@ func mkRepoMatch(id int) *result.RepoMatch {
 
 type mockSearchResolver struct {
 	done   chan struct{}
-	c      streaming.Sender
+	c      chan streaming.SearchEvent
 	inputs *run.SearchInputs
 }
 
-func (h *mockSearchResolver) Results(ctx context.Context) (*graphqlbackend.SearchResultsResolver, error) {
-	select {
-	case <-ctx.Done():
-		return nil, ctx.Err()
-	case <-h.done:
-		return &graphqlbackend.SearchResultsResolver{
-			UserSettings:  &schema.Settings{},
-			SearchResults: &graphqlbackend.SearchResults{},
-		}, nil
+func (h *mockSearchResolver) ResultsStreaming(ctx context.Context, stream streaming.Sender) (*search.Alert, error) {
+	for {
+		select {
+		case event := <-h.c:
+			stream.Send(event)
+		case <-ctx.Done():
+			return nil, ctx.Err()
+		case <-h.done:
+			return nil, nil
+		}
 	}
 }
 

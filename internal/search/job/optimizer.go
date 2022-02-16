@@ -1,7 +1,7 @@
 package job
 
 func ZoektAnd(children []Job) []Job {
-	return []Job{children[0]}
+	return []Job{}
 }
 
 func OptimizeAnd(job Job) Job {

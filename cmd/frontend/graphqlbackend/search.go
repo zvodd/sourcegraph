@@ -57,6 +57,24 @@ type SearchImplementer interface {
 
 // NewSearchImplementer returns a SearchImplementer that provides search results and suggestions.
 func NewSearchImplementer(ctx context.Context, db database.DB, args *SearchArgs) (_ SearchImplementer, err error) {
+	inputs, alert, err := argsToInputs(ctx, db, args)
+	if err != nil {
+		return nil, err
+	}
+	if alert != nil {
+		return NewSearchAlertResolver(search.AlertForQuery(args.Query, err)).wrapSearchImplementer(db), nil
+	}
+
+	return &searchResolver{
+		db:           db,
+		SearchInputs: inputs,
+		stream:       args.Stream,
+		zoekt:        search.Indexed(),
+		searcherURLs: search.SearcherURLs(),
+	}, nil
+}
+
+func argsToInputs(ctx context.Context, db database.DB, args *SearchArgs) (_ *run.SearchInputs, _ *search.Alert, err error) {
 	tr, ctx := trace.New(ctx, "NewSearchImplementer", args.Query)
 	defer func() {
 		tr.SetError(err)
@@ -68,18 +86,18 @@ func NewSearchImplementer(ctx context.Context, db database.DB, args *SearchArgs)
 		var err error
 		settings, err = decodedViewerFinalSettings(ctx, db)
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 	}
 
 	searchType, err := detectSearchType(args.Version, args.PatternType)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	searchType = overrideSearchType(args.Query, searchType)
 
 	if searchType == query.SearchTypeStructural && !conf.StructuralSearchEnabled() {
-		return nil, errors.New("Structural search is disabled in the site configuration.")
+		return nil, nil, errors.New("Structural search is disabled in the site configuration.")
 	}
 
 	// Beta: create a step to replace each context in the query with its repository query if any.
@@ -99,7 +117,7 @@ func NewSearchImplementer(ctx context.Context, db database.DB, args *SearchArgs)
 		query.With(searchContextsQueryEnabled, substituteContextsStep),
 	)
 	if err != nil {
-		return NewSearchAlertResolver(search.AlertForQuery(args.Query, err)).wrapSearchImplementer(db), nil
+		return nil, search.AlertForQuery(args.Query, err), nil
 	}
 	tr.LazyPrintf("parsing done")
 
@@ -116,7 +134,7 @@ func NewSearchImplementer(ctx context.Context, db database.DB, args *SearchArgs)
 	if args.CodeMonitorID != nil {
 		var i int64
 		if err := relay.UnmarshalSpec(*args.CodeMonitorID, &i); err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 		codeMonitorID = &i
 	}
@@ -134,13 +152,7 @@ func NewSearchImplementer(ctx context.Context, db database.DB, args *SearchArgs)
 
 	tr.LazyPrintf("Parsed query: %s", inputs.Query)
 
-	return &searchResolver{
-		db:           db,
-		SearchInputs: inputs,
-		stream:       args.Stream,
-		zoekt:        search.Indexed(),
-		searcherURLs: search.SearcherURLs(),
-	}, nil
+	return inputs, nil, nil
 }
 
 func (r *schemaResolver) Search(ctx context.Context, args *SearchArgs) (SearchImplementer, error) {

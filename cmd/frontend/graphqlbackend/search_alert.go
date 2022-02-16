@@ -1,11 +1,7 @@
 package graphqlbackend
 
 import (
-	"context"
-
-	"github.com/sourcegraph/sourcegraph/internal/database"
 	"github.com/sourcegraph/sourcegraph/internal/search"
-	"github.com/sourcegraph/sourcegraph/internal/search/run"
 )
 
 type searchAlertResolver struct {
@@ -45,27 +41,4 @@ func (a searchAlertResolver) ProposedQueries() *[]*searchQueryDescription {
 
 func alertToSearchResults(alert *search.Alert) *SearchResults {
 	return &SearchResults{Alert: alert}
-}
-
-func (a searchAlertResolver) wrapSearchImplementer(db database.DB) *alertSearchImplementer {
-	return &alertSearchImplementer{
-		db:    db,
-		alert: a,
-	}
-}
-
-// alertSearchImplementer is a light wrapper type around an alert that implements
-// SearchImplementer. This helps avoid needing to have a db on the searchAlert type
-type alertSearchImplementer struct {
-	db    database.DB
-	alert searchAlertResolver
-}
-
-func (a alertSearchImplementer) Results(context.Context) (*SearchResultsResolver, error) {
-	return &SearchResultsResolver{db: a.db, SearchResults: alertToSearchResults(a.alert.alert)}, nil
-}
-
-func (alertSearchImplementer) Stats(context.Context) (*searchResultsStats, error) { return nil, nil }
-func (alertSearchImplementer) Inputs() run.SearchInputs {
-	return run.SearchInputs{}
 }

@@ -49,7 +49,7 @@ func NewComputeStream(ctx context.Context, db database.DB, query string) (<-chan
 		PatternType: &patternType,
 		Stream:      stream,
 	}
-	job, err := graphqlbackend.NewSearchImplementer(ctx, db, searchArgs)
+	job, err := graphqlbackend.NewSearchResolver(ctx, db, searchArgs)
 	if err != nil {
 		close(eventsC)
 		return eventsC, func() error { return err }

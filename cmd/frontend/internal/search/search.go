@@ -324,7 +324,7 @@ type searchResolver interface {
 }
 
 func defaultNewSearchResolver(ctx context.Context, db database.DB, args *graphqlbackend.SearchArgs) (searchResolver, error) {
-	return graphqlbackend.NewSearchImplementer(ctx, db, args)
+	return graphqlbackend.NewSearchResolver(ctx, db, args)
 }
 
 type args struct {

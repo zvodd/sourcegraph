@@ -312,7 +312,7 @@ func (h *streamHandler) startSearch(ctx context.Context, a *args) (events <-chan
 		final <- finalResult{resultsResolver: r, err: err}
 	}()
 
-	return eventsC, search.Inputs(), func() (*graphqlbackend.SearchResultsResolver, error) {
+	return eventsC, search.Inputs(ctx), func() (*graphqlbackend.SearchResultsResolver, error) {
 		f := <-final
 		return f.resultsResolver, f.err
 	}
@@ -320,7 +320,7 @@ func (h *streamHandler) startSearch(ctx context.Context, a *args) (events <-chan
 
 type searchResolver interface {
 	Results(context.Context) (*graphqlbackend.SearchResultsResolver, error)
-	Inputs() run.SearchInputs
+	Inputs(context.Context) run.SearchInputs
 }
 
 func defaultNewSearchResolver(ctx context.Context, db database.DB, args *graphqlbackend.SearchArgs) (searchResolver, error) {

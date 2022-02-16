@@ -560,6 +560,13 @@ func (r *searchResolver) resultsToResolver(results *SearchResults) *SearchResult
 }
 
 func (r *searchResolver) Results(ctx context.Context) (*SearchResultsResolver, error) {
+	alert, err := r.hydrateInputs(ctx)
+	if err != nil {
+		return nil, err
+	} else if alert != nil {
+		return r.resultsToResolver(alertToSearchResults(alert)), nil
+	}
+
 	if r.stream == nil {
 		return r.resultsBatch(ctx)
 	}
@@ -912,6 +919,13 @@ var (
 )
 
 func (r *searchResolver) Stats(ctx context.Context) (stats *searchResultsStats, err error) {
+	alert, err := r.hydrateInputs(ctx)
+	if err != nil {
+		return nil, err
+	} else if alert != nil {
+		return nil, nil
+	}
+
 	// Override user context to ensure that stats for this query are cached
 	// regardless of the user context's cancellation. For example, if
 	// stats/sparklines are slow to load on the homepage and all users navigate

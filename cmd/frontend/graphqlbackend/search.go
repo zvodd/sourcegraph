@@ -2,6 +2,7 @@ package graphqlbackend
 
 import (
 	"context"
+	"sync"
 
 	"github.com/google/zoekt"
 	"github.com/graph-gophers/graphql-go"
@@ -52,22 +53,14 @@ type SearchImplementer interface {
 	//lint:ignore U1000 is used by graphql via reflection
 	Stats(context.Context) (*searchResultsStats, error)
 
-	Inputs() run.SearchInputs
+	Inputs(context.Context) run.SearchInputs
 }
 
 // NewSearchImplementer returns a SearchImplementer that provides search results and suggestions.
 func NewSearchImplementer(ctx context.Context, db database.DB, args *SearchArgs) (_ SearchImplementer, err error) {
-	inputs, alert, err := argsToInputs(ctx, db, args)
-	if err != nil {
-		return nil, err
-	}
-	if alert != nil {
-		return NewSearchAlertResolver(search.AlertForQuery(args.Query, err)).wrapSearchImplementer(db), nil
-	}
-
 	return &searchResolver{
 		db:           db,
-		SearchInputs: inputs,
+		args:         args,
 		stream:       args.Stream,
 		zoekt:        search.Indexed(),
 		searcherURLs: search.SearcherURLs(),
@@ -220,18 +213,34 @@ func getBoolPtr(b *bool, def bool) bool {
 
 // searchResolver is a resolver for the GraphQL type `Search`
 type searchResolver struct {
-	*run.SearchInputs
-	db database.DB
+	db           database.DB
+	zoekt        zoekt.Streamer
+	searcherURLs *endpoint.Map
+	args         *SearchArgs
 
 	// stream if non-nil will send all search events we receive down it.
 	stream streaming.Sender
 
-	zoekt        zoekt.Streamer
-	searcherURLs *endpoint.Map
+	hydrateInputsOnce  sync.Once
+	hydrateInputsAlert *search.Alert
+	hydrateInputsErr   error
+	*run.SearchInputs
 }
 
-func (r *searchResolver) Inputs() run.SearchInputs {
-	return *r.SearchInputs
+func (r *searchResolver) Inputs(ctx context.Context) run.SearchInputs {
+	// ignore hydration errors, leaving it to calls that return a SearchResultsResolver
+	_, _ = r.hydrateInputs(ctx)
+	if r.SearchInputs != nil {
+		return *r.SearchInputs
+	}
+	return run.SearchInputs{}
+}
+
+func (r *searchResolver) hydrateInputs(ctx context.Context) (*search.Alert, error) {
+	r.hydrateInputsOnce.Do(func() {
+		r.SearchInputs, r.hydrateInputsAlert, r.hydrateInputsErr = argsToInputs(ctx, r.db, r.args)
+	})
+	return r.hydrateInputsAlert, r.hydrateInputsErr
 }
 
 // rawQuery returns the original query string input.

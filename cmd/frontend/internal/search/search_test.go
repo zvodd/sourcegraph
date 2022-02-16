@@ -241,7 +241,7 @@ func (h *mockSearchResolver) Close() {
 	close(h.done)
 }
 
-func (h *mockSearchResolver) Inputs() run.SearchInputs {
+func (h *mockSearchResolver) Inputs(context.Context) run.SearchInputs {
 	if h.inputs == nil {
 		return run.SearchInputs{}
 	}

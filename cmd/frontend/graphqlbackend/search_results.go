@@ -463,7 +463,6 @@ func (r *searchResolver) JobArgs() *job.Args {
 	return &job.Args{
 		SearchInputs:        r.SearchInputs,
 		OnSourcegraphDotCom: envvar.SourcegraphDotComMode(),
-		Protocol:            r.protocol(),
 		Zoekt:               r.zoekt,
 		SearcherURLs:        r.searcherURLs,
 	}
@@ -541,12 +540,6 @@ func (r *searchResolver) resultsBatch(ctx context.Context) (*SearchResultsResolv
 	return srr, err
 }
 
-func (r *searchResolver) resultsStreaming(ctx context.Context) (*SearchResultsResolver, error) {
-	alert, err := r.results(ctx, r.stream, r.Plan)
-	srr := r.resultsToResolver(&SearchResults{Alert: alert})
-	return srr, err
-}
-
 func (r *searchResolver) resultsToResolver(results *SearchResults) *SearchResultsResolver {
 	if results == nil {
 		results = &SearchResults{}
@@ -560,20 +553,23 @@ func (r *searchResolver) resultsToResolver(results *SearchResults) *SearchResult
 }
 
 func (r *searchResolver) Results(ctx context.Context) (*SearchResultsResolver, error) {
-	alert, err := r.hydrateInputs(ctx)
+	alert, err := r.hydrateInputs(ctx, search.Batch)
 	if err != nil {
 		return nil, err
 	} else if alert != nil {
 		return r.resultsToResolver(alertToSearchResults(alert)), nil
 	}
 
-	if r.stream == nil {
-		return r.resultsBatch(ctx)
-	}
-	return r.resultsStreaming(ctx)
+	return r.resultsBatch(ctx)
 }
 
 func (r *searchResolver) ResultsStreaming(ctx context.Context, stream streaming.Sender) (*search.Alert, error) {
+	alert, err := r.hydrateInputs(ctx, search.Streaming)
+	if err != nil {
+		return nil, err
+	} else if alert != nil {
+		return alert, nil
+	}
 	return r.results(ctx, stream, r.Plan)
 }
 
@@ -923,7 +919,7 @@ var (
 )
 
 func (r *searchResolver) Stats(ctx context.Context) (stats *searchResultsStats, err error) {
-	alert, err := r.hydrateInputs(ctx)
+	alert, err := r.hydrateInputs(ctx, search.Batch)
 	if err != nil {
 		return nil, err
 	} else if alert != nil {

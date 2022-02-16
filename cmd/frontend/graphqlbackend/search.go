@@ -16,7 +16,6 @@ import (
 	"github.com/sourcegraph/sourcegraph/internal/search/query"
 	"github.com/sourcegraph/sourcegraph/internal/search/run"
 	"github.com/sourcegraph/sourcegraph/internal/search/searchcontexts"
-	"github.com/sourcegraph/sourcegraph/internal/search/streaming"
 	"github.com/sourcegraph/sourcegraph/internal/trace"
 	"github.com/sourcegraph/sourcegraph/lib/errors"
 	"github.com/sourcegraph/sourcegraph/schema"
@@ -35,15 +34,6 @@ type SearchArgs struct {
 	// a static representation of our job tree independently of any resolvers.
 	CodeMonitorID *graphql.ID
 
-	// Stream if non-nil will stream all SearchEvents.
-	//
-	// This is how our streaming and our batch interface co-exist. When this
-	// is set, it exposes a way to stream out results as we collect them. By
-	// default we stream all results, including results that are processed
-	// over batch-based evaluation (like and/or expressions), where results
-	// are first collected, merged, and then sent on the stream.
-	Stream streaming.Sender
-
 	// For tests
 	Settings *schema.Settings
 }
@@ -59,13 +49,12 @@ func NewSearchResolver(ctx context.Context, db database.DB, args *SearchArgs) (_
 	return &searchResolver{
 		db:           db,
 		args:         args,
-		stream:       args.Stream,
 		zoekt:        search.Indexed(),
 		searcherURLs: search.SearcherURLs(),
 	}, nil
 }
 
-func argsToInputs(ctx context.Context, db database.DB, args *SearchArgs) (_ *run.SearchInputs, _ *search.Alert, err error) {
+func argsToInputs(ctx context.Context, db database.DB, protocol search.Protocol, args *SearchArgs) (_ *run.SearchInputs, _ *search.Alert, err error) {
 	tr, ctx := trace.New(ctx, "NewSearchImplementer", args.Query)
 	defer func() {
 		tr.SetError(err)
@@ -113,7 +102,7 @@ func argsToInputs(ctx context.Context, db database.DB, args *SearchArgs) (_ *run
 	tr.LazyPrintf("parsing done")
 
 	defaultLimit := defaultMaxSearchResults
-	if args.Stream != nil {
+	if protocol == search.Streaming {
 		defaultLimit = defaultMaxSearchResultsStreaming
 	}
 	if searchType == query.SearchTypeStructural {
@@ -139,6 +128,7 @@ func argsToInputs(ctx context.Context, db database.DB, args *SearchArgs) (_ *run
 		PatternType:   searchType,
 		DefaultLimit:  defaultLimit,
 		CodeMonitorID: codeMonitorID,
+		Protocol:      protocol,
 	}
 
 	tr.LazyPrintf("Parsed query: %s", inputs.Query)
@@ -216,9 +206,6 @@ type searchResolver struct {
 	searcherURLs *endpoint.Map
 	args         *SearchArgs
 
-	// stream if non-nil will send all search events we receive down it.
-	stream streaming.Sender
-
 	hydrateInputsOnce  sync.Once
 	hydrateInputsAlert *search.Alert
 	hydrateInputsErr   error
@@ -227,16 +214,16 @@ type searchResolver struct {
 
 func (r *searchResolver) Inputs(ctx context.Context) run.SearchInputs {
 	// ignore hydration errors, leaving it to calls that return a SearchResultsResolver
-	_, _ = r.hydrateInputs(ctx)
+	_, _ = r.hydrateInputs(ctx, search.Streaming) // All calls to Inputs() are from streaming search
 	if r.SearchInputs != nil {
 		return *r.SearchInputs
 	}
 	return run.SearchInputs{}
 }
 
-func (r *searchResolver) hydrateInputs(ctx context.Context) (*search.Alert, error) {
+func (r *searchResolver) hydrateInputs(ctx context.Context, protocol search.Protocol) (*search.Alert, error) {
 	r.hydrateInputsOnce.Do(func() {
-		r.SearchInputs, r.hydrateInputsAlert, r.hydrateInputsErr = argsToInputs(ctx, r.db, r.args)
+		r.SearchInputs, r.hydrateInputsAlert, r.hydrateInputsErr = argsToInputs(ctx, r.db, protocol, r.args)
 	})
 	return r.hydrateInputsAlert, r.hydrateInputsErr
 }
@@ -244,15 +231,6 @@ func (r *searchResolver) hydrateInputs(ctx context.Context) (*search.Alert, erro
 // rawQuery returns the original query string input.
 func (r *searchResolver) rawQuery() string {
 	return r.OriginalQuery
-}
-
-// protocol returns what type of search we are doing (batch, stream,
-// paginated).
-func (r *searchResolver) protocol() search.Protocol {
-	if r.stream != nil {
-		return search.Streaming
-	}
-	return search.Batch
 }
 
 const (

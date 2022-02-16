@@ -47,7 +47,6 @@ func NewComputeStream(ctx context.Context, db database.DB, query string) (<-chan
 	searchArgs := &graphqlbackend.SearchArgs{
 		Query:       searchQuery,
 		PatternType: &patternType,
-		Stream:      stream,
 	}
 	job, err := graphqlbackend.NewSearchResolver(ctx, db, searchArgs)
 	if err != nil {
@@ -63,7 +62,7 @@ func NewComputeStream(ctx context.Context, db database.DB, query string) (<-chan
 		defer close(final)
 		defer close(eventsC)
 
-		_, err := job.Results(ctx)
+		_, err := job.ResultsStreaming(ctx, stream)
 		final <- finalResult{err: err}
 	}()
 

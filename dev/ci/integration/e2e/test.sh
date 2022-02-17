@@ -7,7 +7,7 @@ URL="${1:-"http://localhost:7080"}"
 
 function integration_test() {
   echo "--- yarn run test-e2e"
-  env SOURCEGRAPH_BASE_URL="$URL" PERCY_ON=true ./node_modules/.bin/percy exec -- yarn run cover-e2e --reporter mocha-junit-reporter
+  env SOURCEGRAPH_BASE_URL="$URL" PERCY_ON=true ./node_modules/.bin/percy exec -- yarn run cover-e2e 
 }
 
 BUILDKITE_ANALYTICS_FRONTEND_E2E_TEST_SUITE_API_KEY=$(gcloud secrets versions access latest --secret="BUILDKITE_ANALYTICS_FRONTEND_E2E_TEST_SUITE_API_KEY" --project="sourcegraph-ci" --quiet)

@@ -80,14 +80,14 @@ func ToSearchJob(jargs *Args, q query.Q) (Job, error) {
 		// across all of Sourcegraph.
 
 		globalSearch := args.Mode == search.ZoektGlobalSearch
-		// skipUnindexed is a value that controls whether to run
-		// unindexed search in a specific scenario of queries that
-		// contain no repo-affecting filters (global mode). When on
+		// includeSearcher is a value that controls whether to run
+		// unindexed search (searcher) in a specific scenario of queries
+		// that contain no repo-affecting filters (global mode). When on
 		// sourcegraph.com, we resolve only a subset of all indexed
 		// repos to search. This control flow implies len(searcherRepos)
 		// is always 0, meaning that we should not create jobs to run
 		// unindexed searcher.
-		skipUnindexed := args.Mode == search.SkipUnindexed || (globalSearch && jargs.OnSourcegraphDotCom)
+		includeSearcher := !(args.Mode == search.SkipUnindexed || (globalSearch && jargs.OnSourcegraphDotCom))
 		// searcherOnly is a value that controls whether to run
 		// unindexed search in one of two scenarios. The first scenario
 		// depends on if index:no is set (value true). The second
@@ -162,67 +162,63 @@ func ToSearchJob(jargs *Args, q query.Q) (Job, error) {
 			}
 		}
 
-		if args.ResultTypes.Has(result.TypeFile | result.TypePath) {
-			if !skipUnindexed {
-				typ := search.TextRequest
-				// TODO(rvantonder): we don't always have to run
-				// this converter. It depends on whether we run
-				// a zoekt search at all.
-				zoektQuery, err := search.QueryToZoektQuery(args.PatternInfo, &args.Features, typ)
-				if err != nil {
-					return nil, err
-				}
-				zoektArgs := &search.ZoektParameters{
-					Query:          zoektQuery,
-					Typ:            typ,
-					FileMatchLimit: args.PatternInfo.FileMatchLimit,
-					Select:         args.PatternInfo.Select,
-					Zoekt:          args.Zoekt,
-				}
-
-				searcherArgs := &search.SearcherParameters{
-					SearcherURLs:    args.SearcherURLs,
-					PatternInfo:     args.PatternInfo,
-					UseFullDeadline: args.UseFullDeadline,
-				}
-
-				addJob(true, &textsearch.RepoSubsetTextSearch{
-					ZoektArgs:        zoektArgs,
-					SearcherArgs:     searcherArgs,
-					NotSearcherOnly:  !searcherOnly,
-					UseIndex:         args.PatternInfo.Index,
-					ContainsRefGlobs: query.ContainsRefGlobs(q),
-					RepoOpts:         repoOptions,
-				})
+		if args.ResultTypes.Has(result.TypeFile|result.TypePath) && includeSearcher {
+			typ := search.TextRequest
+			// TODO(rvantonder): we don't always have to run
+			// this converter. It depends on whether we run
+			// a zoekt search at all.
+			zoektQuery, err := search.QueryToZoektQuery(args.PatternInfo, &args.Features, typ)
+			if err != nil {
+				return nil, err
 			}
+			zoektArgs := &search.ZoektParameters{
+				Query:          zoektQuery,
+				Typ:            typ,
+				FileMatchLimit: args.PatternInfo.FileMatchLimit,
+				Select:         args.PatternInfo.Select,
+				Zoekt:          args.Zoekt,
+			}
+
+			searcherArgs := &search.SearcherParameters{
+				SearcherURLs:    args.SearcherURLs,
+				PatternInfo:     args.PatternInfo,
+				UseFullDeadline: args.UseFullDeadline,
+			}
+
+			addJob(true, &textsearch.RepoSubsetTextSearch{
+				ZoektArgs:        zoektArgs,
+				SearcherArgs:     searcherArgs,
+				NotSearcherOnly:  !searcherOnly,
+				UseIndex:         args.PatternInfo.Index,
+				ContainsRefGlobs: query.ContainsRefGlobs(q),
+				RepoOpts:         repoOptions,
+			})
 		}
 
-		if args.ResultTypes.Has(result.TypeSymbol) && args.PatternInfo.Pattern != "" {
-			if !skipUnindexed {
-				typ := search.SymbolRequest
-				zoektQuery, err := search.QueryToZoektQuery(args.PatternInfo, &args.Features, typ)
-				if err != nil {
-					return nil, err
-				}
-				zoektArgs := &search.ZoektParameters{
-					Query:          zoektQuery,
-					Typ:            typ,
-					FileMatchLimit: args.PatternInfo.FileMatchLimit,
-					Select:         args.PatternInfo.Select,
-					Zoekt:          args.Zoekt,
-				}
-
-				required := args.UseFullDeadline || args.ResultTypes.Without(result.TypeSymbol) == 0
-				addJob(required, &symbol.RepoSubsetSymbolSearch{
-					ZoektArgs:        zoektArgs,
-					PatternInfo:      args.PatternInfo,
-					Limit:            maxResults,
-					NotSearcherOnly:  !searcherOnly,
-					UseIndex:         args.PatternInfo.Index,
-					ContainsRefGlobs: query.ContainsRefGlobs(q),
-					RepoOpts:         repoOptions,
-				})
+		if args.ResultTypes.Has(result.TypeSymbol) && args.PatternInfo.Pattern != "" && includeSearcher {
+			typ := search.SymbolRequest
+			zoektQuery, err := search.QueryToZoektQuery(args.PatternInfo, &args.Features, typ)
+			if err != nil {
+				return nil, err
 			}
+			zoektArgs := &search.ZoektParameters{
+				Query:          zoektQuery,
+				Typ:            typ,
+				FileMatchLimit: args.PatternInfo.FileMatchLimit,
+				Select:         args.PatternInfo.Select,
+				Zoekt:          args.Zoekt,
+			}
+
+			required := args.UseFullDeadline || args.ResultTypes.Without(result.TypeSymbol) == 0
+			addJob(required, &symbol.RepoSubsetSymbolSearch{
+				ZoektArgs:        zoektArgs,
+				PatternInfo:      args.PatternInfo,
+				Limit:            maxResults,
+				NotSearcherOnly:  !searcherOnly,
+				UseIndex:         args.PatternInfo.Index,
+				ContainsRefGlobs: query.ContainsRefGlobs(q),
+				RepoOpts:         repoOptions,
+			})
 		}
 
 		if args.ResultTypes.Has(result.TypeCommit) || args.ResultTypes.Has(result.TypeDiff) {

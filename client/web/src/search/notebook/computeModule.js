@@ -5258,7 +5258,7 @@ var $elm$core$Dict$RBEmpty_elm_builtin = {$: 'RBEmpty_elm_builtin'};
 var $elm$core$Dict$empty = $elm$core$Dict$RBEmpty_elm_builtin;
 var $author$project$Main$init = function (_v0) {
 	return _Utils_Tuple2(
-		{dataPoints: 30, excludeStopWords: false, millisSinceChange: 0, query: 'blah', queryModifiedSinceLastRequest: false, resultsMap: $elm$core$Dict$empty, resultsRaw: _List_Nil, reverse: false, selectedTab: $author$project$Main$Chart, serverless: false, sortByCount: true},
+		{dataPoints: 30, excludeStopWords: false, millisSinceChange: 0, query: 'repo:sourcegraph/sourcegraph$ content:output(.*codeintel.* -> $author) type:commit', queryModifiedSinceLastRequest: false, resultsMap: $elm$core$Dict$empty, resultsRaw: _List_Nil, reverse: false, selectedTab: $author$project$Main$Chart, serverless: false, sortByCount: true},
 		A2(
 			$elm$core$Task$perform,
 			$elm$core$Basics$identity,
@@ -6135,16 +6135,6 @@ var $author$project$Main$exampleResultsMap = $elm$core$Dict$fromList(
 				{name: 'Func\nmulti\nline', update: $elm$core$Basics$add, value: 5.0},
 				{name: 'Qux', update: $elm$core$Basics$add, value: 2.0}
 			])));
-var $author$project$Main$exampleResultsRaw = _List_fromArray(
-	[
-		$author$project$Types$ReplaceInPlace(
-		{
-			commit: $elm$core$Maybe$Just('HEAD'),
-			path: $elm$core$Maybe$Just('/an/awesome/path'),
-			repository: $elm$core$Maybe$Just('repo'),
-			value: 'diff --git a/client/web/dev/server/development.server.ts b/client/web/dev/server/development.server.ts\nindex 26c5331d62..d5653e66c3 100644\n--- a/client/web/dev/server/development.server.ts\n+++ b/client/web/dev/server/development.server.ts\n@@ -83,6 +83,11 @@ async function startWebpackDevelopmentServer({\n     }\n \n     const developmentServerConfig: WebpackDevServer.Configuration = {\n+               headers: {\n+                 "Access-Control-Allow-Origin": "*",\n+                 "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, PATCH, OPTIONS",\n+                 "Access-Control-Allow-Headers": "X-Requested-With, content-type, Authorization"\n+               },\n         // react-refresh plugin triggers page reload if needed.\n         liveReload: false,\n         allowedHosts: \'all\','
-		})
-	]);
 var $elm$core$Platform$Cmd$batch = _Platform_batch;
 var $elm$core$Platform$Cmd$none = $elm$core$Platform$Cmd$batch(_List_Nil);
 var $elm$core$Maybe$destruct = F3(
@@ -6183,72 +6173,99 @@ var $author$project$Main$openStream = _Platform_outgoingPort(
 				}(b)
 				]));
 	});
-var $elm$url$Url$Parser$State = F5(
-	function (visited, unvisited, params, frag, value) {
-		return {frag: frag, params: params, unvisited: unvisited, value: value, visited: visited};
-	});
-var $elm$url$Url$Parser$getFirstMatch = function (states) {
-	getFirstMatch:
-	while (true) {
-		if (!states.b) {
-			return $elm$core$Maybe$Nothing;
+var $elm$core$List$append = F2(
+	function (xs, ys) {
+		if (!ys.b) {
+			return xs;
 		} else {
-			var state = states.a;
-			var rest = states.b;
-			var _v1 = state.unvisited;
-			if (!_v1.b) {
-				return $elm$core$Maybe$Just(state.value);
-			} else {
-				if ((_v1.a === '') && (!_v1.b.b)) {
-					return $elm$core$Maybe$Just(state.value);
+			return A3($elm$core$List$foldr, $elm$core$List$cons, ys, xs);
+		}
+	});
+var $elm$core$List$concat = function (lists) {
+	return A3($elm$core$List$foldr, $elm$core$List$append, _List_Nil, lists);
+};
+var $elm$core$List$filter = F2(
+	function (isGood, list) {
+		return A3(
+			$elm$core$List$foldr,
+			F2(
+				function (x, xs) {
+					return isGood(x) ? A2($elm$core$List$cons, x, xs) : xs;
+				}),
+			_List_Nil,
+			list);
+	});
+var $elm$core$Basics$not = _Basics_not;
+var $author$project$Main$parseResults = function (l) {
+	return $elm$core$List$concat(
+		A2(
+			$elm$core$List$filterMap,
+			function (r) {
+				if (r.$ === 'Output') {
+					var v = r.a;
+					return $elm$core$Maybe$Just(
+						A2(
+							$elm$core$List$filter,
+							A2($elm$core$Basics$composeL, $elm$core$Basics$not, $elm$core$String$isEmpty),
+							A2($elm$core$String$split, '\n', v.value)));
 				} else {
-					var $temp$states = rest;
-					states = $temp$states;
-					continue getFirstMatch;
+					var v = r.a;
+					return $elm$core$Maybe$Just(
+						_List_fromArray(
+							[v.value]));
 				}
+			},
+			l));
+};
+var $elm$time$Time$posixToMillis = function (_v0) {
+	var millis = _v0.a;
+	return millis;
+};
+var $elm$url$Url$Builder$QueryParameter = F2(
+	function (a, b) {
+		return {$: 'QueryParameter', a: a, b: b};
+	});
+var $elm$url$Url$percentEncode = _Url_percentEncode;
+var $elm$url$Url$Builder$string = F2(
+	function (key, value) {
+		return A2(
+			$elm$url$Url$Builder$QueryParameter,
+			$elm$url$Url$percentEncode(key),
+			$elm$url$Url$percentEncode(value));
+	});
+var $elm$core$String$toFloat = _String_toFloat;
+var $author$project$Main$newDataValue = function (textResult) {
+	var _v0 = A2($elm$core$String$split, '@@@', textResult);
+	if (!_v0.b) {
+		return {name: textResult, update: $elm$core$Basics$add, value: 1};
+	} else {
+		if (!_v0.b.b) {
+			return {name: textResult, update: $elm$core$Basics$add, value: 1};
+		} else {
+			if (!_v0.b.b.b) {
+				var name = _v0.a;
+				var _v1 = _v0.b;
+				var floatValue = _v1.a;
+				var _v2 = $elm$core$String$toFloat(floatValue);
+				if (_v2.$ === 'Just') {
+					var value = _v2.a;
+					return {
+						name: name,
+						update: F2(
+							function (_v3, _v4) {
+								return value;
+							}),
+						value: value
+					};
+				} else {
+					return {name: textResult, update: $elm$core$Basics$add, value: 1};
+				}
+			} else {
+				return {name: textResult, update: $elm$core$Basics$add, value: 1};
 			}
 		}
 	}
 };
-var $elm$url$Url$Parser$removeFinalEmpty = function (segments) {
-	if (!segments.b) {
-		return _List_Nil;
-	} else {
-		if ((segments.a === '') && (!segments.b.b)) {
-			return _List_Nil;
-		} else {
-			var segment = segments.a;
-			var rest = segments.b;
-			return A2(
-				$elm$core$List$cons,
-				segment,
-				$elm$url$Url$Parser$removeFinalEmpty(rest));
-		}
-	}
-};
-var $elm$url$Url$Parser$preparePath = function (path) {
-	var _v0 = A2($elm$core$String$split, '/', path);
-	if (_v0.b && (_v0.a === '')) {
-		var segments = _v0.b;
-		return $elm$url$Url$Parser$removeFinalEmpty(segments);
-	} else {
-		var segments = _v0;
-		return $elm$url$Url$Parser$removeFinalEmpty(segments);
-	}
-};
-var $elm$url$Url$Parser$addToParametersHelp = F2(
-	function (value, maybeList) {
-		if (maybeList.$ === 'Nothing') {
-			return $elm$core$Maybe$Just(
-				_List_fromArray(
-					[value]));
-		} else {
-			var list = maybeList.a;
-			return $elm$core$Maybe$Just(
-				A2($elm$core$List$cons, value, list));
-		}
-	});
-var $elm$url$Url$percentDecode = _Url_percentDecode;
 var $elm$core$Dict$getMin = function (dict) {
 	getMin:
 	while (true) {
@@ -6622,259 +6639,6 @@ var $elm$core$Dict$update = F3(
 			return A2($elm$core$Dict$remove, targetKey, dictionary);
 		}
 	});
-var $elm$url$Url$Parser$addParam = F2(
-	function (segment, dict) {
-		var _v0 = A2($elm$core$String$split, '=', segment);
-		if ((_v0.b && _v0.b.b) && (!_v0.b.b.b)) {
-			var rawKey = _v0.a;
-			var _v1 = _v0.b;
-			var rawValue = _v1.a;
-			var _v2 = $elm$url$Url$percentDecode(rawKey);
-			if (_v2.$ === 'Nothing') {
-				return dict;
-			} else {
-				var key = _v2.a;
-				var _v3 = $elm$url$Url$percentDecode(rawValue);
-				if (_v3.$ === 'Nothing') {
-					return dict;
-				} else {
-					var value = _v3.a;
-					return A3(
-						$elm$core$Dict$update,
-						key,
-						$elm$url$Url$Parser$addToParametersHelp(value),
-						dict);
-				}
-			}
-		} else {
-			return dict;
-		}
-	});
-var $elm$url$Url$Parser$prepareQuery = function (maybeQuery) {
-	if (maybeQuery.$ === 'Nothing') {
-		return $elm$core$Dict$empty;
-	} else {
-		var qry = maybeQuery.a;
-		return A3(
-			$elm$core$List$foldr,
-			$elm$url$Url$Parser$addParam,
-			$elm$core$Dict$empty,
-			A2($elm$core$String$split, '&', qry));
-	}
-};
-var $elm$url$Url$Parser$parse = F2(
-	function (_v0, url) {
-		var parser = _v0.a;
-		return $elm$url$Url$Parser$getFirstMatch(
-			parser(
-				A5(
-					$elm$url$Url$Parser$State,
-					_List_Nil,
-					$elm$url$Url$Parser$preparePath(url.path),
-					$elm$url$Url$Parser$prepareQuery(url.query),
-					url.fragment,
-					$elm$core$Basics$identity)));
-	});
-var $elm$url$Url$Parser$Parser = function (a) {
-	return {$: 'Parser', a: a};
-};
-var $elm$url$Url$Parser$query = function (_v0) {
-	var queryParser = _v0.a;
-	return $elm$url$Url$Parser$Parser(
-		function (_v1) {
-			var visited = _v1.visited;
-			var unvisited = _v1.unvisited;
-			var params = _v1.params;
-			var frag = _v1.frag;
-			var value = _v1.value;
-			return _List_fromArray(
-				[
-					A5(
-					$elm$url$Url$Parser$State,
-					visited,
-					unvisited,
-					params,
-					frag,
-					value(
-						queryParser(params)))
-				]);
-		});
-};
-var $elm$core$List$append = F2(
-	function (xs, ys) {
-		if (!ys.b) {
-			return xs;
-		} else {
-			return A3($elm$core$List$foldr, $elm$core$List$cons, ys, xs);
-		}
-	});
-var $elm$core$List$concat = function (lists) {
-	return A3($elm$core$List$foldr, $elm$core$List$append, _List_Nil, lists);
-};
-var $elm$core$List$concatMap = F2(
-	function (f, list) {
-		return $elm$core$List$concat(
-			A2($elm$core$List$map, f, list));
-	});
-var $elm$url$Url$Parser$slash = F2(
-	function (_v0, _v1) {
-		var parseBefore = _v0.a;
-		var parseAfter = _v1.a;
-		return $elm$url$Url$Parser$Parser(
-			function (state) {
-				return A2(
-					$elm$core$List$concatMap,
-					parseAfter,
-					parseBefore(state));
-			});
-	});
-var $elm$url$Url$Parser$questionMark = F2(
-	function (parser, queryParser) {
-		return A2(
-			$elm$url$Url$Parser$slash,
-			parser,
-			$elm$url$Url$Parser$query(queryParser));
-	});
-var $elm$url$Url$Parser$Internal$Parser = function (a) {
-	return {$: 'Parser', a: a};
-};
-var $elm$core$Maybe$withDefault = F2(
-	function (_default, maybe) {
-		if (maybe.$ === 'Just') {
-			var value = maybe.a;
-			return value;
-		} else {
-			return _default;
-		}
-	});
-var $elm$url$Url$Parser$Query$custom = F2(
-	function (key, func) {
-		return $elm$url$Url$Parser$Internal$Parser(
-			function (dict) {
-				return func(
-					A2(
-						$elm$core$Maybe$withDefault,
-						_List_Nil,
-						A2($elm$core$Dict$get, key, dict)));
-			});
-	});
-var $elm$url$Url$Parser$Query$string = function (key) {
-	return A2(
-		$elm$url$Url$Parser$Query$custom,
-		key,
-		function (stringList) {
-			if (stringList.b && (!stringList.b.b)) {
-				var str = stringList.a;
-				return $elm$core$Maybe$Just(str);
-			} else {
-				return $elm$core$Maybe$Nothing;
-			}
-		});
-};
-var $elm$url$Url$Parser$top = $elm$url$Url$Parser$Parser(
-	function (state) {
-		return _List_fromArray(
-			[state]);
-	});
-var $author$project$Main$parseQueryInUrl = function (url) {
-	var _v0 = A2(
-		$elm$url$Url$Parser$parse,
-		A2(
-			$elm$url$Url$Parser$questionMark,
-			$elm$url$Url$Parser$top,
-			$elm$url$Url$Parser$Query$string('q')),
-		url);
-	if ((_v0.$ === 'Just') && (_v0.a.$ === 'Just')) {
-		var query = _v0.a.a;
-		var _v1 = A2($elm$core$Debug$log, 'parsed', query);
-		return query;
-	} else {
-		var _v2 = A2($elm$core$Debug$log, 'parsed', '<empty>');
-		return '';
-	}
-};
-var $elm$core$List$filter = F2(
-	function (isGood, list) {
-		return A3(
-			$elm$core$List$foldr,
-			F2(
-				function (x, xs) {
-					return isGood(x) ? A2($elm$core$List$cons, x, xs) : xs;
-				}),
-			_List_Nil,
-			list);
-	});
-var $elm$core$Basics$not = _Basics_not;
-var $author$project$Main$parseResults = function (l) {
-	return $elm$core$List$concat(
-		A2(
-			$elm$core$List$filterMap,
-			function (r) {
-				if (r.$ === 'Output') {
-					var v = r.a;
-					return $elm$core$Maybe$Just(
-						A2(
-							$elm$core$List$filter,
-							A2($elm$core$Basics$composeL, $elm$core$Basics$not, $elm$core$String$isEmpty),
-							A2($elm$core$String$split, '\n', v.value)));
-				} else {
-					var v = r.a;
-					return $elm$core$Maybe$Just(
-						_List_fromArray(
-							[v.value]));
-				}
-			},
-			l));
-};
-var $elm$time$Time$posixToMillis = function (_v0) {
-	var millis = _v0.a;
-	return millis;
-};
-var $elm$url$Url$Builder$QueryParameter = F2(
-	function (a, b) {
-		return {$: 'QueryParameter', a: a, b: b};
-	});
-var $elm$url$Url$percentEncode = _Url_percentEncode;
-var $elm$url$Url$Builder$string = F2(
-	function (key, value) {
-		return A2(
-			$elm$url$Url$Builder$QueryParameter,
-			$elm$url$Url$percentEncode(key),
-			$elm$url$Url$percentEncode(value));
-	});
-var $elm$core$String$toFloat = _String_toFloat;
-var $author$project$Main$newDataValue = function (textResult) {
-	var _v0 = A2($elm$core$String$split, '@@@', textResult);
-	if (!_v0.b) {
-		return {name: textResult, update: $elm$core$Basics$add, value: 1};
-	} else {
-		if (!_v0.b.b) {
-			return {name: textResult, update: $elm$core$Basics$add, value: 1};
-		} else {
-			if (!_v0.b.b.b) {
-				var name = _v0.a;
-				var _v1 = _v0.b;
-				var floatValue = _v1.a;
-				var _v2 = $elm$core$String$toFloat(floatValue);
-				if (_v2.$ === 'Just') {
-					var value = _v2.a;
-					return {
-						name: name,
-						update: F2(
-							function (_v3, _v4) {
-								return value;
-							}),
-						value: value
-					};
-				} else {
-					return {name: textResult, update: $elm$core$Basics$add, value: 1};
-				}
-			} else {
-				return {name: textResult, update: $elm$core$Basics$add, value: 1};
-			}
-		}
-	}
-};
 var $author$project$Main$updateChartData = F2(
 	function (textResult, d) {
 		return A3(
@@ -6963,27 +6727,23 @@ var $author$project$Main$update = F2(
 						$elm$core$Platform$Cmd$none);
 				case 'CheckTick':
 					var time = msg.a;
-					return ((_Utils_cmp(
+					if ((_Utils_cmp(
 						$elm$time$Time$posixToMillis(time) - model.millisSinceChange,
-						$author$project$Main$delayComputeRequest) > 0) && model.queryModifiedSinceLastRequest) ? _Utils_Tuple2(model, $elm$core$Platform$Cmd$none) : _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
-				case 'OnUrlChange':
-					var url = msg.a;
-					var _v2 = $elm$core$Debug$log('running compute query');
-					var $temp$msg = $author$project$Main$RunCompute,
-						$temp$model = _Utils_update(
-						model,
-						{
-							query: $author$project$Main$parseQueryInUrl(url)
-						});
-					msg = $temp$msg;
-					model = $temp$model;
-					continue update;
+						$author$project$Main$delayComputeRequest) > 0) && model.queryModifiedSinceLastRequest) {
+						var $temp$msg = $author$project$Main$RunCompute,
+							$temp$model = model;
+						msg = $temp$msg;
+						model = $temp$model;
+						continue update;
+					} else {
+						return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
+					}
 				case 'RunCompute':
-					var _v3 = A2($elm$core$Debug$log, 'Run compute: query', model.query);
+					var _v2 = A2($elm$core$Debug$log, 'Run compute: query', model.query);
 					return model.serverless ? _Utils_Tuple2(
 						_Utils_update(
 							model,
-							{resultsMap: $author$project$Main$exampleResultsMap, resultsRaw: $author$project$Main$exampleResultsRaw}),
+							{resultsMap: $author$project$Main$exampleResultsMap, resultsRaw: _List_Nil}),
 						$elm$core$Platform$Cmd$none) : _Utils_Tuple2(
 						_Utils_update(
 							model,
@@ -7012,7 +6772,7 @@ var $author$project$Main$update = F2(
 									$author$project$Main$updateChartData,
 									model.resultsMap,
 									$author$project$Main$parseResults(r)),
-								resultsRaw: _Utils_ap(model.resultsRaw, r)
+								resultsRaw: _List_Nil
 							}),
 						$elm$core$Platform$Cmd$none);
 				case 'ResultStreamDone':
@@ -7031,6 +6791,58 @@ var $mdgriffith$elm_ui$Internal$Model$AlignX = function (a) {
 };
 var $mdgriffith$elm_ui$Internal$Model$CenterX = {$: 'CenterX'};
 var $mdgriffith$elm_ui$Element$centerX = $mdgriffith$elm_ui$Internal$Model$AlignX($mdgriffith$elm_ui$Internal$Model$CenterX);
+var $mdgriffith$elm_ui$Internal$Model$Colored = F3(
+	function (a, b, c) {
+		return {$: 'Colored', a: a, b: b, c: c};
+	});
+var $mdgriffith$elm_ui$Internal$Model$StyleClass = F2(
+	function (a, b) {
+		return {$: 'StyleClass', a: a, b: b};
+	});
+var $mdgriffith$elm_ui$Internal$Flag$Flag = function (a) {
+	return {$: 'Flag', a: a};
+};
+var $mdgriffith$elm_ui$Internal$Flag$Second = function (a) {
+	return {$: 'Second', a: a};
+};
+var $elm$core$Bitwise$shiftLeftBy = _Bitwise_shiftLeftBy;
+var $mdgriffith$elm_ui$Internal$Flag$flag = function (i) {
+	return (i > 31) ? $mdgriffith$elm_ui$Internal$Flag$Second(1 << (i - 32)) : $mdgriffith$elm_ui$Internal$Flag$Flag(1 << i);
+};
+var $mdgriffith$elm_ui$Internal$Flag$bgColor = $mdgriffith$elm_ui$Internal$Flag$flag(8);
+var $elm$core$Basics$round = _Basics_round;
+var $mdgriffith$elm_ui$Internal$Model$floatClass = function (x) {
+	return $elm$core$String$fromInt(
+		$elm$core$Basics$round(x * 255));
+};
+var $mdgriffith$elm_ui$Internal$Model$formatColorClass = function (_v0) {
+	var red = _v0.a;
+	var green = _v0.b;
+	var blue = _v0.c;
+	var alpha = _v0.d;
+	return $mdgriffith$elm_ui$Internal$Model$floatClass(red) + ('-' + ($mdgriffith$elm_ui$Internal$Model$floatClass(green) + ('-' + ($mdgriffith$elm_ui$Internal$Model$floatClass(blue) + ('-' + $mdgriffith$elm_ui$Internal$Model$floatClass(alpha))))));
+};
+var $mdgriffith$elm_ui$Element$Background$color = function (clr) {
+	return A2(
+		$mdgriffith$elm_ui$Internal$Model$StyleClass,
+		$mdgriffith$elm_ui$Internal$Flag$bgColor,
+		A3(
+			$mdgriffith$elm_ui$Internal$Model$Colored,
+			'bg-' + $mdgriffith$elm_ui$Internal$Model$formatColorClass(clr),
+			'background-color',
+			clr));
+};
+var $mdgriffith$elm_ui$Internal$Flag$fontColor = $mdgriffith$elm_ui$Internal$Flag$flag(14);
+var $mdgriffith$elm_ui$Element$Font$color = function (fontColor) {
+	return A2(
+		$mdgriffith$elm_ui$Internal$Model$StyleClass,
+		$mdgriffith$elm_ui$Internal$Flag$fontColor,
+		A3(
+			$mdgriffith$elm_ui$Internal$Model$Colored,
+			'fc-' + $mdgriffith$elm_ui$Internal$Model$formatColorClass(fontColor),
+			'color',
+			fontColor));
+};
 var $mdgriffith$elm_ui$Internal$Model$Unkeyed = function (a) {
 	return {$: 'Unkeyed', a: a};
 };
@@ -7140,16 +6952,6 @@ var $mdgriffith$elm_ui$Internal$Model$AsEl = {$: 'AsEl'};
 var $mdgriffith$elm_ui$Internal$Model$asEl = $mdgriffith$elm_ui$Internal$Model$AsEl;
 var $mdgriffith$elm_ui$Internal$Model$AsParagraph = {$: 'AsParagraph'};
 var $mdgriffith$elm_ui$Internal$Model$asParagraph = $mdgriffith$elm_ui$Internal$Model$AsParagraph;
-var $mdgriffith$elm_ui$Internal$Flag$Flag = function (a) {
-	return {$: 'Flag', a: a};
-};
-var $mdgriffith$elm_ui$Internal$Flag$Second = function (a) {
-	return {$: 'Second', a: a};
-};
-var $elm$core$Bitwise$shiftLeftBy = _Bitwise_shiftLeftBy;
-var $mdgriffith$elm_ui$Internal$Flag$flag = function (i) {
-	return (i > 31) ? $mdgriffith$elm_ui$Internal$Flag$Second(1 << (i - 32)) : $mdgriffith$elm_ui$Internal$Flag$Flag(1 << i);
-};
 var $mdgriffith$elm_ui$Internal$Flag$alignBottom = $mdgriffith$elm_ui$Internal$Flag$flag(41);
 var $mdgriffith$elm_ui$Internal$Flag$alignRight = $mdgriffith$elm_ui$Internal$Flag$flag(40);
 var $mdgriffith$elm_ui$Internal$Flag$centerX = $mdgriffith$elm_ui$Internal$Flag$flag(42);
@@ -7191,11 +6993,6 @@ var $elm$core$Tuple$second = function (_v0) {
 	var y = _v0.b;
 	return y;
 };
-var $elm$core$Basics$round = _Basics_round;
-var $mdgriffith$elm_ui$Internal$Model$floatClass = function (x) {
-	return $elm$core$String$fromInt(
-		$elm$core$Basics$round(x * 255));
-};
 var $mdgriffith$elm_ui$Internal$Model$transformClass = function (transform) {
 	switch (transform.$) {
 		case 'Untransformed':
@@ -7225,6 +7022,15 @@ var $mdgriffith$elm_ui$Internal$Model$transformClass = function (transform) {
 				'tfrm-' + ($mdgriffith$elm_ui$Internal$Model$floatClass(tx) + ('-' + ($mdgriffith$elm_ui$Internal$Model$floatClass(ty) + ('-' + ($mdgriffith$elm_ui$Internal$Model$floatClass(tz) + ('-' + ($mdgriffith$elm_ui$Internal$Model$floatClass(sx) + ('-' + ($mdgriffith$elm_ui$Internal$Model$floatClass(sy) + ('-' + ($mdgriffith$elm_ui$Internal$Model$floatClass(sz) + ('-' + ($mdgriffith$elm_ui$Internal$Model$floatClass(ox) + ('-' + ($mdgriffith$elm_ui$Internal$Model$floatClass(oy) + ('-' + ($mdgriffith$elm_ui$Internal$Model$floatClass(oz) + ('-' + $mdgriffith$elm_ui$Internal$Model$floatClass(angle))))))))))))))))))));
 	}
 };
+var $elm$core$Maybe$withDefault = F2(
+	function (_default, maybe) {
+		if (maybe.$ === 'Just') {
+			var value = maybe.a;
+			return value;
+		} else {
+			return _default;
+		}
+	});
 var $mdgriffith$elm_ui$Internal$Model$getStyleName = function (style) {
 	switch (style.$) {
 		case 'Shadows':
@@ -7568,6 +7374,11 @@ var $mdgriffith$elm_ui$Internal$Style$CenterY = {$: 'CenterY'};
 var $mdgriffith$elm_ui$Internal$Style$Top = {$: 'Top'};
 var $mdgriffith$elm_ui$Internal$Style$alignments = _List_fromArray(
 	[$mdgriffith$elm_ui$Internal$Style$Top, $mdgriffith$elm_ui$Internal$Style$Bottom, $mdgriffith$elm_ui$Internal$Style$Right, $mdgriffith$elm_ui$Internal$Style$Left, $mdgriffith$elm_ui$Internal$Style$CenterX, $mdgriffith$elm_ui$Internal$Style$CenterY]);
+var $elm$core$List$concatMap = F2(
+	function (f, list) {
+		return $elm$core$List$concat(
+			A2($elm$core$List$map, f, list));
+	});
 var $mdgriffith$elm_ui$Internal$Style$contentName = function (desc) {
 	switch (desc.a.$) {
 		case 'Top':
@@ -12471,6 +12282,16 @@ var $mdgriffith$elm_ui$Element$column = F2(
 						attrs))),
 			$mdgriffith$elm_ui$Internal$Model$Unkeyed(children));
 	});
+var $mdgriffith$elm_ui$Internal$Model$Rgba = F4(
+	function (a, b, c, d) {
+		return {$: 'Rgba', a: a, b: b, c: c, d: d};
+	});
+var $mdgriffith$elm_ui$Element$rgb255 = F3(
+	function (red, green, blue) {
+		return A4($mdgriffith$elm_ui$Internal$Model$Rgba, red / 255, green / 255, blue / 255, 1);
+	});
+var $author$project$Main$darkModeBackgroundColor = A3($mdgriffith$elm_ui$Element$rgb255, 24, 27, 38);
+var $author$project$Main$darkModeFontColor = A3($mdgriffith$elm_ui$Element$rgb255, 255, 255, 255);
 var $mdgriffith$elm_ui$Internal$Model$Left = {$: 'Left'};
 var $mdgriffith$elm_ui$Element$alignLeft = $mdgriffith$elm_ui$Internal$Model$AlignX($mdgriffith$elm_ui$Internal$Model$Left);
 var $mdgriffith$elm_ui$Element$el = F2(
@@ -12497,10 +12318,6 @@ var $mdgriffith$elm_ui$Element$fill = $mdgriffith$elm_ui$Internal$Model$Fill(1);
 var $mdgriffith$elm_ui$Internal$Model$PaddingStyle = F5(
 	function (a, b, c, d, e) {
 		return {$: 'PaddingStyle', a: a, b: b, c: c, d: d, e: e};
-	});
-var $mdgriffith$elm_ui$Internal$Model$StyleClass = F2(
-	function (a, b) {
-		return {$: 'StyleClass', a: a, b: b};
 	});
 var $mdgriffith$elm_ui$Internal$Flag$padding = $mdgriffith$elm_ui$Internal$Flag$flag(2);
 var $mdgriffith$elm_ui$Element$padding = function (x) {
@@ -17897,28 +17714,7 @@ var $mdgriffith$elm_ui$Element$Input$checkbox = F2(
 							icon(checked)
 						]))));
 	});
-var $mdgriffith$elm_ui$Internal$Model$Colored = F3(
-	function (a, b, c) {
-		return {$: 'Colored', a: a, b: b, c: c};
-	});
-var $mdgriffith$elm_ui$Internal$Flag$bgColor = $mdgriffith$elm_ui$Internal$Flag$flag(8);
-var $mdgriffith$elm_ui$Internal$Model$formatColorClass = function (_v0) {
-	var red = _v0.a;
-	var green = _v0.b;
-	var blue = _v0.c;
-	var alpha = _v0.d;
-	return $mdgriffith$elm_ui$Internal$Model$floatClass(red) + ('-' + ($mdgriffith$elm_ui$Internal$Model$floatClass(green) + ('-' + ($mdgriffith$elm_ui$Internal$Model$floatClass(blue) + ('-' + $mdgriffith$elm_ui$Internal$Model$floatClass(alpha))))));
-};
-var $mdgriffith$elm_ui$Element$Background$color = function (clr) {
-	return A2(
-		$mdgriffith$elm_ui$Internal$Model$StyleClass,
-		$mdgriffith$elm_ui$Internal$Flag$bgColor,
-		A3(
-			$mdgriffith$elm_ui$Internal$Model$Colored,
-			'bg-' + $mdgriffith$elm_ui$Internal$Model$formatColorClass(clr),
-			'background-color',
-			clr));
-};
+var $author$project$Main$darkModeTextInputColor = A3($mdgriffith$elm_ui$Element$rgb255, 29, 34, 47);
 var $mdgriffith$elm_ui$Internal$Flag$borderColor = $mdgriffith$elm_ui$Internal$Flag$flag(28);
 var $mdgriffith$elm_ui$Element$Border$color = function (clr) {
 	return A2(
@@ -17929,17 +17725,6 @@ var $mdgriffith$elm_ui$Element$Border$color = function (clr) {
 			'bc-' + $mdgriffith$elm_ui$Internal$Model$formatColorClass(clr),
 			'border-color',
 			clr));
-};
-var $mdgriffith$elm_ui$Internal$Flag$fontColor = $mdgriffith$elm_ui$Internal$Flag$flag(14);
-var $mdgriffith$elm_ui$Element$Font$color = function (fontColor) {
-	return A2(
-		$mdgriffith$elm_ui$Internal$Model$StyleClass,
-		$mdgriffith$elm_ui$Internal$Flag$fontColor,
-		A3(
-			$mdgriffith$elm_ui$Internal$Model$Colored,
-			'fc-' + $mdgriffith$elm_ui$Internal$Model$formatColorClass(fontColor),
-			'color',
-			fontColor));
 };
 var $mdgriffith$elm_ui$Internal$Model$InFront = {$: 'InFront'};
 var $mdgriffith$elm_ui$Internal$Model$Nearby = F2(
@@ -17977,10 +17762,6 @@ var $mdgriffith$elm_ui$Internal$Model$Px = function (a) {
 	return {$: 'Px', a: a};
 };
 var $mdgriffith$elm_ui$Element$px = $mdgriffith$elm_ui$Internal$Model$Px;
-var $mdgriffith$elm_ui$Internal$Model$Rgba = F4(
-	function (a, b, c, d) {
-		return {$: 'Rgba', a: a, b: b, c: c, d: d};
-	});
 var $mdgriffith$elm_ui$Element$rgb = F3(
 	function (r, g, b) {
 		return A4($mdgriffith$elm_ui$Internal$Model$Rgba, r, g, b, 1);
@@ -18977,7 +18758,10 @@ var $author$project$Main$inputRow = function (model) {
 				[
 					A2(
 					$mdgriffith$elm_ui$Element$Input$text,
-					_List_Nil,
+					_List_fromArray(
+						[
+							$mdgriffith$elm_ui$Element$Background$color($author$project$Main$darkModeTextInputColor)
+						]),
 					{
 						label: $mdgriffith$elm_ui$Element$Input$labelHidden(''),
 						onChange: $author$project$Main$OnQueryChanged,
@@ -18998,7 +18782,8 @@ var $author$project$Main$inputRow = function (model) {
 								[
 									$mdgriffith$elm_ui$Element$width(
 									A2($mdgriffith$elm_ui$Element$maximum, 65, $mdgriffith$elm_ui$Element$fill)),
-									$mdgriffith$elm_ui$Element$Font$center
+									$mdgriffith$elm_ui$Element$Font$center,
+									$mdgriffith$elm_ui$Element$Background$color($author$project$Main$darkModeTextInputColor)
 								]),
 							{
 								label: $mdgriffith$elm_ui$Element$Input$labelHidden(''),
@@ -19275,10 +19060,6 @@ var $author$project$Main$Table = {$: 'Table'};
 var $author$project$Main$OnTabSelected = function (a) {
 	return {$: 'OnTabSelected', a: a};
 };
-var $mdgriffith$elm_ui$Element$rgb255 = F3(
-	function (red, green, blue) {
-		return A4($mdgriffith$elm_ui$Internal$Model$Rgba, red / 255, green / 255, blue / 255, 1);
-	});
 var $author$project$Main$color = {
 	skyBlue: A3($mdgriffith$elm_ui$Element$rgb255, 0, 203, 236),
 	vermillion: A3($mdgriffith$elm_ui$Element$rgb255, 255, 85, 67),
@@ -19308,7 +19089,7 @@ var $author$project$Main$tab = F2(
 				case 'Table':
 					return 'Table';
 				default:
-					return 'Patches';
+					return 'Data';
 			}
 		}();
 		var tabColor = function () {
@@ -19324,7 +19105,7 @@ var $author$project$Main$tab = F2(
 		var isSelected = _Utils_eq(thisTab, selectedTab);
 		var padOffset = isSelected ? 0 : 2;
 		var corners = isSelected ? {bottomLeft: 0, bottomRight: 0, topLeft: 6, topRight: 6} : {bottomLeft: 0, bottomRight: 0, topLeft: 0, topRight: 0};
-		var borderWidths = isSelected ? {bottom: 0, left: 2, right: 2, top: 2} : {bottom: 2, left: 0, right: 0, top: 0};
+		var borderWidths = isSelected ? {bottom: 0, left: 1, right: 1, top: 1} : {bottom: 1, left: 0, right: 0, top: 0};
 		return A2(
 			$mdgriffith$elm_ui$Element$el,
 			_List_fromArray(
@@ -19598,6 +19379,7 @@ var $author$project$Main$table = function (data) {
 		[
 			$mdgriffith$elm_ui$Element$Font$bold,
 			$mdgriffith$elm_ui$Element$Font$size(12),
+			$mdgriffith$elm_ui$Element$Font$color($author$project$Main$darkModeFontColor),
 			$mdgriffith$elm_ui$Element$padding(5),
 			$mdgriffith$elm_ui$Element$Border$widthEach(
 			{bottom: 1, left: 0, right: 0, top: 0})
@@ -19658,6 +19440,7 @@ var $author$project$Main$table = function (data) {
 									[
 										$mdgriffith$elm_ui$Element$centerY,
 										$mdgriffith$elm_ui$Element$Font$size(12),
+										$mdgriffith$elm_ui$Element$Font$color($author$project$Main$darkModeFontColor),
 										$mdgriffith$elm_ui$Element$Font$alignRight,
 										$mdgriffith$elm_ui$Element$padding(5)
 									]),
@@ -19682,7 +19465,9 @@ var $author$project$Main$view = function (model) {
 					[
 						$mdgriffith$elm_ui$Element$Font$typeface('Fira Code')
 					])),
-				$mdgriffith$elm_ui$Element$Font$size(12)
+				$mdgriffith$elm_ui$Element$Font$size(12),
+				$mdgriffith$elm_ui$Element$Font$color($author$project$Main$darkModeFontColor),
+				$mdgriffith$elm_ui$Element$Background$color($author$project$Main$darkModeBackgroundColor)
 			]),
 		A2(
 			$mdgriffith$elm_ui$Element$row,
@@ -19735,8 +19520,8 @@ var $author$project$Main$view = function (model) {
 											model,
 											A2(
 												$elm$core$List$map,
-												$author$project$Main$newDataValue,
-												$author$project$Main$parseResults($author$project$Main$exampleResultsRaw))));
+												$elm$core$Tuple$second,
+												$elm$core$Dict$toList(model.resultsMap))));
 							}
 						}()
 						]))

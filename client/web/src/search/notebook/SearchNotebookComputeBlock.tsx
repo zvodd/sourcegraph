@@ -1,3 +1,5 @@
+/* eslint-disable prefer-const */
+/* eslint-disable @typescript-eslint/explicit-function-return-type */
 /* eslint-disable import/order */
 /* eslint-disable @typescript-eslint/no-var-requires */
 import classNames from 'classnames'
@@ -32,6 +34,65 @@ const Elm = require('react-elm-components')
 
 interface SearchNotebookComputeBlockProps extends BlockProps, ComputeBlock, ThemeProps {
     isMacPlatform: boolean
+}
+
+function setupPorts(ports: {
+    receiveEvent: {
+        send: (argument0: {
+            data: any // Can't be null according to spec
+            eventType: any
+            id: any
+        }) => void
+    }
+    openStream: { subscribe: (argument0: (args: any) => void) => void }
+}) {
+    let sources: { [key: string]: EventSource } = {}
+
+    function sendEventToElm(event: any) {
+        console.log(`Full Event: ${JSON.stringify(event)}`)
+        console.log(`Event: ${JSON.stringify(event.type)} : ${JSON.stringify(event.data)}`)
+        ports.receiveEvent.send({
+            data: event.data, // Can't be null according to spec
+            eventType: event.type || null,
+            id: event.id || null,
+        })
+    }
+
+    function newEventSource(address: string) {
+        sources[address] = new EventSource(address)
+        return sources[address]
+    }
+
+    function deleteAllEventSources() {
+        for (const [key] of Object.entries(sources)) {
+            deleteEventSource(key)
+        }
+    }
+
+    function deleteEventSource(address: string) {
+        sources[address].close()
+        delete sources[address]
+    }
+
+    ports.openStream.subscribe((args: any[]) => {
+        deleteAllEventSources() // Pre-emptively close any open streams if we receive a request to open a new stream before seeing 'done'.
+        console.log(`JS Port openStream. Args: ${JSON.stringify(args[0])}`)
+        const address = args[0] // We could listen on a specific event and get args[1] from the Elm app. No need for this right now.
+
+        const eventSource = newEventSource(address)
+        eventSource.addEventListener('error', (error: any) => {
+            console.log(`EventSource failed: ${JSON.stringify(error)}`)
+        })
+        eventSource.addEventListener('results', sendEventToElm)
+        eventSource.addEventListener('alert', sendEventToElm)
+        eventSource.addEventListener('error', sendEventToElm)
+        eventSource.addEventListener('done', (event: any) => {
+            console.log('Done')
+            deleteEventSource(address)
+            // Note: 'done:true' is sent in progress too. But we want a 'done' for the entire stream in case we don't see it.
+            sendEventToElm({ type: 'done', data: '' })
+        })
+    })
 }
 
 export const SearchNotebookComputeBlock: React.FunctionComponent<SearchNotebookComputeBlockProps> = ({
@@ -169,7 +230,7 @@ export const SearchNotebookComputeBlock: React.FunctionComponent<SearchNotebookC
                     */}
                 </div>
                 <div className="elm">
-                    <Elm src={App.Main} flags={null} />
+                    <Elm src={App.Main} ports={setupPorts} flags={null} />
                 </div>
             </div>
             {blockMenu}

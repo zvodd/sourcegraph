@@ -14,7 +14,6 @@ import blockStyles from './SearchNotebookBlock.module.scss'
 import { BlockMenuAction, SearchNotebookBlockMenu } from './SearchNotebookBlockMenu'
 import styles from './SearchNotebookComputeBlock.module.scss'
 // eslint-disable-next-line import/extensions
-import TODO from './todomvc.js'
 // import COMPUTE from './compute.js'
 // eslint-disable-next-line import/extensions
 import { App } from './computeModule.js'
@@ -168,9 +167,6 @@ export const SearchNotebookComputeBlock: React.FunctionComponent<SearchNotebookC
                         border={false}
                     />
                     */}
-                </div>
-                <div className="elm-todo">
-                    <Elm src={TODO.Todo} flags={null} />
                 </div>
                 <div className="elm">
                     <Elm src={App.Main} flags={null} />

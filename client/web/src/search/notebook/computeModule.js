@@ -7026,6 +7026,11 @@ var $author$project$Main$update = F2(
 			}
 		}
 	});
+var $mdgriffith$elm_ui$Internal$Model$AlignX = function (a) {
+	return {$: 'AlignX', a: a};
+};
+var $mdgriffith$elm_ui$Internal$Model$CenterX = {$: 'CenterX'};
+var $mdgriffith$elm_ui$Element$centerX = $mdgriffith$elm_ui$Internal$Model$AlignX($mdgriffith$elm_ui$Internal$Model$CenterX);
 var $mdgriffith$elm_ui$Internal$Model$Unkeyed = function (a) {
 	return {$: 'Unkeyed', a: a};
 };
@@ -12466,9 +12471,6 @@ var $mdgriffith$elm_ui$Element$column = F2(
 						attrs))),
 			$mdgriffith$elm_ui$Internal$Model$Unkeyed(children));
 	});
-var $mdgriffith$elm_ui$Internal$Model$AlignX = function (a) {
-	return {$: 'AlignX', a: a};
-};
 var $mdgriffith$elm_ui$Internal$Model$Left = {$: 'Left'};
 var $mdgriffith$elm_ui$Element$alignLeft = $mdgriffith$elm_ui$Internal$Model$AlignX($mdgriffith$elm_ui$Internal$Model$Left);
 var $mdgriffith$elm_ui$Element$el = F2(
@@ -12492,22 +12494,6 @@ var $mdgriffith$elm_ui$Internal$Model$Fill = function (a) {
 	return {$: 'Fill', a: a};
 };
 var $mdgriffith$elm_ui$Element$fill = $mdgriffith$elm_ui$Internal$Model$Fill(1);
-var $mdgriffith$elm_ui$Internal$Model$Max = F2(
-	function (a, b) {
-		return {$: 'Max', a: a, b: b};
-	});
-var $mdgriffith$elm_ui$Element$maximum = F2(
-	function (i, l) {
-		return A2($mdgriffith$elm_ui$Internal$Model$Max, i, l);
-	});
-var $mdgriffith$elm_ui$Internal$Model$Min = F2(
-	function (a, b) {
-		return {$: 'Min', a: a, b: b};
-	});
-var $mdgriffith$elm_ui$Element$minimum = F2(
-	function (i, l) {
-		return A2($mdgriffith$elm_ui$Internal$Model$Min, i, l);
-	});
 var $mdgriffith$elm_ui$Internal$Model$PaddingStyle = F5(
 	function (a, b, c, d, e) {
 		return {$: 'PaddingStyle', a: a, b: b, c: c, d: d, e: e};
@@ -12568,11 +12554,7 @@ var $author$project$Main$dataView = function (data) {
 					[
 						$mdgriffith$elm_ui$Element$padding(10),
 						$mdgriffith$elm_ui$Element$alignLeft,
-						$mdgriffith$elm_ui$Element$width(
-						A2(
-							$mdgriffith$elm_ui$Element$minimum,
-							800,
-							A2($mdgriffith$elm_ui$Element$maximum, 800, $mdgriffith$elm_ui$Element$fill)))
+						$mdgriffith$elm_ui$Element$width($mdgriffith$elm_ui$Element$fill)
 					]),
 				A2(
 					$mdgriffith$elm_ui$Element$column,
@@ -15770,8 +15752,6 @@ var $terezka$elm_charts$Chart$binLabels = F2(
 						]);
 				}));
 	});
-var $mdgriffith$elm_ui$Internal$Model$CenterX = {$: 'CenterX'};
-var $mdgriffith$elm_ui$Element$centerX = $mdgriffith$elm_ui$Internal$Model$AlignX($mdgriffith$elm_ui$Internal$Model$CenterX);
 var $terezka$elm_charts$Internal$Svg$Event = F2(
 	function (name, handler) {
 		return {handler: handler, name: name};
@@ -17530,6 +17510,7 @@ var $terezka$elm_charts$Chart$Attributes$spacing = F2(
 			config,
 			{spacing: v});
 	});
+var $author$project$Main$width = 800;
 var $elm$svg$Svg$Attributes$xlinkHref = function (value) {
 	return A3(
 		_VirtualDom_attributeNS,
@@ -17552,11 +17533,7 @@ var $author$project$Main$histogram = function (data) {
 		$mdgriffith$elm_ui$Element$el,
 		_List_fromArray(
 			[
-				$mdgriffith$elm_ui$Element$width(
-				A2(
-					$mdgriffith$elm_ui$Element$minimum,
-					800,
-					A2($mdgriffith$elm_ui$Element$maximum, 1300, $mdgriffith$elm_ui$Element$fill))),
+				$mdgriffith$elm_ui$Element$width($mdgriffith$elm_ui$Element$fill),
 				$mdgriffith$elm_ui$Element$height($mdgriffith$elm_ui$Element$fill),
 				$mdgriffith$elm_ui$Element$centerX,
 				$mdgriffith$elm_ui$Element$alignTop,
@@ -17568,7 +17545,7 @@ var $author$project$Main$histogram = function (data) {
 				_List_fromArray(
 					[
 						$terezka$elm_charts$Chart$Attributes$height(300),
-						$terezka$elm_charts$Chart$Attributes$width(1300)
+						$terezka$elm_charts$Chart$Attributes$width($author$project$Main$width)
 					]),
 				_List_fromArray(
 					[
@@ -18189,6 +18166,14 @@ var $mdgriffith$elm_ui$Element$Input$Label = F3(
 	});
 var $mdgriffith$elm_ui$Element$Input$OnRight = {$: 'OnRight'};
 var $mdgriffith$elm_ui$Element$Input$labelRight = $mdgriffith$elm_ui$Element$Input$Label($mdgriffith$elm_ui$Element$Input$OnRight);
+var $mdgriffith$elm_ui$Internal$Model$Max = F2(
+	function (a, b) {
+		return {$: 'Max', a: a, b: b};
+	});
+var $mdgriffith$elm_ui$Element$maximum = F2(
+	function (i, l) {
+		return A2($mdgriffith$elm_ui$Internal$Model$Max, i, l);
+	});
 var $mdgriffith$elm_ui$Element$paddingXY = F2(
 	function (x, y) {
 		if (_Utils_eq(x, y)) {
@@ -18978,13 +18963,15 @@ var $author$project$Main$inputRow = function (model) {
 	return A2(
 		$mdgriffith$elm_ui$Element$el,
 		_List_fromArray(
-			[$mdgriffith$elm_ui$Element$centerX]),
+			[
+				$mdgriffith$elm_ui$Element$centerX,
+				$mdgriffith$elm_ui$Element$width($mdgriffith$elm_ui$Element$fill)
+			]),
 		A2(
 			$mdgriffith$elm_ui$Element$column,
 			_List_fromArray(
 				[
-					$mdgriffith$elm_ui$Element$width(
-					A2($mdgriffith$elm_ui$Element$minimum, 1400, $mdgriffith$elm_ui$Element$fill))
+					$mdgriffith$elm_ui$Element$width($mdgriffith$elm_ui$Element$fill)
 				]),
 			_List_fromArray(
 				[
@@ -19349,14 +19336,14 @@ var $author$project$Main$tab = F2(
 					$author$project$Main$OnTabSelected(thisTab)),
 					$mdgriffith$elm_ui$Element$htmlAttribute(
 					A2($elm$html$Html$Attributes$style, 'cursor', 'pointer')),
-					$mdgriffith$elm_ui$Element$width(
-					A2($mdgriffith$elm_ui$Element$minimum, 467, $mdgriffith$elm_ui$Element$fill))
+					$mdgriffith$elm_ui$Element$width($mdgriffith$elm_ui$Element$fill)
 				]),
 			A2(
 				$mdgriffith$elm_ui$Element$el,
 				_List_fromArray(
 					[
 						$mdgriffith$elm_ui$Element$centerX,
+						$mdgriffith$elm_ui$Element$width($mdgriffith$elm_ui$Element$fill),
 						$mdgriffith$elm_ui$Element$centerY,
 						$mdgriffith$elm_ui$Element$paddingEach(
 						{bottom: 10 - padOffset, left: 30, right: 30, top: 10 + padOffset})
@@ -19367,7 +19354,10 @@ var $author$project$Main$outputRow = function (selectedTab) {
 	return A2(
 		$mdgriffith$elm_ui$Element$row,
 		_List_fromArray(
-			[$mdgriffith$elm_ui$Element$centerX]),
+			[
+				$mdgriffith$elm_ui$Element$centerX,
+				$mdgriffith$elm_ui$Element$width($mdgriffith$elm_ui$Element$fill)
+			]),
 		_List_fromArray(
 			[
 				A2($author$project$Main$tab, $author$project$Main$Chart, selectedTab),
@@ -19607,7 +19597,7 @@ var $author$project$Main$table = function (data) {
 	var headerAttrs = _List_fromArray(
 		[
 			$mdgriffith$elm_ui$Element$Font$bold,
-			$mdgriffith$elm_ui$Element$Font$size(18),
+			$mdgriffith$elm_ui$Element$Font$size(12),
 			$mdgriffith$elm_ui$Element$padding(5),
 			$mdgriffith$elm_ui$Element$Border$widthEach(
 			{bottom: 1, left: 0, right: 0, top: 0})
@@ -19623,8 +19613,7 @@ var $author$project$Main$table = function (data) {
 			$mdgriffith$elm_ui$Element$table,
 			_List_fromArray(
 				[
-					$mdgriffith$elm_ui$Element$width(
-					A2($mdgriffith$elm_ui$Element$minimum, 600, $mdgriffith$elm_ui$Element$fill))
+					$mdgriffith$elm_ui$Element$width($mdgriffith$elm_ui$Element$fill)
 				]),
 			{
 				columns: _List_fromArray(
@@ -19668,7 +19657,7 @@ var $author$project$Main$table = function (data) {
 								_List_fromArray(
 									[
 										$mdgriffith$elm_ui$Element$centerY,
-										$mdgriffith$elm_ui$Element$Font$size(25),
+										$mdgriffith$elm_ui$Element$Font$size(12),
 										$mdgriffith$elm_ui$Element$Font$alignRight,
 										$mdgriffith$elm_ui$Element$padding(5)
 									]),
@@ -19682,7 +19671,7 @@ var $author$project$Main$table = function (data) {
 			}));
 };
 var $mdgriffith$elm_ui$Element$Font$typeface = $mdgriffith$elm_ui$Internal$Model$Typeface;
-var $author$project$Main$body = function (model) {
+var $author$project$Main$view = function (model) {
 	return A2(
 		$mdgriffith$elm_ui$Element$layout,
 		_List_fromArray(
@@ -19693,13 +19682,15 @@ var $author$project$Main$body = function (model) {
 					[
 						$mdgriffith$elm_ui$Element$Font$typeface('Fira Code')
 					])),
-				$mdgriffith$elm_ui$Element$Font$size(16)
+				$mdgriffith$elm_ui$Element$Font$size(12)
 			]),
 		A2(
 			$mdgriffith$elm_ui$Element$row,
 			_List_fromArray(
 				[
-					$mdgriffith$elm_ui$Element$width($mdgriffith$elm_ui$Element$fill)
+					$mdgriffith$elm_ui$Element$centerX,
+					$mdgriffith$elm_ui$Element$width(
+					A2($mdgriffith$elm_ui$Element$maximum, $author$project$Main$width, $mdgriffith$elm_ui$Element$fill))
 				]),
 			_List_fromArray(
 				[
@@ -19707,8 +19698,10 @@ var $author$project$Main$body = function (model) {
 					$mdgriffith$elm_ui$Element$column,
 					_List_fromArray(
 						[
-							$mdgriffith$elm_ui$Element$width($mdgriffith$elm_ui$Element$fill),
-							A2($mdgriffith$elm_ui$Element$paddingXY, 250, 100)
+							$mdgriffith$elm_ui$Element$centerX,
+							$mdgriffith$elm_ui$Element$width(
+							A2($mdgriffith$elm_ui$Element$maximum, $author$project$Main$width, $mdgriffith$elm_ui$Element$fill)),
+							A2($mdgriffith$elm_ui$Element$paddingXY, 20, 20)
 						]),
 					_List_fromArray(
 						[
@@ -19748,9 +19741,6 @@ var $author$project$Main$body = function (model) {
 						}()
 						]))
 				])));
-};
-var $author$project$Main$view = function (model) {
-	return $author$project$Main$body(model);
 };
 var $author$project$Main$main = $elm$browser$Browser$element(
 	{init: $author$project$Main$init, subscriptions: $author$project$Main$subscriptions, update: $author$project$Main$update, view: $author$project$Main$view});

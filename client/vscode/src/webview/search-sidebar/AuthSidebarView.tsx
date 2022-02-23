@@ -140,9 +140,13 @@ export const AuthSidebarView: React.FunctionComponent<AuthSidebarViewProps> = ({
                         Create an account
                     </button>
                 </p>
-                <a onClick={() => setHasAccount(true)} className={classNames(styles.ctaParagraph)} href="/">
+                <button
+                    type="button"
+                    onClick={() => setHasAccount(true)}
+                    className={classNames(styles.ctaParagraph, 'btn btn-sm btn-link')}
+                >
                     Have an account?
-                </a>
+                </button>
             </>
         )
     }

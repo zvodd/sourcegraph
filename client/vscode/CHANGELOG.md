@@ -1,10 +1,16 @@
 # Changelog
 
-## Next Release - 2.1.0
+## Next Release - 2.1.1
 
 ### Changes
 
 - TBA
+
+## 2.1.0
+
+### Fixes
+
+- Fix empty links open issues
 
 ## 2.0.9
 

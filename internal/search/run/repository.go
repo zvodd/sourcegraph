@@ -14,7 +14,6 @@ import (
 	"github.com/sourcegraph/sourcegraph/internal/search/result"
 	"github.com/sourcegraph/sourcegraph/internal/search/streaming"
 	"github.com/sourcegraph/sourcegraph/internal/search/textsearch"
-	zoektutil "github.com/sourcegraph/sourcegraph/internal/search/zoekt"
 	"github.com/sourcegraph/sourcegraph/internal/trace"
 	"github.com/sourcegraph/sourcegraph/lib/errors"
 )
@@ -104,17 +103,31 @@ func reposContainingPath(ctx context.Context, args *search.TextParameters, repos
 	newArgs.Query = q
 	newArgs.UseFullDeadline = true
 
-	globalSearch := newArgs.Mode == search.ZoektGlobalSearch
-	zoektArgs, err := zoektutil.NewIndexedSearchRequest(ctx, &newArgs, globalSearch, search.TextRequest, func([]*search.RepositoryRevisions) {})
-	if err != nil {
-		return nil, err
-	}
+	/*
+		globalSearch := newArgs.Mode == search.ZoektGlobalSearch
+
+		 zoektArgs, err := zoektutil.NewIndexedSearchRequest(ctx, &newArgs, globalSearch, search.TextRequest, func([]*search.RepositoryRevisions) {})
+		 if err != nil {
+			return nil, err
+		 }
+
+			zoektJob := &zoektutil.ZoektRepoSubsetSearch{
+				Repos:          nil, // FIXME
+				Query:          newArgs.Query
+				Typ:            newArgs.
+				FileMatchLimit: args.PatternInfo.FileMatchLimit,
+				Select:         args.PatternInfo.Select,
+				Zoekt:          args.Zoekt,
+				Since:          nil,
+			}
+	*/
+
 	searcherArgs := &search.SearcherParameters{
 		SearcherURLs:    newArgs.SearcherURLs,
 		PatternInfo:     newArgs.PatternInfo,
 		UseFullDeadline: newArgs.UseFullDeadline,
 	}
-	matches, _, err := textsearch.SearchFilesInReposBatch(ctx, zoektArgs, searcherArgs, newArgs.Mode != search.SearcherOnly)
+	matches, _, err := textsearch.SearchFilesInReposBatch(ctx, nil /* FIXME */, nil /*FIXME*/, searcherArgs, newArgs.Mode != search.SearcherOnly)
 	if err != nil {
 		return nil, err
 	}

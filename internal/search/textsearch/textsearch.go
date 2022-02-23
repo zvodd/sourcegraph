@@ -20,7 +20,14 @@ import (
 var MockSearchFilesInRepos func() ([]result.Match, *streaming.Stats, error)
 
 // SearchFilesInRepos searches a set of repos for a pattern.
-func SearchFilesInRepos(ctx context.Context, zoektArgs zoektutil.IndexedSearchRequest, searcherArgs *search.SearcherParameters, notSearcherOnly bool, stream streaming.Sender) (err error) {
+func SearchFilesInRepos(
+	ctx context.Context,
+	runZoekt func(context.Context, database.DB, streaming.Sender) (*search.Alert, error),
+	unindexedRepos []*search.RepositoryRevisions,
+	searcherArgs *search.SearcherParameters,
+	notSearcherOnly bool,
+	stream streaming.Sender,
+) (err error) {
 	if MockSearchFilesInRepos != nil {
 		matches, mockStats, err := MockSearchFilesInRepos()
 		stream.Send(streaming.SearchEvent{
@@ -35,13 +42,14 @@ func SearchFilesInRepos(ctx context.Context, zoektArgs zoektutil.IndexedSearchRe
 	if notSearcherOnly {
 		// Run literal and regexp searches on indexed repositories.
 		g.Go(func() error {
-			return zoektArgs.Search(ctx, stream)
+			_, err := runZoekt(ctx, nil, stream)
+			return err
 		})
 	}
 
 	// Concurrently run searcher for all unindexed repos regardless whether text or regexp.
 	g.Go(func() error {
-		return searcher.SearchOverRepos(ctx, searcherArgs, stream, zoektArgs.UnindexedRepos(), false)
+		return searcher.SearchOverRepos(ctx, searcherArgs, stream, unindexedRepos, false)
 	})
 
 	return g.Wait()
@@ -49,9 +57,15 @@ func SearchFilesInRepos(ctx context.Context, zoektArgs zoektutil.IndexedSearchRe
 
 // SearchFilesInReposBatch is a convenience function around searchFilesInRepos
 // which collects the results from the stream.
-func SearchFilesInReposBatch(ctx context.Context, zoektArgs zoektutil.IndexedSearchRequest, searcherArgs *search.SearcherParameters, searcherOnly bool) ([]*result.FileMatch, streaming.Stats, error) {
+func SearchFilesInReposBatch(
+	ctx context.Context,
+	runZoekt func(context.Context, database.DB, streaming.Sender) (*search.Alert, error),
+	unindexedRepos []*search.RepositoryRevisions,
+	searcherArgs *search.SearcherParameters,
+	searcherOnly bool,
+) ([]*result.FileMatch, streaming.Stats, error) {
 	agg := streaming.NewAggregatingStream()
-	err := SearchFilesInRepos(ctx, zoektArgs, searcherArgs, searcherOnly, agg)
+	err := SearchFilesInRepos(ctx, runZoekt, unindexedRepos, searcherArgs, searcherOnly, agg)
 
 	fms, fmErr := matchesToFileMatches(agg.Results)
 	if fmErr != nil && err == nil {
@@ -73,7 +87,7 @@ func matchesToFileMatches(matches []result.Match) ([]*result.FileMatch, error) {
 }
 
 type RepoSubsetTextSearch struct {
-	ZoektArgs        *search.ZoektParameters
+	RunZoekt         func(context.Context, database.DB, streaming.Sender) (*search.Alert, error)
 	SearcherArgs     *search.SearcherParameters
 	NotSearcherOnly  bool
 	UseIndex         query.YesNoOnly
@@ -91,19 +105,19 @@ func (t *RepoSubsetTextSearch) Run(ctx context.Context, db database.DB, stream s
 
 	repos := &searchrepos.Resolver{DB: db, Opts: t.RepoOpts}
 	return nil, repos.Paginate(ctx, nil, func(page *searchrepos.Resolved) error {
-		request, ok, err := zoektutil.OnlyUnindexed(page.RepoRevs, t.ZoektArgs.Zoekt, t.UseIndex, t.ContainsRefGlobs, zoektutil.MissingRepoRevStatus(stream))
+		request, ok, err := zoektutil.OnlyUnindexed(page.RepoRevs, nil, t.UseIndex, t.ContainsRefGlobs, zoektutil.MissingRepoRevStatus(stream)) // FIXME: t.ZoektArgs.
 		if err != nil {
 			return err
 		}
 
 		if !ok {
-			request, err = zoektutil.NewIndexedSubsetSearchRequest(ctx, page.RepoRevs, t.UseIndex, t.ZoektArgs, zoektutil.MissingRepoRevStatus(stream))
+			request, err = zoektutil.NewIndexedSubsetSearchRequest(ctx, page.RepoRevs, t.UseIndex, nil, zoektutil.MissingRepoRevStatus(stream)) // FIXME: t.ZoektArgs.
 			if err != nil {
 				return err
 			}
 		}
 
-		return SearchFilesInRepos(ctx, request, t.SearcherArgs, t.NotSearcherOnly, stream)
+		return SearchFilesInRepos(ctx, t.RunZoekt, request.UnindexedRepos(), t.SearcherArgs, t.NotSearcherOnly, stream)
 	})
 }
 
@@ -125,6 +139,10 @@ func (t *RepoUniverseTextSearch) Run(ctx context.Context, db database.DB, stream
 		tr.SetError(err)
 		tr.Finish()
 	}()
+
+	if t.ZoektArgs == nil {
+		return nil, nil
+	}
 
 	userPrivateRepos := searchrepos.PrivateReposForActor(ctx, db, t.RepoOptions)
 	t.GlobalZoektQuery.ApplyPrivateFilter(userPrivateRepos)

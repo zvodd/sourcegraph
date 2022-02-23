@@ -154,12 +154,15 @@ func ToSearchJob(jargs *Args, q query.Q) (Job, error) {
 			if err != nil {
 				return nil, err
 			}
-			zoektArgs := &search.ZoektParameters{
+
+			zoektJob := &zoektutil.ZoektRepoSubsetSearch{
+				Repos:          nil, // FIXME
 				Query:          zoektQuery,
 				Typ:            typ,
 				FileMatchLimit: args.PatternInfo.FileMatchLimit,
 				Select:         args.PatternInfo.Select,
 				Zoekt:          args.Zoekt,
+				Since:          nil,
 			}
 
 			searcherArgs := &search.SearcherParameters{
@@ -169,7 +172,7 @@ func ToSearchJob(jargs *Args, q query.Q) (Job, error) {
 			}
 
 			addJob(true, &textsearch.RepoSubsetTextSearch{
-				ZoektArgs:        zoektArgs,
+				RunZoekt:         zoektJob.Run,
 				SearcherArgs:     searcherArgs,
 				NotSearcherOnly:  !onlyRunSearcher,
 				UseIndex:         args.PatternInfo.Index,

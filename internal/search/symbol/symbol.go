@@ -40,7 +40,8 @@ var MockSearchSymbols func(ctx context.Context, args *search.TextParameters, lim
 
 func symbolSearchInRepos(
 	ctx context.Context,
-	request zoektutil.IndexedSearchRequest,
+	runZoekt func(context.Context, database.DB, streaming.Sender) (search.Alert, error),
+	unindexedRepos []*search.RepositoryRevisions,
 	patternInfo *search.TextPatternInfo,
 	notSearcherOnly bool,
 	limit int,
@@ -61,7 +62,7 @@ func symbolSearchInRepos(
 		run.Acquire()
 		goroutine.Go(func() {
 			defer run.Release()
-			err := request.Search(ctx, stream)
+			_, err := runZoekt(ctx, nil, stream)
 			if err != nil {
 				tr.LogFields(otlog.Error(err))
 				// Only record error if we haven't timed out.
@@ -73,7 +74,7 @@ func symbolSearchInRepos(
 		})
 	}
 
-	for _, repoRevs := range request.UnindexedRepos() {
+	for _, repoRevs := range unindexedRepos {
 		repoRevs := repoRevs
 		if ctx.Err() != nil {
 			break
@@ -128,11 +129,13 @@ func Search(ctx context.Context, args *search.TextParameters, notSearcherOnly, g
 		tr.Finish()
 	}()
 
-	request, err := zoektutil.NewIndexedSearchRequest(ctx, args, globalSearch, search.SymbolRequest, zoektutil.MissingRepoRevStatus(stream))
-	if err != nil {
-		return err
-	}
-	return symbolSearchInRepos(ctx, request, args.PatternInfo, notSearcherOnly, limit, stream)
+	/*
+		request, err := zoektutil.NewIndexedSearchRequest(ctx, args, globalSearch, search.SymbolRequest, zoektutil.MissingRepoRevStatus(stream))
+		if err != nil {
+			return err
+		}
+	*/
+	return symbolSearchInRepos(ctx, nil /*FIXME*/, nil /*FIXME*/, args.PatternInfo, notSearcherOnly, limit, stream)
 }
 
 func searchInRepo(ctx context.Context, repoRevs *search.RepositoryRevisions, patternInfo *search.TextPatternInfo, limit int) (res []result.Match, err error) {
@@ -429,19 +432,21 @@ func (s *RepoSubsetSymbolSearch) Run(ctx context.Context, db database.DB, stream
 
 	repos := searchrepos.Resolver{DB: db, Opts: s.RepoOpts}
 	return nil, repos.Paginate(ctx, nil, func(page *searchrepos.Resolved) error {
-		request, ok, err := zoektutil.OnlyUnindexed(page.RepoRevs, s.ZoektArgs.Zoekt, s.UseIndex, s.ContainsRefGlobs, zoektutil.MissingRepoRevStatus(stream))
-		if err != nil {
-			return err
-		}
-
-		if !ok {
-			request, err = zoektutil.NewIndexedSubsetSearchRequest(ctx, page.RepoRevs, s.UseIndex, s.ZoektArgs, zoektutil.MissingRepoRevStatus(stream))
+		/*
+			request, ok, err := zoektutil.OnlyUnindexed(page.RepoRevs, s.ZoektArgs.Zoekt, s.UseIndex, s.ContainsRefGlobs, zoektutil.MissingRepoRevStatus(stream))
 			if err != nil {
 				return err
 			}
-		}
 
-		return symbolSearchInRepos(ctx, request, s.PatternInfo, s.NotSearcherOnly, s.Limit, stream)
+			if !ok {
+				request, err = zoektutil.NewIndexedSubsetSearchRequest(ctx, page.RepoRevs, s.UseIndex, s.ZoektArgs, zoektutil.MissingRepoRevStatus(stream))
+				if err != nil {
+					return err
+				}
+			}
+		*/
+
+		return symbolSearchInRepos(ctx, nil /*FIXME*/, nil /*FIXME*/, s.PatternInfo, s.NotSearcherOnly, s.Limit, stream)
 	})
 }
 
@@ -468,11 +473,11 @@ func (s *RepoUniverseSymbolSearch) Run(ctx context.Context, db database.DB, stre
 	userPrivateRepos := repos.PrivateReposForActor(ctx, db, s.RepoOptions)
 	s.GlobalZoektQuery.ApplyPrivateFilter(userPrivateRepos)
 	s.ZoektArgs.Query = s.GlobalZoektQuery.Generate()
-	request := &zoektutil.IndexedUniverseSearchRequest{Args: s.ZoektArgs}
+	// request := &zoektutil.IndexedUniverseSearchRequest{Args: s.ZoektArgs}
 	// TODO(rvantonder): The `true` argument corresponds to notSearcherOnly,
 	// implied by global search. Separate the concerns in the symbol search
 	// function so that we don't need to pass this value.
-	return nil, symbolSearchInRepos(ctx, request, s.PatternInfo, true, s.Limit, stream)
+	return nil, symbolSearchInRepos(ctx, nil /*FIXME*/, nil /*FIXME*/, s.PatternInfo, true, s.Limit, stream)
 }
 
 func (*RepoUniverseSymbolSearch) Name() string {

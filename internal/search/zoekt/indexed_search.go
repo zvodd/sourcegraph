@@ -15,6 +15,7 @@ import (
 
 	"github.com/sourcegraph/sourcegraph/internal/actor"
 	"github.com/sourcegraph/sourcegraph/internal/api"
+	"github.com/sourcegraph/sourcegraph/internal/database"
 	"github.com/sourcegraph/sourcegraph/internal/search"
 	"github.com/sourcegraph/sourcegraph/internal/search/backend"
 	"github.com/sourcegraph/sourcegraph/internal/search/filter"
@@ -181,12 +182,8 @@ func (rb *IndexedRepoRevs) getRepoInputRev(file *zoekt.FileMatch) (repo types.Mi
 	return repoRev.Repo, inputRevs
 }
 
-// IndexedSearchRequest exposes a method Search(...) to search over indexed
-// repositories. Two kinds of indexed searches implement it:
-// (1) IndexedUniverseSearchRequest that searches over the universe of indexed repositories.
-// (2) IndexedSubsetSearchRequest that searches over an indexed subset of repos in the universe of indexed repositories.
+// IndexedSearchRequest exposes repo index state.
 type IndexedSearchRequest interface {
-	Search(context.Context, streaming.Sender) error
 	IndexedRepos() map[api.RepoID]*search.RepositoryRevisions
 	UnindexedRepos() []*search.RepositoryRevisions
 }
@@ -256,13 +253,6 @@ type IndexedUniverseSearchRequest struct {
 	Args *search.ZoektParameters
 }
 
-func (s *IndexedUniverseSearchRequest) Search(ctx context.Context, c streaming.Sender) error {
-	if s.Args == nil {
-		return nil
-	}
-	return DoZoektSearchGlobal(ctx, s.Args, c)
-}
-
 // IndexedRepos for a request over the indexed universe cannot answer which
 // repositories are searched. This return value is always empty.
 func (s *IndexedUniverseSearchRequest) IndexedRepos() map[api.RepoID]*search.RepositoryRevisions {
@@ -296,11 +286,9 @@ func newIndexedUniverseSearchRequest(ctx context.Context, zoektArgs *search.Zoek
 	return &IndexedUniverseSearchRequest{Args: zoektArgs}, nil
 }
 
-// IndexedSubsetSearchRequest is responsible for:
-// (1) partitioning repos into indexed and unindexed sets of repos to search.
-//     These sets are a subset of the universe of repos.
-// (2) providing a method Search(...) that runs Zoekt over the indexed set of
-//     repositories.
+// IndexedSubsetSearchRequest is responsible for partitioning repos into indexed
+// and unindexed sets of repos to search. These sets are a subset of the
+// universe of repos.
 type IndexedSubsetSearchRequest struct {
 	// Unindexed is a slice of repository revisions that can't be searched by
 	// Zoekt. The repository revisions should be searched by the searcher
@@ -341,24 +329,6 @@ func (s *IndexedSubsetSearchRequest) IndexedRepos() map[api.RepoID]*search.Repos
 // UnindexedRepos is a slice of unindexed repositories to search.
 func (s *IndexedSubsetSearchRequest) UnindexedRepos() []*search.RepositoryRevisions {
 	return s.Unindexed
-}
-
-// Search streams 0 or more events to c.
-func (s *IndexedSubsetSearchRequest) Search(ctx context.Context, c streaming.Sender) error {
-	if s.Args == nil {
-		return nil
-	}
-
-	if len(s.IndexedRepos()) == 0 {
-		return nil
-	}
-
-	since := time.Since
-	if s.since != nil {
-		since = s.since
-	}
-
-	return zoektSearch(ctx, s.RepoRevs, s.Args.Query, s.Args.Typ, s.Args.Zoekt, s.Args.FileMatchLimit, s.Args.Select, since, c)
 }
 
 const maxUnindexedRepoRevSearchesPerQuery = 200
@@ -470,68 +440,6 @@ func DoZoektSearchGlobal(ctx context.Context, args *search.ZoektParameters, c st
 			return repo, []string{""}
 		}, args.Typ, args.Select, c)
 	}))
-}
-
-// zoektSearch searches repositories using zoekt.
-func zoektSearch(ctx context.Context, repos *IndexedRepoRevs, q zoektquery.Q, typ search.IndexedRequestType, client zoekt.Streamer, fileMatchLimit int32, selector filter.SelectPath, since func(t time.Time) time.Duration, c streaming.Sender) error {
-	if len(repos.repoRevs) == 0 {
-		return nil
-	}
-
-	ctx, cancel := context.WithCancel(ctx)
-	defer cancel()
-
-	brs := make([]zoektquery.BranchRepos, 0, len(repos.branchRepos))
-	for _, br := range repos.branchRepos {
-		brs = append(brs, *br)
-	}
-
-	finalQuery := zoektquery.NewAnd(&zoektquery.BranchesRepos{List: brs}, q)
-
-	k := ResultCountFactor(len(repos.repoRevs), fileMatchLimit, false)
-	searchOpts := SearchOpts(ctx, k, fileMatchLimit, selector)
-
-	// Start event stream.
-	t0 := time.Now()
-
-	if deadline, ok := ctx.Deadline(); ok {
-		// If the user manually specified a timeout, allow zoekt to use all of the remaining timeout.
-		searchOpts.MaxWallTime = time.Until(deadline)
-		if searchOpts.MaxWallTime < 0 {
-			return ctx.Err()
-		}
-		// We don't want our context's deadline to cut off zoekt so that we can get the results
-		// found before the deadline.
-		//
-		// We'll create a new context that gets cancelled if the other context is cancelled for any
-		// reason other than the deadline being exceeded. This essentially means the deadline for the new context
-		// will be `deadline + time for zoekt to cancel + network latency`.
-		var cancel context.CancelFunc
-		ctx, cancel = contextWithoutDeadline(ctx)
-		defer cancel()
-	}
-
-	foundResults := atomic.Bool{}
-	err := client.StreamSearch(ctx, finalQuery, &searchOpts, backend.ZoektStreamFunc(func(event *zoekt.SearchResult) {
-		foundResults.CAS(false, event.FileCount != 0 || event.MatchCount != 0)
-		sendMatches(event, repos.getRepoInputRev, typ, selector, c)
-	}))
-	if err != nil {
-		return err
-	}
-
-	mkStatusMap := func(mask search.RepoStatus) search.RepoStatusMap {
-		var statusMap search.RepoStatusMap
-		for _, r := range repos.repoRevs {
-			statusMap.Update(r.Repo.ID, mask)
-		}
-		return statusMap
-	}
-
-	if !foundResults.Load() && since(t0) >= searchOpts.MaxWallTime {
-		c.Send(streaming.SearchEvent{Stats: streaming.Stats{Status: mkStatusMap(search.RepoStatusTimedout)}})
-	}
-	return nil
 }
 
 func sendMatches(event *zoekt.SearchResult, getRepoInputRev repoRevFunc, typ search.IndexedRequestType, selector filter.SelectPath, c streaming.Sender) {
@@ -746,4 +654,88 @@ func limitUnindexedRepos(unindexed []*search.RepositoryRevisions, limit int, onM
 	}
 
 	return unindexed
+}
+
+type ZoektRepoSubsetSearch struct {
+	Repos          *IndexedRepoRevs // the set of indexed repository revisions to search.
+	Query          zoektquery.Q
+	Typ            search.IndexedRequestType
+	FileMatchLimit int32
+	Select         filter.SelectPath
+	Zoekt          zoekt.Streamer
+	Since          func(time.Time) time.Duration // since if non-nil will be used instead of time.Since. For tests
+}
+
+// ZoektSearch is a job that searches repositories using zoekt.
+func (z *ZoektRepoSubsetSearch) Run(ctx context.Context, _ database.DB, stream streaming.Sender) (*search.Alert, error) {
+	if z.Repos == nil {
+		return nil, nil
+	}
+	if len(z.Repos.repoRevs) == 0 {
+		return nil, nil
+	}
+
+	since := time.Since
+	if z.Since != nil {
+		since = z.Since
+	}
+
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
+
+	brs := make([]zoektquery.BranchRepos, 0, len(z.Repos.branchRepos))
+	for _, br := range z.Repos.branchRepos {
+		brs = append(brs, *br)
+	}
+
+	finalQuery := zoektquery.NewAnd(&zoektquery.BranchesRepos{List: brs}, z.Query)
+
+	k := ResultCountFactor(len(z.Repos.repoRevs), z.FileMatchLimit, false)
+	searchOpts := SearchOpts(ctx, k, z.FileMatchLimit, z.Select)
+
+	// Start event stream.
+	t0 := time.Now()
+
+	if deadline, ok := ctx.Deadline(); ok {
+		// If the user manually specified a timeout, allow zoekt to use all of the remaining timeout.
+		searchOpts.MaxWallTime = time.Until(deadline)
+		if searchOpts.MaxWallTime < 0 {
+			return nil, ctx.Err()
+		}
+		// We don't want our context's deadline to cut off zoekt so that we can get the results
+		// found before the deadline.
+		//
+		// We'll create a new context that gets cancelled if the other context is cancelled for any
+		// reason other than the deadline being exceeded. This essentially means the deadline for the new context
+		// will be `deadline + time for zoekt to cancel + network latency`.
+		var cancel context.CancelFunc
+		ctx, cancel = contextWithoutDeadline(ctx)
+		defer cancel()
+	}
+
+	foundResults := atomic.Bool{}
+	err := z.Zoekt.StreamSearch(ctx, finalQuery, &searchOpts, backend.ZoektStreamFunc(func(event *zoekt.SearchResult) {
+		foundResults.CAS(false, event.FileCount != 0 || event.MatchCount != 0)
+		sendMatches(event, z.Repos.getRepoInputRev, z.Typ, z.Select, stream)
+	}))
+	if err != nil {
+		return nil, err
+	}
+
+	mkStatusMap := func(mask search.RepoStatus) search.RepoStatusMap {
+		var statusMap search.RepoStatusMap
+		for _, r := range z.Repos.repoRevs {
+			statusMap.Update(r.Repo.ID, mask)
+		}
+		return statusMap
+	}
+
+	if !foundResults.Load() && since(t0) >= searchOpts.MaxWallTime {
+		stream.Send(streaming.SearchEvent{Stats: streaming.Stats{Status: mkStatusMap(search.RepoStatusTimedout)}})
+	}
+	return nil, nil
+}
+
+func (*ZoektRepoSubsetSearch) Name() string {
+	return "ZoektRepoSubset"
 }

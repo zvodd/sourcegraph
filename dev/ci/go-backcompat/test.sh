@@ -136,7 +136,7 @@ fi
 
 if ! ./dev/ci/go-test.sh "$@"; then
   annotation=$(
-    cat <<EOF
+    cat <<EOM
 This commit contains database schema definitions that caused an unexpected
 failure of one or more unit tests at tagged commit \`${latest_minor_release_tag}\`.
 Rewrite these schema changes to be backwards compatible. For help,
@@ -149,7 +149,7 @@ an exception for this test can be added to the following flakefile:
 ${flakefile}
 \`\`\`
 
-EOF
+EOM
   )
   mkdir -p ./annotations/
   echo "$annotation" | tee './annotations/go-backcompat.md'

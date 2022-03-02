@@ -36,12 +36,14 @@ describe('SlackWebhookAction', () => {
         userEvent.type(getByTestId('slack-webhook-url'), 'https://example.com')
         expect(getByTestId('submit-action-slack-webhook')).toBeEnabled()
 
+        userEvent.click(getByTestId('include-results-toggle-slack-webhook'))
+
         userEvent.click(getByTestId('submit-action-slack-webhook'))
 
         sinon.assert.calledOnceWithExactly(setActionSpy, {
             __typename: 'MonitorSlackWebhook',
             enabled: true,
-            includeResults: false,
+            includeResults: true,
             id: '',
             url: 'https://example.com',
         })

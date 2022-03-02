@@ -42,6 +42,11 @@ export const WebhookAction: React.FunctionComponent<ActionProps> = ({
 
     const [url, setUrl] = useState(action && action.__typename === 'MonitorWebhook' ? action.url : '')
 
+    const [includeResults, setIncludeResults] = useState(action ? action.includeResults : false)
+    const toggleIncludeResults: (includeResults: boolean) => void = useCallback(includeResults => {
+        setIncludeResults(includeResults)
+    }, [])
+
     const onSubmit: React.FormEventHandler = useCallback(
         event => {
             event.preventDefault()
@@ -50,10 +55,10 @@ export const WebhookAction: React.FunctionComponent<ActionProps> = ({
                 id: action ? action.id : '',
                 url,
                 enabled: webhookEnabled,
-                includeResults: false,
+                includeResults,
             })
         },
-        [action, setAction, url, webhookEnabled]
+        [action, includeResults, setAction, url, webhookEnabled]
     )
 
     const onDelete: React.FormEventHandler = useCallback(() => {
@@ -96,6 +101,8 @@ export const WebhookAction: React.FunctionComponent<ActionProps> = ({
             completedSubtitle="The webhook at the specified URL will be called."
             actionEnabled={webhookEnabled}
             toggleActionEnabled={toggleWebhookEnabled}
+            includeResults={includeResults}
+            toggleIncludeResults={toggleIncludeResults}
             canSubmit={!!url}
             onSubmit={onSubmit}
             onCancel={() => {}}

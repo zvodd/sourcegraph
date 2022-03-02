@@ -18,6 +18,9 @@ export interface ActionEditorProps {
     actionEnabled: boolean
     toggleActionEnabled: (enabled: boolean) => void
 
+    includeResults: boolean
+    toggleIncludeResults: (includeResults: boolean) => void
+
     canSubmit?: boolean
     onSubmit: React.FormEventHandler
     onCancel?: React.FormEventHandler
@@ -39,6 +42,8 @@ export const ActionEditor: React.FunctionComponent<ActionEditorProps> = ({
     idName,
     actionEnabled,
     toggleActionEnabled,
+    includeResults,
+    toggleIncludeResults,
     canSubmit = true,
     onSubmit,
     onCancel,
@@ -90,6 +95,21 @@ export const ActionEditor: React.FunctionComponent<ActionEditorProps> = ({
                     {children}
 
                     <div className="d-flex align-items-center my-4">
+                        <div>
+                            <Toggle
+                                title="Enabled"
+                                value={includeResults}
+                                onToggle={toggleIncludeResults}
+                                className="mr-2"
+                                aria-labelledby={`code-monitoring-${idName}-include-results-toggle`}
+                                data-testid={`include-results-toggle-${idName}`}
+                            />
+                        </div>
+                        <span id={`code-monitoring-${idName}-include-results-toggle`}>
+                            Include search results in sent message
+                        </span>
+                    </div>
+                    <div className="d-flex align-items-center mb-4">
                         <div>
                             <Toggle
                                 title="Enabled"

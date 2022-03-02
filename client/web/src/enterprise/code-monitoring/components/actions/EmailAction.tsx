@@ -28,20 +28,23 @@ export const EmailAction: React.FunctionComponent<ActionProps> = ({
     _testStartOpen,
 }) => {
     const [emailNotificationEnabled, setEmailNotificationEnabled] = useState(action ? action.enabled : true)
-
     const toggleEmailNotificationEnabled: (enabled: boolean) => void = useCallback(
         enabled => {
             setEmailNotificationEnabled(enabled)
-            setAction({
-                __typename: 'MonitorEmail',
-                id: action?.id ?? '',
-                recipients: { nodes: [{ id: authenticatedUser.id }] },
-                enabled,
-                includeResults: false,
-            })
+            if (action) {
+                setAction({
+                    ...action,
+                    enabled,
+                })
+            }
         },
-        [action?.id, authenticatedUser.id, setAction]
+        [action, setAction]
     )
+
+    const [includeResults, setIncludeResults] = useState(action ? action.includeResults : false)
+    const toggleIncludeResults: (includeResults: boolean) => void = useCallback(includeResults => {
+        setIncludeResults(includeResults)
+    }, [])
 
     const onSubmit: React.FormEventHandler = useCallback(
         event => {
@@ -54,11 +57,11 @@ export const EmailAction: React.FunctionComponent<ActionProps> = ({
                     id: '',
                     recipients: { nodes: [{ id: authenticatedUser.id }] },
                     enabled: true,
-                    includeResults: false,
+                    includeResults,
                 })
             }
         },
-        [action, authenticatedUser.id, setAction]
+        [action, authenticatedUser.id, includeResults, setAction]
     )
 
     const onDelete: React.FormEventHandler = useCallback(() => {
@@ -103,6 +106,8 @@ export const EmailAction: React.FunctionComponent<ActionProps> = ({
             completedSubtitle={authenticatedUser.email}
             actionEnabled={emailNotificationEnabled}
             toggleActionEnabled={toggleEmailNotificationEnabled}
+            includeResults={includeResults}
+            toggleIncludeResults={toggleIncludeResults}
             onSubmit={onSubmit}
             canDelete={!!action}
             onDelete={onDelete}

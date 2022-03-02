@@ -1,13 +1,11 @@
 import { gql, useMutation } from '@apollo/client'
-import classNames from 'classnames'
 import { noop } from 'lodash'
 import React, { useCallback, useState } from 'react'
 
-import { Alert, Button, Link, ProductStatusBadge } from '@sourcegraph/wildcard'
+import { Alert, Link, ProductStatusBadge } from '@sourcegraph/wildcard'
 
 import { SendTestSlackWebhookResult, SendTestSlackWebhookVariables } from '../../../../graphql-operations'
 import { ActionProps } from '../FormActionArea'
-import styles from '../FormActionArea.module.scss'
 
 import { ActionEditor } from './ActionEditor'
 
@@ -67,23 +65,29 @@ export const SlackWebhookAction: React.FunctionComponent<ActionProps> = ({
         SendTestSlackWebhookResult,
         SendTestSlackWebhookVariables
     >(SEND_TEST_SLACK_WEBHOOK)
-    const isSendTestButtonDisabled = loading || (called && !error) || !monitorName || !url
 
     const onSendTestMessage = useCallback(() => {
         sendTestMessage({
             variables: {
                 namespace: authenticatedUser.id,
                 description: monitorName,
-                slackWebhook: { url, enabled: true, includeResults: false },
+                slackWebhook: { url, enabled: true, includeResults },
             },
         }).catch(noop) // Ignore errors, they will be handled with the error state from useMutation
-    }, [authenticatedUser.id, monitorName, sendTestMessage, url])
+    }, [authenticatedUser.id, includeResults, monitorName, sendTestMessage, url])
 
-    const sendTestEmailButtonText = loading
+    const testButtonText = loading
         ? 'Sending message...'
         : called && !error
         ? 'Test message sent!'
         : 'Send test message'
+
+    const testButtonDisabled = !monitorName || !url
+    const testButtonDisabledReason = !monitorName
+        ? 'Please provide a name for the code monitor before sending a test'
+        : !url
+        ? 'Please provide a webhook URL before sending a test'
+        : undefined
 
     return (
         <ActionEditor
@@ -107,6 +111,14 @@ export const SlackWebhookAction: React.FunctionComponent<ActionProps> = ({
             onCancel={() => {}}
             canDelete={!!action}
             onDelete={onDelete}
+            testButtonDisabled={testButtonDisabled}
+            testButtonDisabledReason={testButtonDisabledReason}
+            testCalled={called}
+            testError={error}
+            testLoading={loading}
+            testButtonText={testButtonText}
+            testAgainButtonText="Send again"
+            onTest={onSendTestMessage}
             _testStartOpen={_testStartOpen}
         >
             <Alert variant="info" className="mt-4">
@@ -135,45 +147,6 @@ export const SlackWebhookAction: React.FunctionComponent<ActionProps> = ({
                     autoFocus={true}
                     spellCheck={false}
                 />
-            </div>
-            <div className="flex mt-1">
-                <Button
-                    className="mr-2"
-                    variant="secondary"
-                    outline={!isSendTestButtonDisabled}
-                    disabled={isSendTestButtonDisabled}
-                    onClick={onSendTestMessage}
-                    size="sm"
-                    data-testid="send-test-slack-webhook"
-                >
-                    {sendTestEmailButtonText}
-                </Button>
-                {called && !error && !loading && monitorName && url && (
-                    <Button
-                        className="p-0"
-                        onClick={onSendTestMessage}
-                        variant="link"
-                        size="sm"
-                        data-testid="send-test-slack-webhook-again"
-                    >
-                        Send again
-                    </Button>
-                )}
-                {!monitorName && (
-                    <div className={classNames('mt-2', styles.testActionError)}>
-                        Please provide a name for the code monitor before sending a test
-                    </div>
-                )}
-                {!url && (
-                    <div className={classNames('mt-2', styles.testActionError)}>
-                        Please provide a webhook URL before sending a test
-                    </div>
-                )}
-                {error && (
-                    <div className={classNames('mt-2', styles.testActionError)} data-testid="test-slack-webhook-error">
-                        {error.message}
-                    </div>
-                )}
             </div>
         </ActionEditor>
     )

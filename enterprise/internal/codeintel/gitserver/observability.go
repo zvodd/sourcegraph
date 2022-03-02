@@ -18,6 +18,7 @@ type operations struct {
 	fileExists            *observation.Operation
 	head                  *observation.Operation
 	listFiles             *observation.Operation
+	listOnlyFiles         *observation.Operation
 	rawContents           *observation.Operation
 	refDescriptions       *observation.Operation
 	repoInfo              *observation.Operation
@@ -55,6 +56,7 @@ func newOperations(observationContext *observation.Context) *operations {
 		fileExists:            op("FileExists"),
 		head:                  op("Head"),
 		listFiles:             op("ListFiles"),
+		listOnlyFiles:         op("ListOnlyFiles"),
 		rawContents:           op("RawContents"),
 		refDescriptions:       op("RefDescriptions"),
 		repoInfo:              op("RepoInfo"),

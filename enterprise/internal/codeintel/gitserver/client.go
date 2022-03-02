@@ -364,6 +364,42 @@ func (c *Client) ListFiles(ctx context.Context, repositoryID int, commit string,
 	return nil, errors.Wrap(err, "git.ListFiles")
 }
 
+func (c *Client) ListOnlyFiles(ctx context.Context, repositoryID int, commit string, pattern *regexp.Regexp) (filteredFiles []string, err error) {
+	ctx, endObservation := c.operations.listOnlyFiles.With(ctx, &err, observation.Args{LogFields: []log.Field{
+		log.Int("repositoryID", repositoryID),
+		log.String("commit", commit),
+		log.String("pattern", pattern.String()),
+	}})
+	defer endObservation(1, observation.Args{})
+
+	repo, err := c.repositoryIDToRepo(ctx, repositoryID)
+	if err != nil {
+		return nil, err
+	}
+
+	files, err := git.LsFiles(ctx, authz.DefaultSubRepoPermsChecker, repo, api.CommitID(commit))
+	if err != nil {
+		// If the repo doesn't exist don't bother trying to resolve the commit.
+		// Otherwise, if we're returning an error, try to resolve revision that was the
+		// target of the command. If the revision fails to resolve, we return an instance
+		// of a RevisionNotFoundError error instead of an "exit 128".
+		if !gitdomain.IsRepoNotExist(err) {
+			if _, err := git.ResolveRevision(ctx, repo, commit, git.ResolveRevisionOptions{}); err != nil {
+				return nil, errors.Wrap(err, "git.ResolveRevision")
+			}
+		}
+		return nil, errors.Wrap(err, "git.ListOnlyFiles")
+	}
+
+	for _, file := range files {
+		if pattern.MatchString(file) {
+			filteredFiles = append(filteredFiles, file)
+		}
+	}
+
+	return
+}
+
 // ResolveRevision returns the absolute commit for a commit-ish spec.
 func (c *Client) ResolveRevision(ctx context.Context, repositoryID int, versionString string) (commitID api.CommitID, err error) {
 	ctx, endObservation := c.operations.resolveRevision.With(ctx, &err, observation.Args{LogFields: []log.Field{

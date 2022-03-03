@@ -82,12 +82,13 @@ export const SlackWebhookAction: React.FunctionComponent<ActionProps> = ({
         ? 'Test message sent!'
         : 'Send test message'
 
-    const testButtonDisabled = !monitorName || !url
     const testButtonDisabledReason = !monitorName
         ? 'Please provide a name for the code monitor before sending a test'
         : !url
         ? 'Please provide a webhook URL before sending a test'
         : undefined
+
+    const testState = loading ? 'loading' : called && !error ? 'called' : error || undefined
 
     return (
         <ActionEditor
@@ -111,11 +112,8 @@ export const SlackWebhookAction: React.FunctionComponent<ActionProps> = ({
             onCancel={() => {}}
             canDelete={!!action}
             onDelete={onDelete}
-            testButtonDisabled={testButtonDisabled}
+            testState={testState}
             testButtonDisabledReason={testButtonDisabledReason}
-            testCalled={called}
-            testError={error}
-            testLoading={loading}
             testButtonText={testButtonText}
             testAgainButtonText="Send again"
             onTest={onSendTestMessage}

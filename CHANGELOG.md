@@ -20,6 +20,7 @@ All notable changes to Sourcegraph are documented in this file.
 - Timestamps in the history panel can now be formatted as absolute timestamps by using user setting `history.preferAbsoluteTimestamps`
 - Timestamps in the history panel can now be formatted as absolute timestamps by using user setting `history.preferAbsoluteTimestamps` [#31837](https://github.com/sourcegraph/sourcegraph/pull/31837)
 - Notebooks from private enterprise instances can now be embedded in external sites by enabling the `enable-embed-route` feature flag. [#31628](https://github.com/sourcegraph/sourcegraph/issues/31628)
+- Code monitor email notifications can now optionally include the content of new search results. This is disabled by default but can be enabled by editing the code monitor's email action and toggling on "Include search results in sent message". [#32097](https://github.com/sourcegraph/sourcegraph/pull/32097)
 
 ### Changed
 

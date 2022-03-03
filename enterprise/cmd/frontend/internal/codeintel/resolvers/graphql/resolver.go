@@ -2,10 +2,12 @@ package graphql
 
 import (
 	"context"
+	"path"
 	"sort"
 	"strings"
 	"time"
 
+	"github.com/grafana/regexp"
 	"github.com/graph-gophers/graphql-go"
 	"github.com/opentracing/opentracing-go/log"
 
@@ -13,7 +15,6 @@ import (
 	gql "github.com/sourcegraph/sourcegraph/cmd/frontend/graphqlbackend"
 	"github.com/sourcegraph/sourcegraph/cmd/frontend/graphqlbackend/graphqlutil"
 	"github.com/sourcegraph/sourcegraph/enterprise/cmd/frontend/internal/codeintel/resolvers"
-	"github.com/sourcegraph/sourcegraph/enterprise/internal/codeintel/policies"
 	store "github.com/sourcegraph/sourcegraph/enterprise/internal/codeintel/stores/dbstore"
 	"github.com/sourcegraph/sourcegraph/internal/api"
 	"github.com/sourcegraph/sourcegraph/internal/conf"
@@ -39,14 +40,14 @@ var errAutoIndexingNotEnabled = errors.New("precise code intelligence auto-index
 // in the parent package.
 type Resolver struct {
 	db                 database.DB
-	gitserver          policies.GitserverClient
+	gitserver          GitserverClient
 	resolver           resolvers.Resolver
 	locationResolver   *CachedLocationResolver
 	observationContext *operations
 }
 
 // NewResolver creates a new Resolver with the given resolver that defines all code intel-specific behavior.
-func NewResolver(db database.DB, gitserver policies.GitserverClient, resolver resolvers.Resolver, observationContext *observation.Context) gql.CodeIntelResolver {
+func NewResolver(db database.DB, gitserver GitserverClient, resolver resolvers.Resolver, observationContext *observation.Context) gql.CodeIntelResolver {
 	return &Resolver{
 		db:                 db,
 		gitserver:          gitserver,
@@ -314,11 +315,55 @@ func (r *Resolver) GitBlobLSIFData(ctx context.Context, args *gql.GitBlobLSIFDat
 	return NewQueryResolver(r.gitserver, resolver, r.resolver, r.locationResolver, errTracer), nil
 }
 
-func (r *Resolver) GitBlobCodeIntelInfo(ctx context.Context, args *gql.GitBlobCodeIntelInfoArgs) (_ gql.CodeIntelSupportResolver, err error) {
+func (r *Resolver) GitBlobCodeIntelInfo(ctx context.Context, args *gql.GitTreeEntryCodeIntelInfoArgs) (_ gql.CodeIntelSupportResolver, err error) {
 	ctx, errTracer, endObservation := r.observationContext.gitBlobCodeIntelInfo.WithErrors(ctx, &err, observation.Args{})
 	endObservation.OnCancel(ctx, 1, observation.Args{})
 
-	return NewCodeIntelSupportResolver(r.resolver, args, errTracer), nil
+	return NewCodeIntelSupportResolver(r.resolver, args.Repo.Name, args.Path, errTracer), nil
+}
+
+func (r *Resolver) GitTreeCodeIntelInfo(ctx context.Context, args *gql.GitTreeEntryCodeIntelInfoArgs) (presolvers *[]gql.CodeIntelInfoResolver, err error) {
+	ctx, errTracer, traceLog, endObservation := r.observationContext.gitBlobCodeIntelInfo.WithErrorsAndLogger(ctx, &err, observation.Args{LogFields: []log.Field{
+		log.Int("repoID", int(args.Repo.ID)),
+		log.String("path", args.Path),
+		log.String("commit", args.Commit),
+	}})
+	endObservation.OnCancel(ctx, 1, observation.Args{LogFields: []log.Field{
+		log.Lazy(func(fv log.Encoder) {
+			if presolvers != nil {
+				fv.EmitInt("resolvers", len(*presolvers))
+			}
+		}),
+	}})
+
+	// filter out dotfiles and files in directories deeper than args.Path
+	filesRegex, err := regexp.Compile("^" + args.Path + "[^.]{1}[^/]*$")
+	if err != nil {
+		return nil, errors.Wrapf(err, "path '%s' caused invalid regex", args.Path)
+	}
+
+	traceLog.Log(log.String("filesRegex", filesRegex.String()))
+
+	files, err := r.gitserver.ListFiles(ctx, int(args.Repo.ID), args.Commit, filesRegex)
+	if err != nil {
+		return nil, err
+	}
+
+	groupings := make(map[string][]string)
+
+	for _, file := range files {
+		if extension := path.Ext(file); extension != "" {
+			groupings[extension] = append(groupings[extension], file)
+		}
+	}
+
+	resolvers := make([]gql.CodeIntelInfoResolver, 0, len(groupings))
+
+	for _, group := range groupings {
+		resolvers = append(resolvers, NewCodeIntelTreeInfoResolver(r.resolver, group, args.Repo, errTracer))
+	}
+
+	return &resolvers, nil
 }
 
 // 🚨 SECURITY: dbstore layer handles authz for GetConfigurationPolicyByID

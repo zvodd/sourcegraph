@@ -21,7 +21,6 @@ import {
 import { Range } from '@sourcegraph/extension-api-types'
 import { useQuery } from '@sourcegraph/http-client'
 import { displayRepoName } from '@sourcegraph/shared/src/components/RepoFileLink'
-import { Resizable } from '@sourcegraph/shared/src/components/Resizable'
 import { ExtensionsControllerProps } from '@sourcegraph/shared/src/extensions/controller'
 import { PlatformContextProps } from '@sourcegraph/shared/src/platform/context'
 import { SettingsCascadeOrError, SettingsCascadeProps } from '@sourcegraph/shared/src/settings/settings'
@@ -48,6 +47,7 @@ import {
     Button,
     useObservable,
     Input,
+    Panel,
     Badge,
 } from '@sourcegraph/wildcard'
 
@@ -766,13 +766,15 @@ const ReferenceGroup: React.FunctionComponent<{
 const TABS: CoolCodeIntelTab[] = [{ id: 'references', label: 'References', component: ReferencesPanel }]
 
 const ResizableCoolCodeIntelPanel = React.memo<CoolCodeIntelProps>(props => (
-    <Resizable
+    <Panel
         className={styles.resizablePanel}
-        handlePosition="top"
+        isFloating={false}
+        position="bottom"
         defaultSize={350}
         storageKey="panel-size"
-        element={<CoolCodeIntelPanel {...props} />}
-    />
+    >
+        <CoolCodeIntelPanel {...props} />
+    </Panel>
 ))
 
 const CoolCodeIntelPanel = React.memo<CoolCodeIntelProps>(props => {
@@ -787,21 +789,9 @@ const CoolCodeIntelPanel = React.memo<CoolCodeIntelProps>(props => {
 
     return (
         <Tabs size="medium" className={styles.panel} index={tabIndex} onChange={handleTabsChange}>
-            <div
-                className={classNames('tablist-wrapper d-flex justify-content-between sticky-top', styles.panelHeader)}
-            >
-                <TabList>
-                    <div className="d-flex w-100">
-                        {TABS.map(({ label, id }) => (
-                            <Tab key={id}>
-                                <span className="tablist-wrapper--tab-label" role="none">
-                                    {label}
-                                </span>
-                            </Tab>
-                        ))}
-                    </div>
-                </TabList>
-                <div className="align-items-center d-flex">
+            <TabList
+                wrapperClassName={styles.panelHeader}
+                actions={
                     <Button
                         onClick={handlePanelClose}
                         className={classNames('btn-icon ml-2', styles.dismissButton)}
@@ -811,15 +801,25 @@ const CoolCodeIntelPanel = React.memo<CoolCodeIntelProps>(props => {
                     >
                         <CloseIcon className="icon-inline" />
                     </Button>
-                </div>
-            </div>
-            <TabPanels>
-                {TABS.map(tab => (
-                    <TabPanel key={tab.id}>
-                        <tab.component {...props} />
-                    </TabPanel>
+                }
+            >
+                {TABS.map(({ label, id }) => (
+                    <Tab key={id}>
+                        <span className="tablist-wrapper--tab-label" role="none">
+                            {label}
+                        </span>
+                    </Tab>
                 ))}
-            </TabPanels>
+            </TabList>
+            <div aria-hidden={true} className="flex w-100 overflow-auto" tabIndex={-1}>
+                <TabPanels>
+                    {TABS.map(tab => (
+                        <TabPanel key={tab.id}>
+                            <tab.component {...props} />
+                        </TabPanel>
+                    ))}
+                </TabPanels>
+            </div>
         </Tabs>
     )
 })

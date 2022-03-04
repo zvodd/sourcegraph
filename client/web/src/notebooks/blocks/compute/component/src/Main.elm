@@ -130,17 +130,9 @@ parseQueryInUrl : Url -> String
 parseQueryInUrl url =
     case Url.Parser.parse (top <?> QueryParser.string "q") url of
         Just (Just query) ->
-            let
-                _ =
-                    Debug.log "parsed" query
-            in
             query
 
         _ ->
-            let
-                _ =
-                    Debug.log "parsed" "<empty>"
-            in
             ""
 
 
@@ -181,17 +173,9 @@ eventDecoder event =
             OnResults (resultEventDecoder event.data)
 
         Just "done" ->
-            let
-                _ =
-                    Debug.log "saw done event"
-            in
             ResultStreamDone
 
         Just e ->
-            let
-                _ =
-                    Debug.log "unhandled event" e
-            in
             NoOp
 
         Nothing ->
@@ -205,10 +189,6 @@ resultEventDecoder input =
             results
 
         Err e ->
-            let
-                _ =
-                    Debug.log "error decoding result" e
-            in
             []
 
 
@@ -295,10 +275,6 @@ update msg model =
                 ( model, Cmd.none )
 
         RunCompute ->
-            let
-                _ =
-                    Debug.log "Run compute: query" model.query
-            in
             if model.serverless then
                 ( { model | resultsRaw = [], resultsMap = exampleResultsMap }, Cmd.none )
 
@@ -333,17 +309,6 @@ update msg model =
 
 
 -- VIEW
-
-
-resultToString : Result -> Html Msg
-resultToString result =
-    case result of
-        Output r ->
-            text (Debug.toString r)
-
-        ReplaceInPlace r ->
-            text (Debug.toString r)
-
 
 table : List DataValue -> E.Element Msg
 table data =

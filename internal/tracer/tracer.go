@@ -34,9 +34,9 @@ func init() {
 	}
 }
 
-// options control the behavior of a tracerType
+// options control the behavior of a configured tracer
 type options struct {
-	tracerType
+	Type
 	externalURL string
 	debug       bool
 	// these values are not configurable at runtime
@@ -45,15 +45,15 @@ type options struct {
 	env         string
 }
 
-type tracerType string
+type Type string
 
 const (
-	None    tracerType = ""
-	Datadog tracerType = "datadog"
-	Ot      tracerType = "opentracing"
+	None    Type = ""
+	Datadog Type = "datadog"
+	Ot      Type = "opentracing"
 )
 
-func (t tracerType) isValid() bool {
+func (t Type) isValid() bool {
 	switch t {
 	case None, Datadog, Ot:
 		return true
@@ -88,7 +88,7 @@ func initTracer(opts *options, c conftypes.WatchableSiteConfig) {
 		version:     opts.version,
 		env:         opts.env,
 		// the values below may change
-		tracerType:  None,
+		Type:        None,
 		debug:       false,
 		externalURL: "",
 	}
@@ -109,7 +109,7 @@ func initTracer(opts *options, c conftypes.WatchableSiteConfig) {
 				samplingStrategy = ot.TraceSelective
 				setTracer = Ot
 			}
-			if t := tracerType(tracingConfig.Type); t.isValid() {
+			if t := Type(tracingConfig.Type); t.isValid() {
 				setTracer = t
 			}
 			shouldLog = tracingConfig.Debug
@@ -122,7 +122,7 @@ func initTracer(opts *options, c conftypes.WatchableSiteConfig) {
 
 		opts := options{
 			externalURL: siteConfig.ExternalURL,
-			tracerType:  setTracer,
+			Type:        setTracer,
 			debug:       shouldLog,
 			serviceName: opts.serviceName,
 			version:     opts.version,
@@ -133,12 +133,12 @@ func initTracer(opts *options, c conftypes.WatchableSiteConfig) {
 			// Nothing changed
 			return
 		}
-		prevTracer := oldOpts.tracerType
+		prevTracer := oldOpts.Type
 		oldOpts = opts
 
 		t, closer, err := newTracer(&opts, prevTracer)
 		if err != nil {
-			log15.Warn("Could not initialize tracer", "tracer", opts.tracerType, "error", err.Error())
+			log15.Warn("Could not initialize tracer", "tracer", opts.Type, "error", err.Error())
 			return
 		}
 		globalTracer.set(t, closer, opts.debug)
@@ -146,15 +146,15 @@ func initTracer(opts *options, c conftypes.WatchableSiteConfig) {
 }
 
 // TODO Use openTelemetry https://github.com/sourcegraph/sourcegraph/issues/27386
-func newTracer(opts *options, prevTracer tracerType) (opentracing.Tracer, io.Closer, error) {
-	if opts.tracerType == None {
+func newTracer(opts *options, prevTracer Type) (opentracing.Tracer, io.Closer, error) {
+	if opts.Type == None {
 		log15.Info("tracing disabled")
 		if prevTracer == Datadog {
 			ddtracer.Stop()
 		}
 		return opentracing.NoopTracer{}, nil, nil
 	}
-	if opts.tracerType == Datadog {
+	if opts.Type == Datadog {
 		log15.Info("Datadog: tracing enabled")
 		tracer := ddopentracing.New(ddtracer.WithService(opts.serviceName),
 			ddtracer.WithDebugMode(opts.debug),

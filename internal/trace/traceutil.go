@@ -49,7 +49,7 @@ func URL(traceID, externalURL, traceProvider string) string {
 		return ""
 	}
 
-	if tracerType(traceProvider) == tracer.Datadog {
+	if traceProvider == tracer.Datadog {
 		return "https://app.datadoghq.com/apm/trace/" + traceID
 	}
 

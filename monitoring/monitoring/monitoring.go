@@ -296,7 +296,7 @@ func (c *Container) renderRules() (*promRulesFile, error) {
 					}
 
 					// The alertQuery must contribute a query that returns true when it should be firing.
-					alertQuery := fmt.Sprintf("%s((%s) %s %v)",
+					alertQuery := fmt.Sprintf("%s(%s) %s %v",
 						a.aggregator, o.Query, a.comparator, a.threshold)
 
 					// If the data must exist, we alert if the query returns no value as well

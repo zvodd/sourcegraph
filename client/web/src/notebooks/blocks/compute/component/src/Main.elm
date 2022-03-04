@@ -1,5 +1,7 @@
 port module Main exposing (..)
 
+import Json.Decode as Decode exposing (Decoder, fail, field, maybe, string)
+import Json.Decode.Pipeline
 import Browser exposing (UrlRequest)
 import Browser.Events exposing (onKeyDown)
 import Browser.Navigation as Navigation exposing (Key)
@@ -15,12 +17,10 @@ import Element.Input as I
 import Html exposing (Html, code, input, pre, text)
 import Html.Attributes exposing (..)
 import Json.Decode as Decode
-import StopWords
 import Svg as S
 import Svg.Attributes as SA
 import Task
 import Time
-import Types exposing (..)
 import Url exposing (Url)
 import Url.Builder
 import Url.Parser exposing (..)
@@ -100,7 +100,7 @@ type alias Model =
     , millisSinceChange : Int
 
     -- Data
-    , resultsRaw : List Types.Result
+    , resultsRaw : List Result
     , resultsMap : Dict String DataValue
 
     -- Debug client only
@@ -198,7 +198,7 @@ eventDecoder event =
             NoOp
 
 
-resultEventDecoder : String -> List Types.Result
+resultEventDecoder : String -> List Result
 resultEventDecoder input =
     case Decode.decodeString (Decode.list resultDecoder) input of
         Ok results ->
@@ -244,7 +244,7 @@ type Msg
     | CheckTick Time.Posix
       -- Data processing
     | RunCompute
-    | OnResults (List Types.Result)
+    | OnResults (List Result)
     | ResultStreamDone
     | NoOp
       -- Unused input triggers
@@ -335,7 +335,7 @@ update msg model =
 -- VIEW
 
 
-resultToString : Types.Result -> Html Msg
+resultToString : Result -> Html Msg
 resultToString result =
     case result of
         Output r ->
@@ -620,7 +620,7 @@ view model =
 -- DATA LOGIC
 
 
-parseResults : List Types.Result -> List String
+parseResults : List Result -> List String
 parseResults l =
     List.filterMap
         (\r ->
@@ -707,7 +707,7 @@ filterData { dataPoints, sortByCount, reverse, excludeStopWords } data =
     let
         pipeStopWords =
             if excludeStopWords then
-                List.filter (\{ name } -> not (Dict.member (String.toLower name) StopWords.words))
+                List.filter (\{ name } -> not (Dict.member (String.toLower name) Dict.empty))
 
             else
                 identity
@@ -752,3 +752,54 @@ darkModeFontColor =
 darkModeTextInputColor : E.Color
 darkModeTextInputColor =
     E.rgb255 0x1D 0x22 0x2F
+
+
+
+
+
+-- STREAMING RESULT TYPES
+
+
+type Result
+    = Output TextResult
+    | ReplaceInPlace TextResult
+
+
+type alias TextResult =
+    { value : String
+    , repository : Maybe String
+    , commit : Maybe String
+    , path : Maybe String
+    }
+
+
+
+-- DECODERS
+
+
+resultDecoder : Decoder Result
+resultDecoder =
+    field "kind" Decode.string
+        |> Decode.andThen
+            (\t ->
+                case t of
+                    "replace-in-place" ->
+                        textResultDecoder
+                            |> Decode.map ReplaceInPlace
+
+                    "output" ->
+                        textResultDecoder
+                            |> Decode.map Output
+
+                    _ ->
+                        fail ("Unrecognized type " ++ t)
+            )
+
+
+textResultDecoder : Decoder TextResult
+textResultDecoder =
+    Decode.succeed TextResult
+        |> Json.Decode.Pipeline.required "value" Decode.string
+        |> Json.Decode.Pipeline.optional "repository" (maybe Decode.string) Nothing
+        |> Json.Decode.Pipeline.optional "commit" (maybe Decode.string) Nothing
+        |> Json.Decode.Pipeline.optional "path" (maybe Decode.string) Nothing

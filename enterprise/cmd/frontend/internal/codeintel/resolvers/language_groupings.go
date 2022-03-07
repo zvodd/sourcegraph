@@ -2,13 +2,15 @@ package resolvers
 
 import (
 	"context"
-	"path"
 
+	"github.com/go-enry/go-enry/v2"
 	"github.com/grafana/regexp"
 
 	"github.com/sourcegraph/sourcegraph/lib/errors"
 )
 
+// FilesLanguageGroupings returns a grouping of files, non-recursively rooted at root, based on their
+// inferred language.
 func (r *resolver) FilesLanguageGroupings(ctx context.Context, repositoryID int, rev, root string) (map[string][]string, error) {
 	// filter out dotfiles and files in directories deeper than args.Path
 	filesRegex, err := regexp.Compile("^" + root + "[^.]{1}[^/]*$")
@@ -19,7 +21,7 @@ func (r *resolver) FilesLanguageGroupings(ctx context.Context, repositoryID int,
 	// TODO(nsc): how to, from ctx maybe?
 	// traceLog.Log(log.String("filesRegex", filesRegex.String()))
 
-	files, err := r.gitserverClient.ListFiles(ctx, int(repositoryID), rev, filesRegex)
+	files, err := r.gitserverClient.ListFiles(ctx, repositoryID, rev, filesRegex)
 	if err != nil {
 		return nil, err
 	}
@@ -27,8 +29,12 @@ func (r *resolver) FilesLanguageGroupings(ctx context.Context, repositoryID int,
 	groupings := make(map[string][]string)
 
 	for _, file := range files {
-		if extension := path.Ext(file); extension != "" {
-			groupings[extension] = append(groupings[extension], file)
+		language, _ := enry.GetLanguageByExtension(file)
+		if language == "" {
+			language, _ = enry.GetLanguageByFilename(file)
+		}
+		if language != "" {
+			groupings[language] = append(groupings[language], file)
 		}
 	}
 

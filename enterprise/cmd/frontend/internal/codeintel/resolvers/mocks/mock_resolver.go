@@ -44,6 +44,9 @@ type MockResolver struct {
 	// ExecutorResolverFunc is an instance of a mock function object
 	// controlling the behavior of the method ExecutorResolver.
 	ExecutorResolverFunc *ResolverExecutorResolverFunc
+	// FilesLanguageGroupingsFunc is an instance of a mock function object
+	// controlling the behavior of the method FilesLanguageGroupings.
+	FilesLanguageGroupingsFunc *ResolverFilesLanguageGroupingsFunc
 	// GetConfigurationPoliciesFunc is an instance of a mock function object
 	// controlling the behavior of the method GetConfigurationPolicies.
 	GetConfigurationPoliciesFunc *ResolverGetConfigurationPoliciesFunc
@@ -142,6 +145,11 @@ func NewMockResolver() *MockResolver {
 		ExecutorResolverFunc: &ResolverExecutorResolverFunc{
 			defaultHook: func() graphql.Resolver {
 				return nil
+			},
+		},
+		FilesLanguageGroupingsFunc: &ResolverFilesLanguageGroupingsFunc{
+			defaultHook: func(context.Context, int, string, string) (map[string][]string, error) {
+				return nil, nil
 			},
 		},
 		GetConfigurationPoliciesFunc: &ResolverGetConfigurationPoliciesFunc{
@@ -276,6 +284,11 @@ func NewStrictMockResolver() *MockResolver {
 				panic("unexpected invocation of MockResolver.ExecutorResolver")
 			},
 		},
+		FilesLanguageGroupingsFunc: &ResolverFilesLanguageGroupingsFunc{
+			defaultHook: func(context.Context, int, string, string) (map[string][]string, error) {
+				panic("unexpected invocation of MockResolver.FilesLanguageGroupings")
+			},
+		},
 		GetConfigurationPoliciesFunc: &ResolverGetConfigurationPoliciesFunc{
 			defaultHook: func(context.Context, dbstore.GetConfigurationPoliciesOptions) ([]dbstore.ConfigurationPolicy, int, error) {
 				panic("unexpected invocation of MockResolver.GetConfigurationPolicies")
@@ -393,6 +406,9 @@ func NewMockResolverFrom(i resolvers.Resolver) *MockResolver {
 		},
 		ExecutorResolverFunc: &ResolverExecutorResolverFunc{
 			defaultHook: i.ExecutorResolver,
+		},
+		FilesLanguageGroupingsFunc: &ResolverFilesLanguageGroupingsFunc{
+			defaultHook: i.FilesLanguageGroupings,
 		},
 		GetConfigurationPoliciesFunc: &ResolverGetConfigurationPoliciesFunc{
 			defaultHook: i.GetConfigurationPolicies,
@@ -1198,6 +1214,122 @@ func (c ResolverExecutorResolverFuncCall) Args() []interface{} {
 // invocation.
 func (c ResolverExecutorResolverFuncCall) Results() []interface{} {
 	return []interface{}{c.Result0}
+}
+
+// ResolverFilesLanguageGroupingsFunc describes the behavior when the
+// FilesLanguageGroupings method of the parent MockResolver instance is
+// invoked.
+type ResolverFilesLanguageGroupingsFunc struct {
+	defaultHook func(context.Context, int, string, string) (map[string][]string, error)
+	hooks       []func(context.Context, int, string, string) (map[string][]string, error)
+	history     []ResolverFilesLanguageGroupingsFuncCall
+	mutex       sync.Mutex
+}
+
+// FilesLanguageGroupings delegates to the next hook function in the queue
+// and stores the parameter and result values of this invocation.
+func (m *MockResolver) FilesLanguageGroupings(v0 context.Context, v1 int, v2 string, v3 string) (map[string][]string, error) {
+	r0, r1 := m.FilesLanguageGroupingsFunc.nextHook()(v0, v1, v2, v3)
+	m.FilesLanguageGroupingsFunc.appendCall(ResolverFilesLanguageGroupingsFuncCall{v0, v1, v2, v3, r0, r1})
+	return r0, r1
+}
+
+// SetDefaultHook sets function that is called when the
+// FilesLanguageGroupings method of the parent MockResolver instance is
+// invoked and the hook queue is empty.
+func (f *ResolverFilesLanguageGroupingsFunc) SetDefaultHook(hook func(context.Context, int, string, string) (map[string][]string, error)) {
+	f.defaultHook = hook
+}
+
+// PushHook adds a function to the end of hook queue. Each invocation of the
+// FilesLanguageGroupings method of the parent MockResolver instance invokes
+// the hook at the front of the queue and discards it. After the queue is
+// empty, the default hook function is invoked for any future action.
+func (f *ResolverFilesLanguageGroupingsFunc) PushHook(hook func(context.Context, int, string, string) (map[string][]string, error)) {
+	f.mutex.Lock()
+	f.hooks = append(f.hooks, hook)
+	f.mutex.Unlock()
+}
+
+// SetDefaultReturn calls SetDefaultHook with a function that returns the
+// given values.
+func (f *ResolverFilesLanguageGroupingsFunc) SetDefaultReturn(r0 map[string][]string, r1 error) {
+	f.SetDefaultHook(func(context.Context, int, string, string) (map[string][]string, error) {
+		return r0, r1
+	})
+}
+
+// PushReturn calls PushHook with a function that returns the given values.
+func (f *ResolverFilesLanguageGroupingsFunc) PushReturn(r0 map[string][]string, r1 error) {
+	f.PushHook(func(context.Context, int, string, string) (map[string][]string, error) {
+		return r0, r1
+	})
+}
+
+func (f *ResolverFilesLanguageGroupingsFunc) nextHook() func(context.Context, int, string, string) (map[string][]string, error) {
+	f.mutex.Lock()
+	defer f.mutex.Unlock()
+
+	if len(f.hooks) == 0 {
+		return f.defaultHook
+	}
+
+	hook := f.hooks[0]
+	f.hooks = f.hooks[1:]
+	return hook
+}
+
+func (f *ResolverFilesLanguageGroupingsFunc) appendCall(r0 ResolverFilesLanguageGroupingsFuncCall) {
+	f.mutex.Lock()
+	f.history = append(f.history, r0)
+	f.mutex.Unlock()
+}
+
+// History returns a sequence of ResolverFilesLanguageGroupingsFuncCall
+// objects describing the invocations of this function.
+func (f *ResolverFilesLanguageGroupingsFunc) History() []ResolverFilesLanguageGroupingsFuncCall {
+	f.mutex.Lock()
+	history := make([]ResolverFilesLanguageGroupingsFuncCall, len(f.history))
+	copy(history, f.history)
+	f.mutex.Unlock()
+
+	return history
+}
+
+// ResolverFilesLanguageGroupingsFuncCall is an object that describes an
+// invocation of method FilesLanguageGroupings on an instance of
+// MockResolver.
+type ResolverFilesLanguageGroupingsFuncCall struct {
+	// Arg0 is the value of the 1st argument passed to this method
+	// invocation.
+	Arg0 context.Context
+	// Arg1 is the value of the 2nd argument passed to this method
+	// invocation.
+	Arg1 int
+	// Arg2 is the value of the 3rd argument passed to this method
+	// invocation.
+	Arg2 string
+	// Arg3 is the value of the 4th argument passed to this method
+	// invocation.
+	Arg3 string
+	// Result0 is the value of the 1st result returned from this method
+	// invocation.
+	Result0 map[string][]string
+	// Result1 is the value of the 2nd result returned from this method
+	// invocation.
+	Result1 error
+}
+
+// Args returns an interface slice containing the arguments of this
+// invocation.
+func (c ResolverFilesLanguageGroupingsFuncCall) Args() []interface{} {
+	return []interface{}{c.Arg0, c.Arg1, c.Arg2, c.Arg3}
+}
+
+// Results returns an interface slice containing the results of this
+// invocation.
+func (c ResolverFilesLanguageGroupingsFuncCall) Results() []interface{} {
+	return []interface{}{c.Result0, c.Result1}
 }
 
 // ResolverGetConfigurationPoliciesFunc describes the behavior when the

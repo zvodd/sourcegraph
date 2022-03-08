@@ -62,6 +62,7 @@ var initFunctions = map[string]EnterpriseInitializer{
 	"compute":        compute.Init,
 }
 
+var foo = 1243
 var codeIntelConfig = &codeintel.Config{}
 
 func init() {

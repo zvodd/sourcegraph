@@ -1,5 +1,11 @@
 @import 'bootstrap/scss/dropdown';
 
+:root {
+    --dropdown-font-size: 0.875rem;
+    --dropdown-padding-y: $dropdown-padding-y;
+    --dropdown-padding-x: $dropdown-item-padding-x;
+}
+
 .theme-light {
     --dropdown-bg: var(--color-bg-1);
     --dropdown-border-color: var(--input-border-color);
@@ -23,4 +29,14 @@
 .dropdown-menu {
     border-radius: var(--popover-border-radius);
     box-shadow: var(--dropdown-shadow);
+
+    &.show {
+        display: block;
+    }
+}
+
+.dropdown-item-text {
+    display: block;
+    padding: $dropdown-item-padding-y $dropdown-item-padding-x;
+    color: $dropdown-link-color;
 }

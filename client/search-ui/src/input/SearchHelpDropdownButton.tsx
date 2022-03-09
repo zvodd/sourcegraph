@@ -14,6 +14,7 @@ import {
     Link,
     MenuDivider,
     MenuHeader,
+    MenuLink,
 } from '@sourcegraph/wildcard'
 
 import styles from './SearchHelpDropdownButton.module.scss'
@@ -127,15 +128,15 @@ export const SearchHelpDropdownButton: React.FunctionComponent<SearchHelpDropdow
                     </li>
                 </ul>
                 <MenuDivider className="mb-0" />
-                <Link
+                <MenuLink
                     target="_blank"
                     rel="noopener"
+                    as={Link}
                     to={`${documentationUrlPrefix}/code_search/reference/queries`}
-                    className="dropdown-item"
                     onClick={onQueryDocumentationLinkClicked}
                 >
                     <ExternalLinkIcon className="icon-inline small" /> All search keywords
-                </Link>
+                </MenuLink>
                 {isSourcegraphDotCom && (
                     <Alert className="small rounded-0 mb-0 mt-1" variant="info">
                         On Sourcegraph.com, use a <code>repo:</code> filter to narrow your search to &le;500

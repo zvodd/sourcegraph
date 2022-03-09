@@ -618,7 +618,8 @@ ComplexDiagram(
         Terminal("contains.content(...)", {href: "#repo-contains-content"}),
         Terminal("contains.file(...)", {href: "#repo-contains-file"}),
         Terminal("contains(...)", {href: "#repo-contains-file-and-content"}),
-        Terminal("contains.commit.after(...)", {href: "#repo-contains-commit-after"}))).addTo();
+        Terminal("contains.commit.after(...)", {href: "#repo-contains-commit-after"})
+        Terminal("dependencies(...)").addTo();
 </script>
 
 ### Repo contains file

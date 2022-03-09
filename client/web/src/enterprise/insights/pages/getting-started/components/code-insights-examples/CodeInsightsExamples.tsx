@@ -1,11 +1,11 @@
 import { ParentSize } from '@visx/responsive'
 import classNames from 'classnames'
-import React from 'react'
+import React, { useContext, useMemo } from 'react'
 import { useLocation } from 'react-router'
 
 import { SyntaxHighlightedSearchQuery } from '@sourcegraph/search-ui'
 import { TelemetryProps } from '@sourcegraph/shared/src/telemetry/telemetryService'
-import { Button, Link } from '@sourcegraph/wildcard'
+import { Button, Link, useObservable } from '@sourcegraph/wildcard'
 
 import * as View from '../../../../../../views'
 import { LegendBlock, LegendItem } from '../../../../../../views'
@@ -13,6 +13,7 @@ import {
     getLineStroke,
     LineChart,
 } from '../../../../../../views/components/view/content/chart-view-content/charts/line/components/LineChartContent'
+import { CodeInsightsBackendContext } from '../../../../core/backend/code-insights-backend-context'
 import { InsightType } from '../../../../core/types'
 import { CodeInsightTrackType, useCodeInsightViewPings } from '../../../../pings'
 import { encodeCaptureInsightURL } from '../../../insights/creation/capture-group'
@@ -94,6 +95,9 @@ interface CodeInsightSearchExampleProps extends TelemetryProps {
 
 const CodeInsightSearchExample: React.FunctionComponent<CodeInsightSearchExampleProps> = props => {
     const { templateLink, className, content, telemetryService } = props
+    const { getUiFeatures } = useContext(CodeInsightsBackendContext)
+    const features = useObservable(useMemo(() => getUiFeatures(), [getUiFeatures]))
+
     const { trackMouseEnter, trackMouseLeave } = useCodeInsightViewPings({
         telemetryService,
         insightType: CodeInsightTrackType.InProductLandingPageInsight,
@@ -124,7 +128,7 @@ const CodeInsightSearchExample: React.FunctionComponent<CodeInsightSearchExample
                         to={templateLink}
                         onClick={handleTemplateLinkClick}
                     >
-                        Use as template
+                        {features?.licensed ? 'Use as template' : 'Explore template'}
                     </Button>
                 )
             }
@@ -158,6 +162,9 @@ interface CodeInsightCaptureExampleProps extends TelemetryProps {
 
 const CodeInsightCaptureExample: React.FunctionComponent<CodeInsightCaptureExampleProps> = props => {
     const { content, templateLink, className, telemetryService } = props
+
+    const { getUiFeatures } = useContext(CodeInsightsBackendContext)
+    const features = useObservable(useMemo(() => getUiFeatures(), [getUiFeatures]))
     const { trackMouseEnter, trackMouseLeave } = useCodeInsightViewPings({
         telemetryService,
         insightType: CodeInsightTrackType.InProductLandingPageInsight,
@@ -187,7 +194,7 @@ const CodeInsightCaptureExample: React.FunctionComponent<CodeInsightCaptureExamp
                         to={templateLink}
                         onClick={handleTemplateLinkClick}
                     >
-                        Use as template
+                        {features?.licensed ? 'Use as template' : 'Explore template'}
                     </Button>
                 )
             }

@@ -56,7 +56,7 @@ export const CodeInsightsDotComGetStarted: React.FunctionComponent<CodeInsightsD
                         <Button variant="primary" as={Link} to="/schedule-demo">
                             Schedule a demo
                         </Button>
-                        <Button variant="secondary" as={Link} to="/schedule-demo">
+                        <Button variant="secondary" as={Link} to="/insights/about#code-insights-templates">
                             Explore use cases
                         </Button>
                     </footer>

@@ -6,7 +6,7 @@ import { useLocation } from 'react-router-dom'
 import { useTemporarySetting } from '@sourcegraph/shared/src/settings/temporary/useTemporarySetting'
 import { TelemetryProps } from '@sourcegraph/shared/src/telemetry/telemetryService'
 import { lazyComponent } from '@sourcegraph/shared/src/util/lazyComponent'
-import { Button, Link, PageHeader, Tabs, TabList, Tab, Badge, useObservable, Icon } from '@sourcegraph/wildcard'
+import { Button, Link, PageHeader, Tabs, TabList, Tab, Badge, Icon } from '@sourcegraph/wildcard'
 
 import { Page } from '../../../components/Page'
 import { CodeInsightsIcon } from '../../../insights/Icons'
@@ -53,7 +53,7 @@ export const CodeInsightsRootPage: React.FunctionComponent<CodeInsightsRootPageP
 
     const [hasInsightPageBeenViewed, markMainPageAsViewed] = useTemporarySetting('insights.wasMainPageOpen', false)
     const { getUiFeatures } = useContext(CodeInsightsBackendContext)
-    const features = useObservable(useMemo(() => getUiFeatures(), [getUiFeatures]))
+    const features = useMemo(() => getUiFeatures(), [getUiFeatures])
 
     const dashboardId = params?.dashboardId ?? ALL_INSIGHTS_DASHBOARD_ID
     const queryParameterDashboardId = query.get('dashboardId') ?? ALL_INSIGHTS_DASHBOARD_ID
@@ -75,7 +75,7 @@ export const CodeInsightsRootPage: React.FunctionComponent<CodeInsightsRootPageP
 
     return (
         <Page>
-            {!features?.licensed && (
+            {!features.licensed && (
                 <Badge variant="info" className="mb-2">
                     Free trial
                 </Badge>

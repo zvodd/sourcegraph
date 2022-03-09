@@ -28,6 +28,14 @@ import {
 
 export interface UiFeatures {
     licensed: boolean
+    getDashboardsContent: (
+        currentDashboard?: InsightDashboard
+    ) => {
+        addRemoveInsightsButton: {
+            disabled: boolean
+            tooltip: string | undefined
+        }
+    }
 }
 
 /**
@@ -154,5 +162,5 @@ export interface CodeInsightsBackend {
     /**
      * Returns a feaures object used to show/hide and enable/disable UI elements
      */
-    getUiFeatures: () => Observable<UiFeatures>
+    getUiFeatures: () => UiFeatures
 }

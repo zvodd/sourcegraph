@@ -330,7 +330,7 @@ export const SettingsRepositoriesPage: React.FunctionComponent<Props> = ({
                     orgDisplayName={owner.name}
                 />
             )}
-            {!isUserOwner && authenticatedUser && org && org.viewerNeedsCodeHostUpdate && org.displayName && (
+            {!isUserOwner && authenticatedUser && org && org.displayName && (
                 <OrgUserNeedsGithubUpgrade user={authenticatedUser} orgDisplayName={org.displayName} />
             )}
             <PageTitle title="Your repositories" />

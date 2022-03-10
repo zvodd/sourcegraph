@@ -249,6 +249,8 @@ commands:
         export GCFLAGS='all=-N -l'
       fi
 
+      cp -a ./cmd/symbols/squirrel/{external/nvim-treesitter/,}queries
+
       ./cmd/symbols/build-ctags.sh &&
       go build -gcflags="$GCFLAGS" -o .bin/symbols github.com/sourcegraph/sourcegraph/cmd/symbols
     checkBinary: .bin/symbols
@@ -266,6 +268,8 @@ commands:
       if [ -n "$DELVE" ]; then
         export GCFLAGS='all=-N -l'
       fi
+
+      cp -a ./cmd/symbols/squirrel/{external/nvim-treesitter/,}queries
 
       ./cmd/symbols/build-ctags.sh &&
       go build -gcflags="$GCFLAGS" -o .bin/enterprise-symbols github.com/sourcegraph/sourcegraph/enterprise/cmd/symbols

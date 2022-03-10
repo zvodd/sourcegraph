@@ -44,6 +44,14 @@ type Status = undefined | 'loading' | ServicesByKind | ErrorLike
 const isServicesByKind = (status: Status): status is ServicesByKind =>
     typeof status === 'object' && Object.keys(status).every(key => keyExistsIn(key, ExternalServiceKind))
 
+export const updateGitHubApp = (): void => {
+    window.location.assign(
+        `/.auth/github/login?pc=${encodeURIComponent(
+            `https://github.com/::${window.context.githubAppCloudClientID}`
+        )}&op=createCodeHostConnection&redirect=${window.location.href}`
+    )
+}
+
 export const ifNotNavigated = (callback: () => void, waitMS: number = 2000): void => {
     let timeoutID = 0
     let willNavigate = false
@@ -332,11 +340,7 @@ export const UserAddCodeHostsPage: React.FunctionComponent<UserAddCodeHostsPageP
                         `${authProvider.authenticationURL as string}&redirect=${encodeURIComponent(firstRedirectURI)}`
                     )
                 } else {
-                    window.location.assign(
-                        `/.auth/github/login?pc=${encodeURIComponent(
-                            `https://github.com/::${window.context.githubAppCloudClientID}`
-                        )}&op=createCodeHostConnection&redirect=${window.location.href}`
-                    )
+                    updateGitHubApp()
                 }
             }
         },

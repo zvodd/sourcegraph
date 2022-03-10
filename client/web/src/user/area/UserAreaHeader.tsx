@@ -44,7 +44,7 @@ export const UserAreaHeader: React.FunctionComponent<Props> = ({ url, navItems, 
                         )}
                     </span>
                 ),
-                icon: () => <UserAvatar className={styles.avatar} user={props.user} />,
+                icon: () => <UserAvatar inline={false} className={styles.avatar} user={props.user} />,
             },
         ],
         [props.user]

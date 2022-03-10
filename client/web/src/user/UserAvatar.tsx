@@ -2,6 +2,7 @@ import classNames from 'classnames'
 import React from 'react'
 
 import { Maybe } from '@sourcegraph/shared/src/graphql-operations'
+import { Icon } from '@sourcegraph/wildcard'
 
 import styles from './UserAvatar.module.scss'
 
@@ -16,6 +17,10 @@ interface Props {
     ['data-tooltip']?: string
     targetID?: string
     alt?: string
+    /**
+     * Whether to render with icon-inline className
+     */
+    inline?: boolean
 }
 
 /**
@@ -26,6 +31,7 @@ export const UserAvatar: React.FunctionComponent<Props> = ({
     user,
     className,
     targetID,
+    inline,
     // Exclude children since neither <img /> nor mdi-react icons receive them
     children,
     ...otherProps
@@ -42,11 +48,13 @@ export const UserAvatar: React.FunctionComponent<Props> = ({
             // noop
         }
         return (
-            <img
+            <Icon
+                as="img"
                 className={classNames(styles.userAvatar, className)}
                 src={url}
                 id={targetID}
                 alt=""
+                inline={inline}
                 role="presentation"
                 {...otherProps}
             />
@@ -64,8 +72,8 @@ export const UserAvatar: React.FunctionComponent<Props> = ({
     }
 
     return (
-        <div id={targetID} className={classNames(styles.userAvatar, className)}>
+        <Icon inline={inline} id={targetID} className={classNames(styles.userAvatar, className)} as="div">
             <span className={styles.initials}>{getInitials(name)}</span>
-        </div>
+        </Icon>
     )
 }

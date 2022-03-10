@@ -1,6 +1,8 @@
 import classNames from 'classnames'
 import React, { ElementType, SVGProps } from 'react'
 
+import { ForwardReferenceComponent } from '../..'
+
 import { ICON_SIZES } from './constants'
 import styles from './Icon.module.scss'
 
@@ -15,16 +17,22 @@ export interface IconProps extends SVGProps<SVGSVGElement> {
      * Always be mindful of potentially accessibility pitfalls when using this!
      */
     as?: ElementType
+    /**
+     * Whether to show with icon-inline
+     *
+     * @default true
+     */
+    inline?: boolean
 }
 
-export const Icon = React.forwardRef<SVGElement, IconProps>(
-    ({ children, className, size, as: Component = 'svg', ...attributes }, reference) => (
+export const Icon = React.forwardRef(
+    ({ children, inline = true, className, size, as: Component = 'svg', ...attributes }, reference) => (
         <Component
-            className={classNames(styles.iconInline, size === 'md' && styles.iconInlineMd, className)}
+            className={classNames(inline && styles.iconInline, size === 'md' && styles.iconInlineMd, className)}
             ref={reference}
             {...attributes}
         >
             {children}
         </Component>
     )
-)
+) as ForwardReferenceComponent<'svg', IconProps>

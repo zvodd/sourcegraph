@@ -139,9 +139,10 @@ export const UserNavItem: React.FunctionComponent<UserNavItemProps> = props => {
                         <div className="position-relative">
                             <div className="align-items-center d-flex">
                                 <UserAvatar
+                                    inline={true}
                                     user={props.authenticatedUser}
                                     targetID={targetID}
-                                    className={classNames('icon-inline', styles.avatar)}
+                                    className={styles.avatar}
                                 />
                                 {isExpanded ? (
                                     <ChevronUpIcon className="icon-inline" />

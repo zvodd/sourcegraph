@@ -17,7 +17,7 @@ exports[`UserNavItem simple 1`] = `
         class="align-items-center d-flex"
       >
         <div
-          class="userAvatar icon-inline avatar"
+          class="iconInline userAvatar avatar"
           id="target-user-avatar"
         >
           <span

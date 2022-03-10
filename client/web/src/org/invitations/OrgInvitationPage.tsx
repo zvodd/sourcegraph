@@ -136,7 +136,12 @@ export const OrgInvitationPage: React.FunctionComponent<Props> = ({ authenticate
                     <Form className="text-center pr-4 pl-4 pb-4">
                         <h2>You've been invited to join the {orgDisplayName} organization</h2>
                         <div className="mt-4">
-                            <UserAvatar className={classNames('mr-2', styles.userAvatar)} user={sender} size={24} />
+                            <UserAvatar
+                                className={classNames('mr-2', styles.userAvatar)}
+                                user={sender}
+                                size={24}
+                                inline={false}
+                            />
                             <span>
                                 Invited by{' '}
                                 <Link to={userURL(sender.username)}>{sender.displayName || `@${sender.username}`}</Link>

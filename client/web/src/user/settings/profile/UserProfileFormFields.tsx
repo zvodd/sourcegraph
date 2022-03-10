@@ -83,7 +83,9 @@ export const UserProfileFormFields: React.FunctionComponent<Props> = ({
                         placeholder="URL to avatar photo"
                     />
                 </div>
-                {value.avatarURL && <UserAvatar user={value} className={classNames('ml-2', styles.avatar)} />}
+                {value.avatarURL && (
+                    <UserAvatar inline={false} user={value} className={classNames('ml-2', styles.avatar)} />
+                )}
             </div>
         </div>
     )

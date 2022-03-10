@@ -157,6 +157,7 @@ const InvitationItem: React.FunctionComponent<InvitationItemProps> = ({
                     <div className={styles.avatarContainer}>
                         {invite.recipient && (
                             <UserAvatar
+                                inline={false}
                                 size={24}
                                 className={styles.avatar}
                                 user={invite.recipient}

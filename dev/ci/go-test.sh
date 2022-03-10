@@ -99,7 +99,6 @@ asdf reshim golang
 # shellcheck disable=SC2034
 declare -A IGNORED_DIRS=(
   ["./docker-images/syntax-highlighter"]=1
-  ["./cmd/symbols/squirrel/external"]=1
 )
 
 # We have multiple go.mod files and go list doesn't recurse into them.

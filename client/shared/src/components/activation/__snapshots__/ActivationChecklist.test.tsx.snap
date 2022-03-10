@@ -27,7 +27,7 @@ exports[`ActivationChecklist render 0/1 complete 1`] = `
               class="d-flex align-items-center"
             >
               <span
-                class="icon-inline iconContainer iconDown"
+                class="iconInline iconContainer iconDown"
               >
                 <svg
                   class="mdi-icon icon"
@@ -42,7 +42,7 @@ exports[`ActivationChecklist render 0/1 complete 1`] = `
                 </svg>
               </span>
               <span
-                class="icon-inline iconContainer iconRight"
+                class="iconInline iconContainer iconRight"
               >
                 <svg
                   class="mdi-icon icon"
@@ -62,7 +62,7 @@ exports[`ActivationChecklist render 0/1 complete 1`] = `
             </div>
             <div>
               <svg
-                class="mdi-icon icon-inline text-muted"
+                class="mdi-icon iconInline text-muted"
                 fill="currentColor"
                 height="24"
                 viewBox="0 0 24 24"
@@ -124,7 +124,7 @@ exports[`ActivationChecklist render 0/1 complete 2`] = `
               class="d-flex align-items-center"
             >
               <span
-                class="icon-inline iconContainer iconDown"
+                class="iconInline iconContainer iconDown"
               >
                 <svg
                   class="mdi-icon icon"
@@ -139,7 +139,7 @@ exports[`ActivationChecklist render 0/1 complete 2`] = `
                 </svg>
               </span>
               <span
-                class="icon-inline iconContainer iconRight"
+                class="iconInline iconContainer iconRight"
               >
                 <svg
                   class="mdi-icon icon"
@@ -159,7 +159,7 @@ exports[`ActivationChecklist render 0/1 complete 2`] = `
             </div>
             <div>
               <svg
-                class="mdi-icon icon-inline text-muted"
+                class="mdi-icon iconInline text-muted"
                 fill="currentColor"
                 height="24"
                 viewBox="0 0 24 24"
@@ -221,7 +221,7 @@ exports[`ActivationChecklist render 1/1 complete 1`] = `
               class="d-flex align-items-center"
             >
               <span
-                class="icon-inline iconContainer iconDown"
+                class="iconInline iconContainer iconDown"
               >
                 <svg
                   class="mdi-icon icon"
@@ -236,7 +236,7 @@ exports[`ActivationChecklist render 1/1 complete 1`] = `
                 </svg>
               </span>
               <span
-                class="icon-inline iconContainer iconRight"
+                class="iconInline iconContainer iconRight"
               >
                 <svg
                   class="mdi-icon icon"
@@ -256,7 +256,7 @@ exports[`ActivationChecklist render 1/1 complete 1`] = `
             </div>
             <div>
               <svg
-                class="mdi-icon icon-inline text-success"
+                class="mdi-icon iconInline text-success"
                 fill="currentColor"
                 height="24"
                 viewBox="0 0 24 24"
@@ -294,7 +294,7 @@ exports[`ActivationChecklist render 1/1 complete 1`] = `
 exports[`ActivationChecklist render loading 1`] = `
 <DocumentFragment>
   <div
-    class="loadingSpinner icon-inline my-2"
+    class="iconInline loadingSpinner my-2"
   />
 </DocumentFragment>
 `;

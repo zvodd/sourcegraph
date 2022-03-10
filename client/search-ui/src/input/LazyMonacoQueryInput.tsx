@@ -6,7 +6,8 @@ import { lazyComponent } from '@sourcegraph/shared/src/util/lazyComponent'
 import styles from './LazyMonacoQueryInput.module.scss'
 import { MonacoQueryInputProps } from './MonacoQueryInput'
 
-const MonacoQueryInput = lazyComponent(() => import('./MonacoQueryInput'), 'MonacoQueryInput')
+// const MonacoQueryInput = lazyComponent(() => import('./MonacoQueryInput'), 'MonacoQueryInput')
+const MonacoQueryInput = lazyComponent(() => import('./CodemirrorQueryInput'), 'CodemirrorQueryInput')
 
 /**
  * A plain query input displayed during lazy-loading of the MonacoQueryInput.

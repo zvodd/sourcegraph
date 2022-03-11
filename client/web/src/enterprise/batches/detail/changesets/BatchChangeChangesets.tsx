@@ -157,6 +157,7 @@ const BatchChangeChangesetsImpl: React.FunctionComponent<Props> = ({
             ...queryArguments,
             first: BATCH_COUNT,
             after: null,
+            checkOpenOrDraft: false
         },
         options: {
             useURL: true,

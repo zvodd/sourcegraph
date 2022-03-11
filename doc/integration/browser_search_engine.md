@@ -18,7 +18,7 @@ The easiest way is to install the [Sourcegraph browser extension](browser_extens
 1. Copy the URL of the search results page.
 1. Go to [`chrome://settings`](chrome://settings.md). Under **Search engine**, click **Manage search engines**. Next to **Other search engines**, click **ADD**.
 ![](img/AddButton.png)
-1. In the **Add search engine** form, paste the URL you copied (in step 1) in the **URL with %s in place of query** field. Insert the string `%s` into the URL's `?q=` query parameter (and remove any parts of the query that you don't want to keep).
+1. In the **Add search engine** form, paste the URL you copied (in step 1) in the **URL with %s in place of query** field. Insert the string `%s` into the URL's `?q=` query parameter (and remove any parts of the query that you don't want to keep).  For example, you may wish to paste this string: `https://sourcegraph.com/search?q=%s`
 1. Fill in the keyword field with the keyboard shortcut you want for searching on Sourcegraph. In this example, it's set to <kbd>s</kbd>.
 
 ![](img/Replace.png)

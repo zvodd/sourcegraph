@@ -3,6 +3,7 @@ package store
 import (
 	"context"
 	"database/sql"
+	"fmt"
 	"sort"
 	"strings"
 	"testing"
@@ -559,6 +560,23 @@ retryLoop:
 		if status.Phase != nil {
 			t.Fatalf("unexpected phase. want=%v have=%v", nil, status.Phase)
 		}
+	}
+}
+
+func TestDescribe(t *testing.T) {
+	db := dbtest.NewDB(t)
+	store := testStore(db)
+	ctx := context.Background()
+
+	schemas, err := store.Describe(ctx)
+	if err != nil {
+		t.Fatalf("unexpected error describing schema: %s", err)
+	}
+
+	// TODO - make assertions
+
+	for schemaName, schema := range schemas {
+		fmt.Printf("> %q: %s\n", schemaName, schema)
 	}
 }
 
